@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## SensAI frontend
 
-## Getting Started
+SensAI is an AI-first Learning Management System (LMS) which enables educators to help them teacher smarter and reach further. SensAI coaches your students through questions that develop deeper thinking—just like you would, but for every student and all the time. This repository is the frontend for SensAI. The backend repository can be found [here](https://gitlab.com/hvacademy/sensai-ai).
 
-First, run the development server:
+If you are using SensAI and have any feedback for us or want any help with using SensAI, please consider [joining our community](https://chat.whatsapp.com/LmiulDbWpcXIgqNK6fZyxe) of AI + Education builders and reaching out to us.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+If you want to contribute to SensAI, please look at the `Contributing` section [here](https://gitlab.com/hvacademy/sensai-ai/-/blob/main/docs/CONTRIBUTING.md).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Our public roadmap is live [here](https://hyperverge.notion.site/fa1dd0cef7194fa9bf95c28820dca57f?v=ec52c6a716e94df180dcc8ced3d87610). Go check it out and let us know what you think we should build next!
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Contributing
+To learn more about making a contribution to SensAI, please see our [Contributing guide](https://gitlab.com/hvacademy/sensai-ai/-/blob/main/docs/CONTRIBUTING.md).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Installation
+- Make sure the backend is set up properly. Refer to the backend [installation guide](https://gitlab.com/hvacademy/sensai-ai/-/blob/main/docs/INSTALL.md) for more information.
+- Ensure you have Node.js installed on your machine.
+- Clone the repository:
+  ```
+  git clone https://gitlab.com/hvacademy/sensai-frontend.git
+  cd sensai-frontend
+  ```
+- Copy `.env.example` to `.env.local` and set the environment variables.
+- Install dependencies:
+  ```
+  npm ci
+  ```
+- Run the development server:
+  ```
+  npm run dev
+  ```
 
-## Learn More
+The app will be available at `http://localhost:3000`.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Community
+We are building a community of creators, builders, teachers, learners, parents, entrepreneurs, non-profits and volunteers who are excited about the future of AI and education. If you identify as one and want to be part of it, consider [joining our community](https://chat.whatsapp.com/LmiulDbWpcXIgqNK6fZyxe).
