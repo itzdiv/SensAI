@@ -1754,17 +1754,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             />
                                         </div>
                                     ) : activeEditorTab === 'knowledge' ? (
-                                        <div className="w-full mt-4 flex flex-row h-[600px] overflow-y-auto">
+                                        <div className="w-full mt-4 flex flex-row overflow-y-auto">
                                             {/* Left column with callout (20-30% width) */}
                                             <div className="w-[20%]">
                                                 <div className="bg-[#222222] p-3 rounded-md">
                                                     <Zap size={16} className="text-amber-400 mb-2" />
                                                     <div>
                                                         <p className="text-gray-400 text-xs leading-tight mb-2">
-                                                            Content added here will not be shown to learners but will be used by the AI to provide more accurate and helpful feedback
+                                                            This knowledge base is <span className="font-bold text-white">optional</span> and will not be shown to learners but can be used by AI to provide more accurate and helpful feedback
                                                         </p>
                                                         <p className="text-gray-300 text-xs leading-tight">
-                                                            You can either link existing learning materials or add new material here
+                                                            You can either link existing learning materials added to the course or add new material here, but it is not mandatory. Providing a knowledge base can make the feedback given by AI more specific to how you teach by letting it adapt to your teaching style.
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1772,80 +1772,94 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                                             {/* Right column with linker and editor (70-80% width) */}
                                             <div className="w-[80%] flex flex-col">
-                                                {/* Add learning material selection component */}
-                                                <div className="mb-4 ml-12">
-                                                    <LearningMaterialLinker
-                                                        courseId={courseId || ''}
-                                                        linkedMaterialIds={currentQuestion?.config?.linkedMaterialIds || []}
-                                                        readOnly={readOnly}
-                                                        onMaterialsChange={(linkedMaterialIds) => {
-                                                            // Update the question config with the new linked material IDs
-                                                            const updatedQuestions = [...questions];
-                                                            const currentQuestion = updatedQuestions[currentQuestionIndex];
-                                                            const currentConfig = currentQuestion.config || {};
+                                                {readOnly &&
+                                                    (!currentQuestion?.config?.linkedMaterialIds?.length &&
+                                                        (!currentQuestion?.config?.knowledgeBaseBlocks?.length ||
+                                                            extractTextFromBlocks(currentQuestion?.config?.knowledgeBaseBlocks || []).trim().length === 0)) ? (
+                                                    <div className="w-full flex flex-col items-center justify-center p-8 text-center rounded-lg bg-[#1A1A1A] h-full">
+                                                        <div className="max-w-md">
+                                                            <h3 className="text-xl font-light text-white mb-3">No knowledge base found</h3>
+                                                            <p className="text-gray-400 mb-6">
+                                                                This question does not have any knowledge base attached to it
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="h-[600px]">
+                                                        {/* Add learning material selection component */}
+                                                        <div className="mb-4 ml-12">
+                                                            <LearningMaterialLinker
+                                                                courseId={courseId || ''}
+                                                                linkedMaterialIds={currentQuestion?.config?.linkedMaterialIds || []}
+                                                                readOnly={readOnly}
+                                                                onMaterialsChange={(linkedMaterialIds) => {
+                                                                    // Update the question config with the new linked material IDs
+                                                                    const updatedQuestions = [...questions];
+                                                                    const currentQuestion = updatedQuestions[currentQuestionIndex];
+                                                                    const currentConfig = currentQuestion.config || {};
 
-                                                            updatedQuestions[currentQuestionIndex] = {
-                                                                ...currentQuestion,
-                                                                config: {
-                                                                    ...currentConfig,
-                                                                    linkedMaterialIds: linkedMaterialIds
+                                                                    updatedQuestions[currentQuestionIndex] = {
+                                                                        ...currentQuestion,
+                                                                        config: {
+                                                                            ...currentConfig,
+                                                                            linkedMaterialIds: linkedMaterialIds
+                                                                        }
+                                                                    };
+
+                                                                    setQuestions(updatedQuestions);
+
+                                                                    if (onChange) {
+                                                                        onChange(updatedQuestions);
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
+
+                                                        <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                // Ensure the knowledge base editor keeps focus
+                                                                if (knowledgeBaseEditorRef.current) {
+                                                                    try {
+                                                                        // Try to focus the editor
+                                                                        knowledgeBaseEditorRef.current.focusEditor();
+                                                                    } catch (err) {
+                                                                        console.error("Error focusing knowledge base editor:", err);
+                                                                    }
                                                                 }
-                                                            };
+                                                            }}
+                                                            onMouseDown={(e) => {
+                                                                e.stopPropagation();
+                                                            }}
+                                                        >
+                                                            <BlockNoteEditor
+                                                                key={`knowledge-base-editor-${currentQuestionIndex}`}
+                                                                initialContent={currentQuestionConfig.knowledgeBaseBlocks || []}
+                                                                onChange={(content) => {
+                                                                    // Store blocks
+                                                                    const updatedQuestions = [...questions];
+                                                                    updatedQuestions[currentQuestionIndex] = {
+                                                                        ...updatedQuestions[currentQuestionIndex],
+                                                                        config: {
+                                                                            ...updatedQuestions[currentQuestionIndex].config,
+                                                                            knowledgeBaseBlocks: content
+                                                                        }
+                                                                    };
+                                                                    setQuestions(updatedQuestions);
 
-                                                            setQuestions(updatedQuestions);
-
-                                                            if (onChange) {
-                                                                onChange(updatedQuestions);
-                                                            }
-                                                        }}
-                                                    />
-                                                </div>
-
-                                                <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        // Ensure the knowledge base editor keeps focus
-                                                        if (knowledgeBaseEditorRef.current) {
-                                                            try {
-                                                                // Try to focus the editor
-                                                                knowledgeBaseEditorRef.current.focusEditor();
-                                                            } catch (err) {
-                                                                console.error("Error focusing knowledge base editor:", err);
-                                                            }
-                                                        }
-                                                    }}
-                                                    onMouseDown={(e) => {
-                                                        e.stopPropagation();
-                                                    }}
-                                                >
-                                                    <BlockNoteEditor
-                                                        key={`knowledge-base-editor-${currentQuestionIndex}`}
-                                                        initialContent={currentQuestionConfig.knowledgeBaseBlocks || []}
-                                                        onChange={(content) => {
-                                                            // Store blocks
-                                                            const updatedQuestions = [...questions];
-                                                            updatedQuestions[currentQuestionIndex] = {
-                                                                ...updatedQuestions[currentQuestionIndex],
-                                                                config: {
-                                                                    ...updatedQuestions[currentQuestionIndex].config,
-                                                                    knowledgeBaseBlocks: content
-                                                                }
-                                                            };
-                                                            setQuestions(updatedQuestions);
-
-                                                            if (onChange) {
-                                                                onChange(updatedQuestions);
-                                                            }
-                                                        }}
-                                                        isDarkMode={isDarkMode}
-                                                        readOnly={readOnly}
-                                                        onEditorReady={setKnowledgeBaseEditorInstance}
-                                                        className="knowledge-base-editor"
-                                                    />
-                                                </div>
+                                                                    if (onChange) {
+                                                                        onChange(updatedQuestions);
+                                                                    }
+                                                                }}
+                                                                isDarkMode={isDarkMode}
+                                                                readOnly={readOnly}
+                                                                onEditorReady={setKnowledgeBaseEditorInstance}
+                                                                className="knowledge-base-editor"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-
-
                                         </div>
                                     ) : (
                                         // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
