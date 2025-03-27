@@ -29,7 +29,9 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     inputType: 'text',
     responseType: 'chat',
     evaluationCriteria: [],
-    questionType: 'objective'
+    questionType: 'objective',
+    knowledgeBaseBlocks: [],
+    linkedMaterialIds: []
 };
 
 // Helper function to extract text from all blocks in a BlockNote document
@@ -331,6 +333,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // Reference to the correct answer editor
     const correctAnswerEditorRef = useRef<any>(null);
 
+    // Reference to the knowledge base editor
+    const knowledgeBaseEditorRef = useRef<any>(null);
+
     // State for scorecard templates dialog
     const [showScorecardDialog, setShowScorecardDialog] = useState(false);
     const [scorecardDialogPosition, setScorecardDialogPosition] = useState<{ top: number, left: number } | null>(null);
@@ -344,7 +349,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const scorecardRef = useRef<ScorecardHandle>(null);
 
     // State for tracking active tab (question or answer)
-    const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard'>('question');
+    const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard' | 'knowledge'>('question');
 
     // State to track which field is being highlighted for validation errors
     const [highlightedField, setHighlightedField] = useState<'question' | 'answer' | null>(null);
@@ -736,6 +741,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         correctAnswerEditorRef.current = editor;
     }, []);
 
+    // Function to set the knowledge base editor reference
+    const setKnowledgeBaseEditorInstance = useCallback((editor: any) => {
+        knowledgeBaseEditorRef.current = editor;
+    }, []);
+
     // Handle content change for the current question - use useCallback to memoize
     const handleQuestionContentChange = useCallback((content: any[]) => {
         if (questions.length === 0) return;
@@ -871,7 +881,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             } else if (activeEditorTab === 'answer' && nextQuestion.config.questionType == 'subjective') {
                 setActiveEditorTab('question');
             }
-
             // Call the onQuestionChange callback if provided
             if (onQuestionChange && questions[newIndex] && !isPreviewMode) {
                 onQuestionChange(questions[newIndex].id);
@@ -1040,6 +1049,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     }
                 }
 
+                // Extract knowledge base content if it exists
+                const knowledgeBaseBlocks = question.config.knowledgeBaseBlocks || [];
+                const hasKnowledgeBase = knowledgeBaseBlocks.length > 0;
+
                 // Return the formatted question object for all questions, not just those with scorecards
                 return {
                     blocks: question.content,
@@ -1052,7 +1065,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     max_attempts: taskType === 'exam' ? 1 : null,
                     is_feedback_shown: taskType === 'exam' ? false : true,
                     scorecard: scorecard,
-                    scorecard_id: scorecardId
+                    scorecard_id: scorecardId,
+                    knowledge_base: hasKnowledgeBase ? knowledgeBaseBlocks : null
                 };
             });
 
@@ -1145,12 +1159,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 const inputType = question.config.inputType;
                 console.log(`Question ${question.id} - Input type: ${inputType}`);
 
+                // Extract knowledge base content if it exists
+                const knowledgeBaseBlocks = question.config.knowledgeBaseBlocks || [];
+                const hasKnowledgeBase = knowledgeBaseBlocks.length > 0;
+
                 return {
                     id: question.id,
                     blocks: question.content,
                     answer: correctAnswerText,
                     type: questionType,
-                    input_type: inputType
+                    input_type: inputType,
+                    knowledge_base: hasKnowledgeBase ? knowledgeBaseBlocks : null
                 };
             });
 
@@ -1596,6 +1615,16 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 Scorecard
                                             </button>
                                         )}
+                                        <button
+                                            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'knowledge'
+                                                ? 'bg-[#333333] text-white'
+                                                : 'text-gray-400 hover:text-white'
+                                                }`}
+                                            onClick={() => setActiveEditorTab('knowledge')}
+                                        >
+                                            <Zap size={16} className="mr-2" />
+                                            Knowledge Base
+                                        </button>
                                     </div>
                                 </div>
 
@@ -1663,6 +1692,64 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 className="correct-answer-editor"
                                                 placeholder="Enter the correct answer here"
                                             />
+                                        </div>
+                                    ) : activeEditorTab === 'knowledge' ? (
+                                        <div className="w-full flex flex-col">
+                                            <div className="bg-[#222222] p-3 mb-3 rounded-md flex items-center">
+                                                <Zap size={16} className="text-amber-400 mr-2 flex-shrink-0" />
+                                                <div>
+                                                    <p className="text-gray-400 text-xs leading-tight">
+                                                        Content added here will not be shown to learners but will be used by the AI to provide more accurate and helpful feedback
+                                                    </p>
+                                                    <p className="text-gray-300 text-xs leading-tight">
+                                                        You can either link existing learning materials or add new material here
+                                                    </p>
+                                                </div>
+
+                                            </div>
+                                            <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // Ensure the knowledge base editor keeps focus
+                                                    if (knowledgeBaseEditorRef.current) {
+                                                        try {
+                                                            // Try to focus the editor
+                                                            knowledgeBaseEditorRef.current.focusEditor();
+                                                        } catch (err) {
+                                                            console.error("Error focusing knowledge base editor:", err);
+                                                        }
+                                                    }
+                                                }}
+                                                onMouseDown={(e) => {
+                                                    e.stopPropagation();
+                                                }}
+                                            >
+                                                <BlockNoteEditor
+                                                    key={`knowledge-base-editor-${currentQuestionIndex}`}
+                                                    initialContent={currentQuestionConfig.knowledgeBaseBlocks || []}
+                                                    onChange={(content) => {
+                                                        // Store blocks
+                                                        const updatedQuestions = [...questions];
+                                                        updatedQuestions[currentQuestionIndex] = {
+                                                            ...updatedQuestions[currentQuestionIndex],
+                                                            config: {
+                                                                ...updatedQuestions[currentQuestionIndex].config,
+                                                                knowledgeBaseBlocks: content
+                                                            }
+                                                        };
+                                                        setQuestions(updatedQuestions);
+
+                                                        if (onChange) {
+                                                            onChange(updatedQuestions);
+                                                        }
+                                                    }}
+                                                    isDarkMode={isDarkMode}
+                                                    readOnly={readOnly}
+                                                    onEditorReady={setKnowledgeBaseEditorInstance}
+                                                    className="knowledge-base-editor"
+                                                    placeholder="Add knowledge base content or reference materials to help the AI provide better feedback"
+                                                />
+                                            </div>
                                         </div>
                                     ) : (
                                         // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder

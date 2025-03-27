@@ -8,13 +8,13 @@ export interface QuizEditorHandle {
     getCurrentQuestionType: () => 'objective' | 'subjective' | 'coding';
     hasCorrectAnswer: () => boolean;
     hasScorecard: () => boolean;
-    setActiveTab: (tab: 'question' | 'answer' | 'scorecard') => void;
+    setActiveTab: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
     validateBeforePublish: () => boolean;
     getCurrentQuestionConfig: () => QuizQuestionConfig | undefined;
     validateScorecardCriteria: (
         scorecard: ScorecardTemplate | undefined, 
         callbacks: {
-            setActiveTab: (tab: 'question' | 'answer' | 'scorecard') => void;
+            setActiveTab: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
             showErrorMessage?: (title: string, message: string, emoji?: string) => void;
             questionIndex?: number;
         }
@@ -31,6 +31,8 @@ export interface QuizQuestionConfig {
     audioMaxDuration?: number; // For audio input type in seconds
     questionType: 'objective' | 'subjective' | 'coding';
     scorecardData?: ScorecardTemplate;
+    knowledgeBaseBlocks?: any[]; // Add knowledge base content blocks
+    linkedMaterialIds?: string[]; // Add IDs of linked learning materials
 }
 
 export interface QuizQuestion {
