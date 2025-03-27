@@ -346,8 +346,25 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // State for tracking active tab (question or answer)
     const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard'>('question');
 
+    // State to track which field is being highlighted for validation errors
+    const [highlightedField, setHighlightedField] = useState<'question' | 'answer' | null>(null);
+
     // Add validation utility functions to reduce duplication
     // These functions can validate both the current question and any question by index
+
+    /**
+     * Highlights a field (question or answer) to draw attention to a validation error
+     * @param field The field to highlight
+     */
+    const highlightField = useCallback((field: 'question' | 'answer') => {
+        // Set the highlighted field
+        setHighlightedField(field);
+
+        // Clear the highlight after 4 seconds
+        setTimeout(() => {
+            setHighlightedField(null);
+        }, 4000);
+    }, []);
 
     /**
      * Validates if question content is non-empty
@@ -435,7 +452,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         if (showErrorMessage) {
                             const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
                             showErrorMessage(
-                                "Empty Parameter Name",
+                                "Empty Scorecard Parameter",
                                 `Please provide a name for parameter ${index + 1} in the scorecard${suffix}`,
                                 "🚫"
                             );
@@ -467,7 +484,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         if (showErrorMessage) {
                             const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
                             showErrorMessage(
-                                "Empty Parameter Description",
+                                "Empty Scorecard Parameter",
                                 `Please provide a description for parameter ${index + 1} in the scorecard${suffix}`,
                                 "🚫"
                             );
@@ -493,7 +510,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             if (onValidationError) {
                 onValidationError(
                     "No Questions",
-                    "Please add at least one question to continue."
+                    "Please add at least one question to continue"
                 );
             }
             return false;
@@ -509,11 +526,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 setCurrentQuestionIndex(i);
                 setActiveEditorTab('question');
 
+                // Highlight the question field
+                highlightField('question');
+
                 // Notify parent about validation error
                 if (onValidationError) {
                     onValidationError(
                         "Empty Question",
-                        `Question ${i + 1} is empty. Please add details to the question.`
+                        `Question ${i + 1} is empty. Please add details to the question`
                     );
                 }
                 return false;
@@ -526,11 +546,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     setCurrentQuestionIndex(i);
                     setActiveEditorTab('answer');
 
+                    // Highlight the answer field
+                    highlightField('answer');
+
                     // Notify parent about validation error
                     if (onValidationError) {
                         onValidationError(
                             "Empty Correct Answer",
-                            `Question ${i + 1} has no correct answer. Please add a correct answer.`
+                            `Question ${i + 1} has no correct answer. Please add a correct answer`
                         );
                     }
                     return false;
@@ -548,7 +571,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     if (onValidationError) {
                         onValidationError(
                             "Missing Scorecard",
-                            `Question ${i + 1} has no scorecard. Please add a scorecard.`
+                            `Question ${i + 1} has no scorecard. Please add a scorecard`
                         );
                     }
                     return false;
@@ -577,7 +600,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
 
         return true;
-    }, [questions, onValidationError, validateQuestionContent, validateCorrectAnswer, validateScorecard, setCurrentQuestionIndex, setActiveEditorTab, validateScorecardCriteria]);
+    }, [questions, onValidationError, validateQuestionContent, validateCorrectAnswer, validateScorecard, setCurrentQuestionIndex, setActiveEditorTab, validateScorecardCriteria, highlightField]);
 
     // Function to handle opening the scorecard templates dialog
     const handleOpenScorecardDialog = () => {
@@ -1192,12 +1215,30 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         save: handleSave,
         cancel: handleCancel,
         hasContent: () => questions.length > 0,
-        hasQuestionContent: () => validateQuestionContent(currentQuestionContent),
+        hasQuestionContent: () => {
+            const isValid = validateQuestionContent(currentQuestionContent);
+            if (!isValid) {
+                // Switch to question tab
+                setActiveEditorTab('question');
+                // Highlight the question field to draw attention to the error
+                highlightField('question');
+            }
+            return isValid;
+        },
         getCurrentQuestionType: () => {
             // Return the current question's type, defaulting to 'objective' if not set
             return currentQuestionConfig.questionType;
         },
-        hasCorrectAnswer: () => validateCorrectAnswer(currentQuestionConfig),
+        hasCorrectAnswer: () => {
+            const isValid = validateCorrectAnswer(currentQuestionConfig);
+            if (!isValid) {
+                // Switch to answer tab
+                setActiveEditorTab('answer');
+                // Highlight the answer field to draw attention to the error
+                highlightField('answer');
+            }
+            return isValid;
+        },
         hasScorecard: () => validateScorecard(currentQuestionConfig),
         setActiveTab: (tab) => {
             // Set the active editor tab
@@ -1562,7 +1603,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     {/* Show content based on active tab */}
                                     {activeEditorTab === 'question' ? (
                                         <div className="w-full">
-                                            <div className="editor-container h-full">
+                                            <div className={`editor-container h-full ${highlightedField === 'question' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
                                                 <BlockNoteEditor
                                                     key={`quiz-editor-question-${currentQuestionIndex}`}
                                                     initialContent={currentQuestionContent}
@@ -1575,7 +1616,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             </div>
                                         </div>
                                     ) : activeEditorTab === 'answer' ? (
-                                        <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden"
+                                        <div className={`w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden ${highlightedField === 'answer' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 // Ensure the correct answer editor keeps focus
