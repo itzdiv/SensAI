@@ -92,6 +92,10 @@ export interface APIQuestionResponse {
             max_score: number;
         }[];
     };
+    context?: {
+        blocks?: any[];
+        linkedMaterialIds?: string[];
+    };
 } 
 
 

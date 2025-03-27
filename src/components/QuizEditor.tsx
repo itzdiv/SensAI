@@ -48,6 +48,7 @@ const extractTextFromBlocks = (blocks: any[]): string => {
     if (!blocks || blocks.length === 0) return "";
 
     return blocks.map(block => {
+        console.log(block);
         // Handle different block types
         if (block.type === "paragraph") {
             // For paragraph blocks, extract text content
@@ -233,13 +234,20 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                             // Map API question type to local questionType
                             const questionType = question.type;
 
+
                             // Create correct answer blocks from the answer text if it exists
-                            const correctAnswerBlocks = question.answer ? [
+                            const correctAnswerBlocks = [
                                 {
                                     type: "paragraph",
-                                    content: question.answer
+                                    content: [
+                                        {
+                                            type: "text",
+                                            text: question.answer || "",
+                                            styles: {}
+                                        }
+                                    ]
                                 }
-                            ] : [];
+                            ];
 
                             // Handle scorecard data if scorecard_id is present
                             let scorecardData = undefined;
@@ -258,8 +266,22 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         })),
                                     };
                                 }
+                            }
 
-                                console.log(matchingScorecard)
+                            // Extract knowledgeBaseBlocks and linkedMaterialIds from context if it exists
+                            let knowledgeBaseBlocks: any[] = [];
+                            let linkedMaterialIds: string[] = [];
+
+                            if (question.context) {
+                                // Extract blocks for knowledge base if they exist
+                                if (question.context.blocks && Array.isArray(question.context.blocks)) {
+                                    knowledgeBaseBlocks = question.context.blocks;
+                                }
+
+                                // Extract linkedMaterialIds if they exist
+                                if (question.context.linkedMaterialIds && Array.isArray(question.context.linkedMaterialIds)) {
+                                    linkedMaterialIds = question.context.linkedMaterialIds;
+                                }
                             }
 
                             return {
@@ -269,9 +291,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     inputType: question.input_type || 'text' as 'text' | 'code' | 'audio',
                                     responseType: question.response_type,
                                     correctAnswer: question.answer || '',
-                                    correctAnswerBlocks: correctAnswerBlocks, // Use the answer-based blocks instead of question blocks
+                                    correctAnswerBlocks: correctAnswerBlocks,
                                     questionType: questionType as 'objective' | 'subjective' | 'coding',
-                                    scorecardData: scorecardData
+                                    scorecardData: scorecardData,
+                                    knowledgeBaseBlocks: knowledgeBaseBlocks,
+                                    linkedMaterialIds: linkedMaterialIds
                                 }
                             };
                         });
@@ -767,11 +791,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         editorRef.current = editor;
     }, []);
 
-    // Function to open the slash menu
-    const openSlashMenu = useCallback(() => {
-        // Function intentionally left empty - we're not programmatically opening the slash menu
-    }, []);
-
     // Memoize the current question content and config to prevent unnecessary re-renders
     const currentQuestion = useMemo(() =>
         questions[currentQuestionIndex] || { content: [], config: defaultQuestionConfig },
@@ -810,6 +829,26 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         setQuestions(updatedQuestions);
 
         // Call onChange callback if provided
+        if (onChange) {
+            onChange(updatedQuestions);
+        }
+    }, [questions, currentQuestionIndex, onChange]);
+
+    // Handle correct answer content change
+    const handleCorrectAnswerChange = useCallback((content: any[]) => {
+        if (questions.length === 0) return;
+
+        // Store blocks but don't extract text on every change
+        const updatedQuestions = [...questions];
+        updatedQuestions[currentQuestionIndex] = {
+            ...updatedQuestions[currentQuestionIndex],
+            config: {
+                ...updatedQuestions[currentQuestionIndex].config,
+                correctAnswerBlocks: content
+            }
+        };
+        setQuestions(updatedQuestions);
+
         if (onChange) {
             onChange(updatedQuestions);
         }
@@ -868,6 +907,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
         try {
             const blocks = correctAnswerEditorRef.current.document;
+            console.log(blocks)
             if (blocks && blocks.length > 0) {
                 return extractTextFromBlocks(blocks);
             }
@@ -1067,14 +1107,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     correctAnswerText = question.config.correctAnswer;
                 }
 
-                console.log(`Question ${question.id} - Correct answer: "${correctAnswerText}"`);
-
                 // Map questionType to API type
                 const questionType = question.config.questionType;
                 // Map inputType
                 const inputType = question.config.inputType
 
-                console.log(question.config.scorecardData)
                 let scorecard = null
                 let scorecardId = null
 
@@ -1187,15 +1224,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 let correctAnswerText = "";
 
                 // If this is the current question, extract directly from the editor
-                if (index === currentQuestionIndex) {
-                    correctAnswerText = extractCurrentCorrectAnswer();
-                } else if (question.config.correctAnswerBlocks) {
+                if (question.config.correctAnswerBlocks) {
                     // For other questions, extract from stored blocks if available
                     correctAnswerText = extractTextFromBlocks(question.config.correctAnswerBlocks);
+                    console.log(correctAnswerText)
                 } else if (question.config.correctAnswer) {
                     // Fallback to stored text answer
                     correctAnswerText = question.config.correctAnswer;
+                    console.log(correctAnswerText)
                 }
+
+                console.log(correctAnswerText)
 
                 // Map questionType to API type
                 const questionType = question.config.questionType;
@@ -1705,28 +1744,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         >
                                             <BlockNoteEditor
                                                 key={`correct-answer-editor-${currentQuestionIndex}`}
-                                                initialContent={currentQuestionConfig.correctAnswerBlocks || (currentQuestionConfig.correctAnswer ? [
-                                                    {
-                                                        type: "paragraph",
-                                                        content: currentQuestionConfig.correctAnswer
-                                                    }
-                                                ] : [])}
-                                                onChange={(content) => {
-                                                    // Store blocks but don't extract text on every change
-                                                    const updatedQuestions = [...questions];
-                                                    updatedQuestions[currentQuestionIndex] = {
-                                                        ...updatedQuestions[currentQuestionIndex],
-                                                        config: {
-                                                            ...updatedQuestions[currentQuestionIndex].config,
-                                                            correctAnswerBlocks: content
-                                                        }
-                                                    };
-                                                    setQuestions(updatedQuestions);
-
-                                                    if (onChange) {
-                                                        onChange(updatedQuestions);
-                                                    }
-                                                }}
+                                                initialContent={currentQuestionConfig.correctAnswerBlocks}
+                                                onChange={handleCorrectAnswerChange}
                                                 isDarkMode={isDarkMode}
                                                 readOnly={readOnly}
                                                 onEditorReady={setCorrectAnswerEditorInstance}
