@@ -48,11 +48,36 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
         description: '',
         emoji: ''
     });
+    // State to track highlighted fields
+    const [highlightedField, setHighlightedField] = useState<{ index: number, field: 'name' | 'description' } | null>(null);
 
     // Update nameValue when prop changes
     useEffect(() => {
         setNameValue(name || '');
     }, [name]);
+
+    // Listen for highlight-criterion events
+    useEffect(() => {
+        const handleHighlightCriterion = (event: CustomEvent) => {
+            const { index, field } = event.detail;
+
+            // Set the highlighted field - we only need the index now since we highlight the whole row
+            setHighlightedField({ index, field });
+
+            // Clear the highlight after 4 seconds
+            setTimeout(() => {
+                setHighlightedField(null);
+            }, 4000);
+        };
+
+        // Add event listener
+        document.addEventListener('highlight-criterion', handleHighlightCriterion as EventListener);
+
+        // Clean up
+        return () => {
+            document.removeEventListener('highlight-criterion', handleHighlightCriterion as EventListener);
+        };
+    }, []);
 
     // Auto-hide toast after 5 seconds
     useEffect(() => {
@@ -257,7 +282,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                     {/* Table header */}
                     <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px 80px 40px' }} className="gap-2 mb-2 text-xs text-gray-300">
                         <div className="px-2 flex items-center">
-                            Criterion
+                            Parameter
                             <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
@@ -271,7 +296,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
-                                    A detailed explanation of what is being measured by this criterion
+                                    A detailed explanation of what is being measured by this parameter
                                     <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
                                 </div>
                             </div>
@@ -281,7 +306,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
-                                    The lowest possible score for this criterion
+                                    The lowest possible score for this parameter
                                     <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
                                 </div>
                             </div>
@@ -291,7 +316,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
-                                    The highest possible score for this criterion
+                                    The highest possible score for this parameter
                                     <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
                                 </div>
                             </div>
@@ -306,8 +331,15 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             const pillColors = ["#5E3B5D", "#3B5E4F", "#3B4E5E", "#5E3B3B", "#4F5E3B"];
                             const pillColor = pillColors[index % pillColors.length];
 
+                            // Check if this row should be highlighted
+                            const isRowHighlighted = highlightedField && highlightedField.index === index;
+
                             return (
-                                <div key={index} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px 80px 40px' }} className="gap-2 bg-[#2A2A2A] rounded-md p-1 text-white">
+                                <div
+                                    key={index}
+                                    style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px 80px 40px' }}
+                                    className={`gap-2 rounded-md p-1 text-white ${isRowHighlighted ? 'bg-[#4D2424] outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse' : 'bg-[#2A2A2A]'}`}
+                                >
                                     {/* Criterion Name Cell */}
                                     <div className="px-2 py-1 text-sm h-full flex items-center">
                                         {editingCell?.rowIndex === index && editingCell.field === 'name' ? (
@@ -327,7 +359,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 style={{ backgroundColor: pillColor }}
                                                 onClick={() => startEditing(index, 'name')}
                                             >
-                                                {criterion.name || 'New Criterion'}
+                                                {criterion.name}
                                                 {!readOnly && !linked && (
                                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block px-2 py-1 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
                                                         Click to edit
@@ -437,7 +469,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                             <button
                                                 onClick={() => handleDeleteCriterion(index)}
                                                 className="p-1 rounded-full hover:bg-[#4F2828] text-gray-500 hover:text-red-300 transition-colors cursor-pointer"
-                                                aria-label={`Delete criterion ${criterion.name}`}
+                                                aria-label={`Delete parameter ${criterion.name}`}
                                             >
                                                 <X size={14} />
                                             </button>
@@ -452,7 +484,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px 80px' }} className="gap-2 bg-[#2A2A2A] rounded-md p-1 text-white">
                                 <div className="px-2 py-1 text-sm flex items-center">
                                     <span className="inline-block px-2 py-0.5 rounded-full text-xs text-white bg-[#5E3B5D]">
-                                        Add criteria
+                                        Add parameter
                                     </span>
                                 </div>
                                 <div className="px-2 py-1 flex items-center">
@@ -470,7 +502,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             <button
                                 onClick={handleAddCriterion}
                                 className="flex items-center px-4 py-2 rounded-full bg-[#2A2A2A] hover:bg-[#2A4A3A] text-gray-300 hover:text-green-300 transition-colors cursor-pointer"
-                                aria-label="Add criterion"
+                                aria-label="Add parameter"
                             >
                                 <Plus size={14} className="mr-1" />
                                 <span className="text-sm">Add</span>

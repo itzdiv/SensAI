@@ -363,6 +363,25 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                     quizEditorRef.current.setActiveTab('scorecard');
                     return; // Prevent entering preview mode
                 }
+
+                // Validate the scorecard criteria for subjective questions
+                // Get the current question's scorecard data
+                const currentQuestionConfig = quizEditorRef.current.getCurrentQuestionConfig?.();
+
+                if (currentQuestionConfig?.scorecardData) {
+                    // Use the shared validation function to validate the scorecard criteria
+                    const isValid = quizEditorRef.current.validateScorecardCriteria(
+                        currentQuestionConfig.scorecardData,
+                        {
+                            setActiveTab: quizEditorRef.current.setActiveTab,
+                            showErrorMessage: displayToast
+                        }
+                    );
+
+                    if (!isValid) {
+                        return; // Prevent entering preview mode if validation fails
+                    }
+                }
             }
         }
 
@@ -378,7 +397,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         setShowToast(true);
         setTimeout(() => {
             setShowToast(false);
-        }, 5000); // Auto-hide after 3 seconds
+        }, 5000); // Auto-hide after 5 seconds
     };
 
     // Handle save button click - show confirmation

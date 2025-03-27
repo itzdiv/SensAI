@@ -390,6 +390,100 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }, []);
 
     /**
+     * Validates scorecard criteria for empty names and descriptions
+     * @param scorecard The scorecard data to validate
+     * @param callbacks Object containing callback functions for validation actions
+     * @returns True if all criteria are valid, false if any validation fails
+     */
+    const validateScorecardCriteria = (
+        scorecard: ScorecardTemplate | undefined,
+        callbacks: {
+            setActiveTab: (tab: 'question' | 'answer' | 'scorecard') => void;
+            showErrorMessage?: (title: string, message: string, emoji?: string) => void;
+            questionIndex?: number; // Optional for showing question number in error message
+        }
+    ): boolean => {
+        // If no scorecard or not a user-created scorecard (new), return true (valid)
+        if (!scorecard || !scorecard.new) {
+            return true;
+        }
+
+        const { setActiveTab, showErrorMessage, questionIndex } = callbacks;
+
+        // Check each criterion for empty name or description
+        for (let i = 0; i < scorecard.criteria.length; i++) {
+            const criterion = scorecard.criteria[i];
+
+            // Check for empty name
+            if (!criterion.name || criterion.name.trim() === '') {
+                // Switch to scorecard tab first
+                setActiveTab('scorecard');
+
+                // Use a self-invoking function for delayed highlight and error message
+                (function (index) {
+                    setTimeout(() => {
+                        // Create event to highlight the problematic row
+                        const event = new CustomEvent('highlight-criterion', {
+                            detail: {
+                                index,
+                                field: 'name'
+                            }
+                        });
+                        document.dispatchEvent(event);
+
+                        // Show error message if callback is provided
+                        if (showErrorMessage) {
+                            const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
+                            showErrorMessage(
+                                "Empty Parameter Name",
+                                `Please provide a name for parameter ${index + 1} in the scorecard${suffix}`,
+                                "🚫"
+                            );
+                        }
+                    }, 250);
+                })(i);
+
+                return false;
+            }
+
+            // Check for empty description
+            if (!criterion.description || criterion.description.trim() === '') {
+                // Switch to scorecard tab first
+                setActiveTab('scorecard');
+
+                // Use a self-invoking function for delayed highlight and error message
+                (function (index, name) {
+                    setTimeout(() => {
+                        // Create event to highlight the problematic row
+                        const event = new CustomEvent('highlight-criterion', {
+                            detail: {
+                                index,
+                                field: 'description'
+                            }
+                        });
+                        document.dispatchEvent(event);
+
+                        // Show error message if callback is provided
+                        if (showErrorMessage) {
+                            const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
+                            showErrorMessage(
+                                "Empty Parameter Description",
+                                `Please provide a description for parameter ${index + 1} in the scorecard${suffix}`,
+                                "🚫"
+                            );
+                        }
+                    }, 250);
+                })(i, criterion.name);
+
+                return false;
+            }
+        }
+
+        // If all criteria passed validation
+        return true;
+    };
+
+    /**
      * Validates all questions in the quiz/exam and navigates to the first invalid question
      * @returns True if all questions are valid, false otherwise
      */
@@ -459,11 +553,31 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     }
                     return false;
                 }
+
+                // Check for empty criterion names or descriptions in the scorecard
+                if (question.config.scorecardData) {
+                    // Navigate to the question with the problematic scorecard first
+                    setCurrentQuestionIndex(i);
+
+                    // Use the shared validation function for scorecards
+                    const isValid = validateScorecardCriteria(
+                        question.config.scorecardData,
+                        {
+                            setActiveTab: setActiveEditorTab,
+                            showErrorMessage: onValidationError,
+                            questionIndex: i
+                        }
+                    );
+
+                    if (!isValid) {
+                        return false;
+                    }
+                }
             }
         }
 
         return true;
-    }, [questions, onValidationError, validateQuestionContent, validateCorrectAnswer, validateScorecard, setCurrentQuestionIndex, setActiveEditorTab]);
+    }, [questions, onValidationError, validateQuestionContent, validateCorrectAnswer, validateScorecard, setCurrentQuestionIndex, setActiveEditorTab, validateScorecardCriteria]);
 
     // Function to handle opening the scorecard templates dialog
     const handleOpenScorecardDialog = () => {
@@ -1089,7 +1203,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Set the active editor tab
             setActiveEditorTab(tab);
         },
-        validateBeforePublish: validateAllQuestions
+        validateBeforePublish: validateAllQuestions,
+        getCurrentQuestionConfig: () => {
+            // Return the current question's configuration
+            return currentQuestionConfig;
+        },
+        validateScorecardCriteria: (scorecard: ScorecardTemplate | undefined, callbacks: any) =>
+            validateScorecardCriteria(scorecard, callbacks)
     }));
 
     // Update the MemoizedLearnerQuizView to include the correct answer
@@ -1577,7 +1697,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 <div className="max-w-md">
                                                     <h3 className="text-xl font-light text-white mb-3">What is a scorecard?</h3>
                                                     <p className="text-gray-400 mb-6">
-                                                        A scorecard is a set of criteria used to grade the answer to an open-ended question - either use one of our templates or create your own
+                                                        A scorecard is a set of parameters used to grade the answer to an open-ended question - either use one of our templates or create your own
                                                     </p>
                                                     <button
                                                         className="flex items-center px-5 py-2.5 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer mx-auto"

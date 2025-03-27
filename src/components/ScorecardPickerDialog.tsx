@@ -99,9 +99,9 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
 
                 {/* Table header */}
                 <div className="grid grid-cols-3 gap-2 mb-2 text-xs text-gray-300">
-                    <div className="px-2">Criterion</div>
+                    <div className="px-2">Parameter</div>
                     <div className="px-2">Description</div>
-                    <div className="px-2">Max Score</div>
+                    <div className="px-2">Maximum</div>
                 </div>
 
                 {/* Table rows */}

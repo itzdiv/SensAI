@@ -10,6 +10,15 @@ export interface QuizEditorHandle {
     hasScorecard: () => boolean;
     setActiveTab: (tab: 'question' | 'answer' | 'scorecard') => void;
     validateBeforePublish: () => boolean;
+    getCurrentQuestionConfig: () => QuizQuestionConfig | undefined;
+    validateScorecardCriteria: (
+        scorecard: ScorecardTemplate | undefined, 
+        callbacks: {
+            setActiveTab: (tab: 'question' | 'answer' | 'scorecard') => void;
+            showErrorMessage?: (title: string, message: string, emoji?: string) => void;
+            questionIndex?: number;
+        }
+    ) => boolean;
 }
 
 export interface QuizQuestionConfig {
