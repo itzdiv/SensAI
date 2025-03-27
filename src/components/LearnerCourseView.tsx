@@ -324,7 +324,6 @@ export default function LearnerCourseView({
                         config: {
                             inputType: q.input_type,
                             responseType: q.response_type,
-                            evaluationCriteria: [],
                             correctAnswer: q.answer || ''
                         }
                     };

@@ -24,7 +24,6 @@ export interface QuizEditorHandle {
 export interface QuizQuestionConfig {
     inputType: 'text' | 'code' | 'audio';
     responseType: 'chat' | 'report';
-    evaluationCriteria: string[];
     correctAnswer?: string;
     correctAnswerBlocks?: any[];
     codeLanguage?: string; // For code input type
@@ -63,6 +62,7 @@ export interface QuizEditorProps {
     userId?: string;
     schoolId?: string; // ID of the school for fetching school-specific scorecards
     onValidationError?: (message: string, description: string) => void; // Function to handle validation errors
+    courseId?: string; // ID of the course for fetching learning materials
 }
 
 export interface ScorecardCriterion {

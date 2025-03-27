@@ -95,7 +95,7 @@ interface Module {
 const defaultQuestionConfig: QuizQuestionConfig = {
     inputType: 'text',
     responseType: 'chat',
-    evaluationCriteria: []
+    questionType: 'objective',
 };
 
 // Add TaskData interface at the top of the file with the other interfaces
@@ -1918,7 +1918,7 @@ export default function CreateCourse() {
                         </button>
 
                         <CourseModuleList
-                            modules={modules as LocalModule[]}
+                            modules={modules}
                             mode="edit"
                             onToggleModule={toggleModule}
                             onOpenItem={openItemDialog}
@@ -1932,6 +1932,8 @@ export default function CreateCourse() {
                             onMoveModuleDown={moveModuleDown}
                             onDeleteModule={deleteModule}
                             onEditModuleTitle={enableModuleEditing}
+                            saveModuleTitle={saveModuleTitle}
+                            cancelModuleEditing={cancelModuleEditing}
                             isDialogOpen={isDialogOpen}
                             activeItem={activeItem}
                             activeModuleId={activeModuleId}
@@ -1947,9 +1949,8 @@ export default function CreateCourse() {
                             handleDialogTitleChange={handleDialogTitleChange}
                             handleQuizContentChange={handleQuizContentChange}
                             setShowPublishConfirmation={setShowPublishConfirmation}
-                            saveModuleTitle={saveModuleTitle}
-                            cancelModuleEditing={cancelModuleEditing}
                             schoolId={schoolId}
+                            courseId={courseId}
                         />
                     </div>
 

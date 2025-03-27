@@ -4,55 +4,10 @@ import "@blocknote/core/fonts/inter.css";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
-import AudioInputComponent from "./AudioInputComponent";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse } from "../types/quiz";
-import LearnerScorecard from "./LearnerScorecard";
 import ChatView from './ChatView';
 import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
-
-// Custom styles for the pulsating animation
-const styles = `
-@keyframes pulsate {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(0.9);
-    opacity: 0.8;
-  }
-}
-
-.pulsating-circle {
-  animation: pulsate 1.5s ease-in-out infinite;
-}
-
-@keyframes highlightText {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 300% center;
-  }
-}
-
-.highlight-animation {
-  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 25%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 75%);
-  background-size: 200% auto;
-  color: rgba(255, 255, 255, 0.6);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: highlightText 2s linear infinite;
-  transition: opacity 0.2s ease-in-out;
-}
-`;
-
 
 export interface LearnerQuizViewProps {
     questions: QuizQuestion[];
@@ -118,7 +73,6 @@ export default function LearnerQuizView({
                         inputType: 'text',
                         responseType: 'chat',
                         questionType: 'objective',
-                        evaluationCriteria: [],
                         correctAnswer: "",
                         audioMaxDuration: 120, // Default to 2 minutes
                         scorecardData: undefined
@@ -134,7 +88,6 @@ export default function LearnerQuizView({
                     inputType: q.config?.inputType || 'text',
                     responseType: q.config?.responseType,
                     questionType: q.config?.questionType,
-                    evaluationCriteria: q.config?.evaluationCriteria || [],
                     correctAnswer: q.config?.correctAnswer || "",
                     audioMaxDuration: q.config?.audioMaxDuration || 120,
                     scorecardData: q.config?.scorecardData
@@ -156,7 +109,6 @@ export default function LearnerQuizView({
                         inputType: config.inputType || 'text',
                         responseType: config.responseType,
                         questionType: config.questionType,
-                        evaluationCriteria: config.evaluationCriteria || [],
                         correctAnswer: config.correctAnswer || "",
                         audioMaxDuration: config.audioMaxDuration || 120,
                         scorecardData: config.scorecardData
@@ -174,7 +126,6 @@ export default function LearnerQuizView({
                     inputType: config.inputType || 'text',
                     responseType: config.responseType,
                     questionType: config.questionType,
-                    evaluationCriteria: config.evaluationCriteria || [],
                     correctAnswer: config.correctAnswer || "",
                     audioMaxDuration: config.audioMaxDuration || 120,
                     scorecardData: config.scorecardData

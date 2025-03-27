@@ -3,7 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from "react";
-import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Zap, Sparkles, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Zap, Sparkles, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck, Search } from "lucide-react";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -23,16 +23,25 @@ import Scorecard, { ScorecardHandle } from "./Scorecard";
 import { questionTypeOptions, answerTypeOptions } from "./dropdownOptions";
 // Import quiz types
 import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
+// Add import for LearningMaterialLinker
+import LearningMaterialLinker from "./LearningMaterialLinker";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
     inputType: 'text',
     responseType: 'chat',
-    evaluationCriteria: [],
     questionType: 'objective',
     knowledgeBaseBlocks: [],
     linkedMaterialIds: []
 };
+
+// Add these new interfaces after your existing interfaces
+interface LearningMaterial {
+    id: number;
+    title: string;
+    type: string;
+    status: string;
+}
 
 // Helper function to extract text from all blocks in a BlockNote document
 const extractTextFromBlocks = (blocks: any[]): string => {
@@ -85,6 +94,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     userId,
     schoolId, // Add schoolId prop to access school scorecards
     onValidationError,
+    courseId,
 }, ref) => {
     // For published quizzes/exams: data is always fetched from the API
     // For draft quizzes/exams: always start with empty questions
@@ -106,6 +116,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [schoolScorecards, setSchoolScorecards] = useState<ScorecardTemplate[]>([]);
     // Add loading state for fetching scorecards
     const [isLoadingScorecards, setIsLoadingScorecards] = useState(false);
+
+    // Add these new state variables for learning material selection
+    const [availableLearningMaterials, setAvailableLearningMaterials] = useState<LearningMaterial[]>([]);
+    const [selectedLearningMaterials, setSelectedLearningMaterials] = useState<LearningMaterial[]>([]);
+    const [learningMaterialSearchQuery, setLearningMaterialSearchQuery] = useState('');
+    const [filteredLearningMaterials, setFilteredLearningMaterials] = useState<LearningMaterial[]>([]);
+    const [isLearningMaterialDropdownOpen, setIsLearningMaterialDropdownOpen] = useState(false);
+    const [isLoadingLearningMaterials, setIsLoadingLearningMaterials] = useState(false);
+    const learningMaterialDropdownRef = useRef<HTMLDivElement>(null);
 
     // Make sure we reset questions when component mounts for draft quizzes
     useEffect(() => {
@@ -218,7 +237,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 config: {
                                     inputType: question.input_type || 'text' as 'text' | 'code' | 'audio',
                                     responseType: question.response_type,
-                                    evaluationCriteria: [],
                                     correctAnswer: question.answer || '',
                                     correctAnswerBlocks: correctAnswerBlocks, // Use the answer-based blocks instead of question blocks
                                     questionType: questionType as 'objective' | 'subjective' | 'coding',
@@ -1705,8 +1723,37 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         You can either link existing learning materials or add new material here
                                                     </p>
                                                 </div>
-
                                             </div>
+
+                                            {/* Add learning material selection component */}
+                                            <div className="mb-4">
+                                                <LearningMaterialLinker
+                                                    courseId={courseId || ''}
+                                                    linkedMaterialIds={currentQuestion?.config?.linkedMaterialIds || []}
+                                                    readOnly={readOnly}
+                                                    onMaterialsChange={(linkedMaterialIds) => {
+                                                        // Update the question config with the new linked material IDs
+                                                        const updatedQuestions = [...questions];
+                                                        const currentQuestion = updatedQuestions[currentQuestionIndex];
+                                                        const currentConfig = currentQuestion.config || {};
+
+                                                        updatedQuestions[currentQuestionIndex] = {
+                                                            ...currentQuestion,
+                                                            config: {
+                                                                ...currentConfig,
+                                                                linkedMaterialIds: linkedMaterialIds
+                                                            }
+                                                        };
+
+                                                        setQuestions(updatedQuestions);
+
+                                                        if (onChange) {
+                                                            onChange(updatedQuestions);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+
                                             <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -1747,7 +1794,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     readOnly={readOnly}
                                                     onEditorReady={setKnowledgeBaseEditorInstance}
                                                     className="knowledge-base-editor"
-                                                    placeholder="Add knowledge base content or reference materials to help the AI provide better feedback"
                                                 />
                                             </div>
                                         </div>

@@ -63,7 +63,8 @@ interface CourseItemDialogProps {
     onDialogTitleChange: (e: React.FormEvent<HTMLHeadingElement>) => void;
     onQuizContentChange: (questions: QuizQuestion[]) => void;
     focusEditor: () => void;
-    schoolId?: string; // Add schoolId prop
+    schoolId?: string; // School ID for fetching scorecards
+    courseId?: string; // Add courseId prop for learning materials
 }
 
 const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
@@ -86,6 +87,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     onQuizContentChange,
     focusEditor,
     schoolId,
+    courseId,
 }) => {
     // Add refs for the editor components
     const learningMaterialEditorRef = useRef<LearningMaterialEditorHandle>(null);
@@ -767,6 +769,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     // Display toast notification for validation errors during publishing
                                     displayToast(message, description, "🚫");
                                 }}
+                                courseId={courseId}
                                 onSaveSuccess={(updatedData) => {
                                     // Handle save success
                                     if (updatedData) {
