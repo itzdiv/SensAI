@@ -774,15 +774,17 @@ export default function CourseModuleList({
             />
 
             {/* Task deletion confirmation dialog */}
-            <ConfirmationDialog
-                open={taskToDelete !== null}
-                title={`Are you sure you want to delete this ${taskToDelete ? getItemTypeName(taskToDelete.itemType) : 'item'}?`}
-                message={`This ${taskToDelete ? getItemTypeName(taskToDelete.itemType) : 'item'} will be permanently removed. This action cannot be undone.`}
-                confirmButtonText={`Delete ${taskToDelete ? getItemTypeName(taskToDelete.itemType).charAt(0).toUpperCase() + getItemTypeName(taskToDelete.itemType).slice(1) : 'Item'}`}
-                onConfirm={handleConfirmTaskDelete}
-                onCancel={handleCancelTaskDelete}
-                type="delete"
-            />
+            {taskToDelete && (
+                <ConfirmationDialog
+                    open={taskToDelete !== null}
+                    title={`Are you sure you want to delete this ${getItemTypeName(taskToDelete.itemType)}?`}
+                    message={`This ${getItemTypeName(taskToDelete.itemType)} will be permanently removed. This action cannot be undone.`}
+                    confirmButtonText={`Delete`}
+                    onConfirm={handleConfirmTaskDelete}
+                    onCancel={handleCancelTaskDelete}
+                    type="delete"
+                />
+            )}
         </>
     );
 } 

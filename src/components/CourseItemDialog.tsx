@@ -336,7 +336,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
             if (!hasContent) {
                 // Show toast notification
-                displayToast("Empty Question", "Please add content to the question before previewing.", "🚫");
+                displayToast("Empty Question", "Please add details to the question before previewing.", "🚫");
                 return; // Prevent entering preview mode
             }
 
@@ -383,6 +383,16 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Handle save button click - show confirmation
     const handleSaveClick = () => {
+        // For quizzes and exams, validate before showing save confirmation
+        if ((activeItem?.type === 'quiz' || activeItem?.type === 'exam') && quizEditorRef.current) {
+            // Run validation before opening the save confirmation
+            const isValid = quizEditorRef.current.validateBeforePublish();
+            if (!isValid) {
+                return; // Don't show confirmation if validation fails
+            }
+        }
+
+        // If validation passes or it's a learning material, show save confirmation
         setShowSaveConfirmation(true);
     };
 
@@ -519,7 +529,19 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     (activeItem?.type === 'exam' && hasQuizQuestions) ||
                                     activeItem?.type === 'material') && (
                                     <button
-                                        onClick={() => onSetShowPublishConfirmation(true)}
+                                        onClick={() => {
+                                            // For quizzes and exams, validate before showing publish confirmation
+                                            if ((activeItem?.type === 'quiz' || activeItem?.type === 'exam') && quizEditorRef.current) {
+                                                // Run validation before opening the publish confirmation
+                                                const isValid = quizEditorRef.current.validateBeforePublish();
+                                                if (!isValid) {
+                                                    return; // Don't show confirmation if validation fails
+                                                }
+                                            }
+
+                                            // If validation passes or it's a learning material, show publish confirmation
+                                            onSetShowPublishConfirmation(true);
+                                        }}
                                         className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
                                         aria-label={`Publish ${activeItem?.type}`}
                                     >
@@ -664,6 +686,10 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 taskType={activeItem.type as 'quiz' | 'exam'}
                                 showPublishConfirmation={showPublishConfirmation}
                                 onPublishCancel={onPublishCancel}
+                                onValidationError={(message, description) => {
+                                    // Display toast notification for validation errors during publishing
+                                    displayToast(message, description, "🚫");
+                                }}
                                 onSaveSuccess={(updatedData) => {
                                     // Handle save success
                                     if (updatedData) {

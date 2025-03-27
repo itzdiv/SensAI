@@ -82,6 +82,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     onSubmitAnswer,
     userId,
     schoolId, // Add schoolId prop to access school scorecards
+    onValidationError,
 }, ref) => {
     // For published quizzes/exams: data is always fetched from the API
     // For draft quizzes/exams: always start with empty questions
@@ -341,6 +342,128 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Reference to the scorecard component
     const scorecardRef = useRef<ScorecardHandle>(null);
+
+    // State for tracking active tab (question or answer)
+    const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard'>('question');
+
+    // Add validation utility functions to reduce duplication
+    // These functions can validate both the current question and any question by index
+
+    /**
+     * Validates if question content is non-empty
+     * @param content The content blocks to validate
+     * @returns True if content has non-empty text, false otherwise
+     */
+    const validateQuestionContent = useCallback((content: any[]) => {
+        if (!content || content.length === 0) {
+            return false;
+        }
+
+        const textContent = extractTextFromBlocks(content);
+        return textContent.trim().length > 0;
+    }, []);
+
+    /**
+     * Validates if a question has a non-empty correct answer
+     * @param questionConfig The question configuration containing the answer
+     * @returns True if correct answer exists and is non-empty, false otherwise
+     */
+    const validateCorrectAnswer = useCallback((questionConfig: QuizQuestionConfig) => {
+        if (questionConfig.correctAnswerBlocks && questionConfig.correctAnswerBlocks.length > 0) {
+            const textContent = extractTextFromBlocks(questionConfig.correctAnswerBlocks);
+            return textContent.trim().length > 0;
+        } else if (questionConfig.correctAnswer) {
+            return questionConfig.correctAnswer.trim().length > 0;
+        }
+        return false;
+    }, []);
+
+    /**
+     * Validates if a question has a valid scorecard attached
+     * @param questionConfig The question configuration containing the scorecard data
+     * @returns True if a valid scorecard with criteria exists, false otherwise
+     */
+    const validateScorecard = useCallback((questionConfig: QuizQuestionConfig) => {
+        return !!(questionConfig.scorecardData &&
+            questionConfig.scorecardData.criteria &&
+            questionConfig.scorecardData.criteria.length > 0);
+    }, []);
+
+    /**
+     * Validates all questions in the quiz/exam and navigates to the first invalid question
+     * @returns True if all questions are valid, false otherwise
+     */
+    const validateAllQuestions = useCallback(() => {
+        // Check if there are any questions
+        if (questions.length === 0) {
+            if (onValidationError) {
+                onValidationError(
+                    "No Questions",
+                    "Please add at least one question to continue."
+                );
+            }
+            return false;
+        }
+
+        // Validate all questions
+        for (let i = 0; i < questions.length; i++) {
+            const question = questions[i];
+
+            // Check if question has content
+            if (!validateQuestionContent(question.content)) {
+                // Navigate to the question with missing content
+                setCurrentQuestionIndex(i);
+                setActiveEditorTab('question');
+
+                // Notify parent about validation error
+                if (onValidationError) {
+                    onValidationError(
+                        "Empty Question",
+                        `Question ${i + 1} is empty. Please add details to the question.`
+                    );
+                }
+                return false;
+            }
+
+            // For objective questions, check if correct answer is set
+            if (question.config.questionType === 'objective') {
+                if (!validateCorrectAnswer(question.config)) {
+                    // Navigate to the question with missing answer
+                    setCurrentQuestionIndex(i);
+                    setActiveEditorTab('answer');
+
+                    // Notify parent about validation error
+                    if (onValidationError) {
+                        onValidationError(
+                            "Empty Correct Answer",
+                            `Question ${i + 1} has no correct answer. Please add a correct answer.`
+                        );
+                    }
+                    return false;
+                }
+            }
+
+            // For subjective questions, check if scorecard is set
+            if (question.config.questionType === 'subjective') {
+                if (!validateScorecard(question.config)) {
+                    // Navigate to the question with missing scorecard
+                    setCurrentQuestionIndex(i);
+                    setActiveEditorTab('scorecard');
+
+                    // Notify parent about validation error
+                    if (onValidationError) {
+                        onValidationError(
+                            "Missing Scorecard",
+                            `Question ${i + 1} has no scorecard. Please add a scorecard.`
+                        );
+                    }
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }, [questions, onValidationError, validateQuestionContent, validateCorrectAnswer, validateScorecard, setCurrentQuestionIndex, setActiveEditorTab]);
 
     // Function to handle opening the scorecard templates dialog
     const handleOpenScorecardDialog = () => {
@@ -955,37 +1078,18 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         save: handleSave,
         cancel: handleCancel,
         hasContent: () => questions.length > 0,
-        hasQuestionContent: () => {
-            if (!currentQuestionContent || currentQuestionContent.length === 0) {
-                return false;
-            }
-
-            // Use the existing extractTextFromBlocks function to check for actual text content
-            const textContent = extractTextFromBlocks(currentQuestionContent);
-            return textContent.trim().length > 0;
-        },
+        hasQuestionContent: () => validateQuestionContent(currentQuestionContent),
         getCurrentQuestionType: () => {
             // Return the current question's type, defaulting to 'objective' if not set
             return currentQuestionConfig.questionType;
         },
-        hasCorrectAnswer: () => {
-            // For objective questions, check if correct answer has content
-            if (currentQuestionConfig.correctAnswerBlocks && currentQuestionConfig.correctAnswerBlocks.length > 0) {
-                const textContent = extractTextFromBlocks(currentQuestionConfig.correctAnswerBlocks);
-                return textContent.trim().length > 0;
-            }
-            return false;
-        },
-        hasScorecard: () => {
-            // Check if the current question has a scorecard set
-            return !!(currentQuestionConfig.scorecardData &&
-                currentQuestionConfig.scorecardData.criteria &&
-                currentQuestionConfig.scorecardData.criteria.length > 0);
-        },
+        hasCorrectAnswer: () => validateCorrectAnswer(currentQuestionConfig),
+        hasScorecard: () => validateScorecard(currentQuestionConfig),
         setActiveTab: (tab) => {
             // Set the active editor tab
             setActiveEditorTab(tab);
-        }
+        },
+        validateBeforePublish: validateAllQuestions
     }));
 
     // Update the MemoizedLearnerQuizView to include the correct answer
@@ -1084,9 +1188,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // State for type dropdown
     const [selectedQuestionType, setSelectedQuestionType] = useState<DropdownOption>(questionTypeOptions[0]);
     const [selectedAnswerType, setSelectedAnswerType] = useState<DropdownOption>(answerTypeOptions[0]);
-
-    // State for tracking active tab (question or answer)
-    const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard'>('question');
 
     // Helper function to check if a scorecard is a published scorecard
     const isPublishedScorecard = (scorecardData: ScorecardTemplate): boolean => {

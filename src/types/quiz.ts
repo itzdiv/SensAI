@@ -9,6 +9,7 @@ export interface QuizEditorHandle {
     hasCorrectAnswer: () => boolean;
     hasScorecard: () => boolean;
     setActiveTab: (tab: 'question' | 'answer' | 'scorecard') => void;
+    validateBeforePublish: () => boolean;
 }
 
 export interface QuizQuestionConfig {
@@ -50,6 +51,7 @@ export interface QuizEditorProps {
     onSubmitAnswer?: (questionId: string, answer: string) => void;
     userId?: string;
     schoolId?: string; // ID of the school for fetching school-specific scorecards
+    onValidationError?: (message: string, description: string) => void; // Function to handle validation errors
 }
 
 export interface ScorecardCriterion {
