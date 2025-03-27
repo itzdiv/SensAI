@@ -80,7 +80,7 @@ export default function LearningStreak({ streakDays, activeDays }: LearningStrea
 
             <div className="p-4">
                 <div className="text-3xl font-light mb-4 text-white flex items-center">
-                    {streakDays} Days
+                    {streakDays} Day{streakDays === 1 ? "" : "s"}
                     {randomEmoji && <span className="ml-2" role="img" aria-label="Energizing emoji">{randomEmoji}</span>}
                 </div>
 
