@@ -48,7 +48,6 @@ export const extractTextFromBlocks = (blocks: any[]): string => {
     if (!blocks || blocks.length === 0) return "";
 
     return blocks.map(block => {
-        console.log(block);
         // Handle different block types
         if (block.type === "paragraph") {
             // For paragraph blocks, extract text content
@@ -907,7 +906,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
         try {
             const blocks = correctAnswerEditorRef.current.document;
-            console.log(blocks)
             if (blocks && blocks.length > 0) {
                 return extractTextFromBlocks(blocks);
             }
@@ -960,7 +958,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Reset last content update ref when navigating to a different question
             lastContentUpdateRef.current = "";
             const newIndex = currentQuestionIndex - 1;
-            setCurrentQuestionIndex(newIndex);
+
 
             // Reset active tab to question when navigating
             // Only change active tab if the current tab is not available in the next question
@@ -970,12 +968,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             } else if (activeEditorTab === 'answer' && nextQuestion.config.questionType == 'subjective') {
                 setActiveEditorTab('question');
             }
+
+            setCurrentQuestionIndex(newIndex);
+
             // Call the onQuestionChange callback if provided
             if (onQuestionChange && questions[newIndex] && !isPreviewMode) {
                 onQuestionChange(questions[newIndex].id);
             }
         }
-    }, [currentQuestionIndex, onQuestionChange, questions, isPreviewMode]);
+    }, [currentQuestionIndex, onQuestionChange, questions, activeEditorTab, isPreviewMode]);
 
     // Navigate to next question
     const goToNextQuestion = useCallback(() => {
@@ -983,7 +984,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Reset last content update ref when navigating to a different question
             lastContentUpdateRef.current = "";
             const newIndex = currentQuestionIndex + 1;
-            setCurrentQuestionIndex(newIndex);
 
             // Reset active tab to question when navigating
             const nextQuestion = questions[newIndex];
@@ -993,12 +993,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 setActiveEditorTab('question');
             }
 
+            setCurrentQuestionIndex(newIndex);
+
             // Call the onQuestionChange callback if provided
             if (onQuestionChange && questions[newIndex] && !isPreviewMode) {
                 onQuestionChange(questions[newIndex].id);
             }
         }
-    }, [currentQuestionIndex, questions.length, onQuestionChange, questions, isPreviewMode]);
+    }, [currentQuestionIndex, questions.length, onQuestionChange, questions, activeEditorTab, isPreviewMode]);
 
     // Delete current question
     const deleteQuestion = useCallback(() => {
@@ -1975,7 +1977,4 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     );
 });
 
-// Add display name for better debugging
-QuizEditor.displayName = 'QuizEditor';
-
-export default QuizEditor; 
+export default QuizEditor;
