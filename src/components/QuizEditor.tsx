@@ -1754,11 +1754,26 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             />
                                         </div>
                                     ) : activeEditorTab === 'knowledge' ? (
-                                        <div className="w-full flex flex-row h-[600px] overflow-y-auto gap-4">
-                                            {/* Left column with linker and editor (70-80% width) */}
-                                            <div className="w-[75%] flex flex-col">
+                                        <div className="w-full mt-4 flex flex-row h-[600px] overflow-y-auto">
+                                            {/* Left column with callout (20-30% width) */}
+                                            <div className="w-[20%]">
+                                                <div className="bg-[#222222] p-3 rounded-md">
+                                                    <Zap size={16} className="text-amber-400 mb-2" />
+                                                    <div>
+                                                        <p className="text-gray-400 text-xs leading-tight mb-2">
+                                                            Content added here will not be shown to learners but will be used by the AI to provide more accurate and helpful feedback
+                                                        </p>
+                                                        <p className="text-gray-300 text-xs leading-tight">
+                                                            You can either link existing learning materials or add new material here
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Right column with linker and editor (70-80% width) */}
+                                            <div className="w-[80%] flex flex-col">
                                                 {/* Add learning material selection component */}
-                                                <div className="mb-4">
+                                                <div className="mb-4 ml-12">
                                                     <LearningMaterialLinker
                                                         courseId={courseId || ''}
                                                         linkedMaterialIds={currentQuestion?.config?.linkedMaterialIds || []}
@@ -1830,20 +1845,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 </div>
                                             </div>
 
-                                            {/* Right column with callout (20-30% width) */}
-                                            <div className="w-[25%]">
-                                                <div className="bg-[#222222] p-3 rounded-md">
-                                                    <Zap size={16} className="text-amber-400 mb-2" />
-                                                    <div>
-                                                        <p className="text-gray-400 text-xs leading-tight mb-2">
-                                                            Content added here will not be shown to learners but will be used by the AI to provide more accurate and helpful feedback
-                                                        </p>
-                                                        <p className="text-gray-300 text-xs leading-tight">
-                                                            You can either link existing learning materials or add new material here
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
+
                                         </div>
                                     ) : (
                                         // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
