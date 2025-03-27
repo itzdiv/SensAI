@@ -336,7 +336,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
             if (!hasContent) {
                 // Show toast notification
-                displayToast("Empty Question", "Please add details to the question before previewing.", "🚫");
+                displayToast("Empty Question", "Please add details to the question before previewing", "🚫");
                 return; // Prevent entering preview mode
             }
 
@@ -348,7 +348,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 const hasCorrectAnswer = quizEditorRef.current.hasCorrectAnswer();
                 if (!hasCorrectAnswer) {
                     // Show toast notification for empty correct answer
-                    displayToast("Empty Correct Answer", "Please set a correct answer for this question before previewing.", "🚫");
+                    displayToast("Empty Correct Answer", "Please set a correct answer for this question before previewing", "🚫");
                     // Switch to answer tab
                     quizEditorRef.current.setActiveTab('answer');
                     return; // Prevent entering preview mode
@@ -358,7 +358,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 const hasScorecard = quizEditorRef.current.hasScorecard();
                 if (!hasScorecard) {
                     // Show toast notification for missing scorecard
-                    displayToast("Missing Scorecard", "Please set a scorecard for evaluating this question before previewing.", "🚫");
+                    displayToast("Missing Scorecard", "Please set a scorecard for evaluating this question before previewing", "🚫");
                     // Switch to scorecard tab
                     quizEditorRef.current.setActiveTab('scorecard');
                     return; // Prevent entering preview mode
@@ -411,7 +411,21 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             }
         }
 
-        // If validation passes or it's a learning material, show save confirmation
+        // For learning materials, validate content exists
+        if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
+            const hasContent = learningMaterialEditorRef.current.hasContent();
+            if (!hasContent) {
+                // Show error message
+                displayToast(
+                    "Empty Learning Material",
+                    "Please add content to your learning material before saving",
+                    "🚫"
+                );
+                return; // Don't show confirmation if validation fails
+            }
+        }
+
+        // If validation passes, show save confirmation
         setShowSaveConfirmation(true);
     };
 
@@ -558,7 +572,21 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                 }
                                             }
 
-                                            // If validation passes or it's a learning material, show publish confirmation
+                                            // For learning materials, validate content exists
+                                            if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
+                                                const hasContent = learningMaterialEditorRef.current.hasContent();
+                                                if (!hasContent) {
+                                                    // Show error message
+                                                    displayToast(
+                                                        "Empty Learning Material",
+                                                        "Please add content to your learning material before publishing",
+                                                        "🚫"
+                                                    );
+                                                    return; // Don't show confirmation if validation fails
+                                                }
+                                            }
+
+                                            // If validation passes, show publish confirmation
                                             onSetShowPublishConfirmation(true);
                                         }}
                                         className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
