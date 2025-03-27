@@ -200,10 +200,10 @@ export default function TopPerformers({
                                         )}
                                     </div>
                                     <div className="text-sm text-gray-400">
-                                        Streak: {performer.streakDays} Days
+                                        Streak: {performer.streakDays} Day{performer.streakDays === 1 ? "" : "s"}
                                     </div>
                                     <div className="text-sm text-gray-400">
-                                        Solved: {performer.tasksSolved} Tasks
+                                        Solved: {performer.tasksSolved} Task{performer.tasksSolved === 1 ? "" : "s"}
                                     </div>
                                 </div>
                             </div>

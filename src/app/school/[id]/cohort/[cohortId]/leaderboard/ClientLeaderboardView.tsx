@@ -195,7 +195,7 @@ export default function ClientLeaderboardView({
 
                                     {/* Completion Column */}
                                     <div className="col-span-3 lg:col-span-2 text-center text-gray-400">
-                                        {performer.streakDays} Days
+                                        {performer.streakDays} Day{performer.streakDays === 1 ? "" : "s"}
                                     </div>
 
                                     {/* Tasks Solved Column */}
