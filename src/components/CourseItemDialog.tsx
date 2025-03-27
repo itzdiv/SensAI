@@ -98,6 +98,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     const [showToast, setShowToast] = useState(false);
     const [toastTitle, setToastTitle] = useState("Published");
     const [toastDescription, setToastDescription] = useState("");
+    const [toastEmoji, setToastEmoji] = useState("🚀");
 
     // Add state for close confirmation dialog
     const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
@@ -328,13 +329,52 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Toggle quiz preview mode
     const toggleQuizPreviewMode = () => {
+        // If we're not already in preview mode and trying to enter it
+        if (!quizPreviewMode && quizEditorRef.current) {
+            // Check if current question has content
+            const hasContent = quizEditorRef.current.hasQuestionContent();
+
+            if (!hasContent) {
+                // Show toast notification
+                displayToast("Empty Question", "Please add content to the question before previewing.", "🚫");
+                return; // Prevent entering preview mode
+            }
+
+            // Get the current question type and check for empty correct answer or missing scorecard
+            const currentQuestionType = quizEditorRef.current.getCurrentQuestionType();
+
+            if (currentQuestionType === 'objective') {
+                // For objective questions, check if correct answer is empty
+                const hasCorrectAnswer = quizEditorRef.current.hasCorrectAnswer();
+                if (!hasCorrectAnswer) {
+                    // Show toast notification for empty correct answer
+                    displayToast("Empty Correct Answer", "Please set a correct answer for this question before previewing.", "🚫");
+                    // Switch to answer tab
+                    quizEditorRef.current.setActiveTab('answer');
+                    return; // Prevent entering preview mode
+                }
+            } else if (currentQuestionType === 'subjective') {
+                // For subjective questions, check if scorecard is set
+                const hasScorecard = quizEditorRef.current.hasScorecard();
+                if (!hasScorecard) {
+                    // Show toast notification for missing scorecard
+                    displayToast("Missing Scorecard", "Please set a scorecard for evaluating this question before previewing.", "🚫");
+                    // Switch to scorecard tab
+                    quizEditorRef.current.setActiveTab('scorecard');
+                    return; // Prevent entering preview mode
+                }
+            }
+        }
+
+        // Toggle preview mode if content exists or we're exiting preview mode
         setQuizPreviewMode(!quizPreviewMode);
     };
 
     // Handle showing and hiding toast
-    const displayToast = (title: string, description: string) => {
+    const displayToast = (title: string, description: string, emoji: string = "🚀") => {
         setToastTitle(title);
         setToastDescription(description);
+        setToastEmoji(emoji);
         setShowToast(true);
         setTimeout(() => {
             setShowToast(false);
@@ -457,12 +497,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 <button
                                     onClick={toggleQuizPreviewMode}
                                     className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-blue-500 hover:bg-[#222222] focus:border-blue-500 active:border-blue-500 rounded-full transition-colors cursor-pointer"
-                                    aria-label={quizPreviewMode ? "Edit mode" : "Preview mode"}
+                                    aria-label={quizPreviewMode ? "Exit preview" : "Preview quiz"}
                                 >
                                     {quizPreviewMode ? (
                                         <>
                                             <Edit2 size={16} className="mr-2" />
-                                            Editor
+                                            Exit Preview
                                         </>
                                     ) : (
                                         <>
@@ -716,7 +756,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 show={showToast}
                 title={toastTitle}
                 description={toastDescription}
-                emoji="🚀"
+                emoji={toastEmoji}
                 onClose={() => setShowToast(false)}
             />
         </>

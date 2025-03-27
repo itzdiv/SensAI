@@ -954,7 +954,38 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     useImperativeHandle(ref, () => ({
         save: handleSave,
         cancel: handleCancel,
-        hasContent: () => questions.length > 0
+        hasContent: () => questions.length > 0,
+        hasQuestionContent: () => {
+            if (!currentQuestionContent || currentQuestionContent.length === 0) {
+                return false;
+            }
+
+            // Use the existing extractTextFromBlocks function to check for actual text content
+            const textContent = extractTextFromBlocks(currentQuestionContent);
+            return textContent.trim().length > 0;
+        },
+        getCurrentQuestionType: () => {
+            // Return the current question's type, defaulting to 'objective' if not set
+            return currentQuestionConfig.questionType;
+        },
+        hasCorrectAnswer: () => {
+            // For objective questions, check if correct answer has content
+            if (currentQuestionConfig.correctAnswerBlocks && currentQuestionConfig.correctAnswerBlocks.length > 0) {
+                const textContent = extractTextFromBlocks(currentQuestionConfig.correctAnswerBlocks);
+                return textContent.trim().length > 0;
+            }
+            return false;
+        },
+        hasScorecard: () => {
+            // Check if the current question has a scorecard set
+            return !!(currentQuestionConfig.scorecardData &&
+                currentQuestionConfig.scorecardData.criteria &&
+                currentQuestionConfig.scorecardData.criteria.length > 0);
+        },
+        setActiveTab: (tab) => {
+            // Set the active editor tab
+            setActiveEditorTab(tab);
+        }
     }));
 
     // Update the MemoizedLearnerQuizView to include the correct answer

@@ -122,7 +122,16 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     // Handle key press events in the edit inputs
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
-            saveChanges();
+            if (editingCell?.field === 'description') {
+                // For descriptions, only save on Ctrl+Enter
+                if (e.ctrlKey) {
+                    saveChanges();
+                }
+                // Otherwise allow line breaks (default textarea behavior)
+            } else {
+                // For other fields, save on Enter
+                saveChanges();
+            }
         } else if (e.key === 'Escape') {
             setEditingCell(null);
         }
@@ -131,7 +140,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     return (
         <div className="w-full">
             {/* Linked scorecard message */}
-            {linked && (
+            {linked && !readOnly && (
                 <div className="bg-gradient-to-r from-[#252525] to-[#292536] p-4 rounded-xl shadow-sm border border-[#333342] flex items-start gap-3 mb-3">
                     <div className="p-1.5 rounded-full bg-[#3b3d5e] text-[#a3a8ff] flex-shrink-0">
                         <Info size={14} />
@@ -267,19 +276,19 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                     {/* Description Cell */}
                                     <div className="px-2 py-1 text-sm flex items-start h-full">
                                         {editingCell?.rowIndex === index && editingCell.field === 'description' ? (
-                                            <input
-                                                type="text"
+                                            <textarea
                                                 value={editValue}
                                                 onChange={(e) => setEditValue(e.target.value)}
                                                 onBlur={saveChanges}
                                                 onKeyDown={handleKeyDown}
                                                 autoFocus
-                                                className="bg-[#333] rounded w-full text-sm p-1 outline-none"
-                                                style={{ caretColor: 'white' }}
+                                                className="bg-[#333] rounded w-full text-sm p-2 outline-none min-h-[60px] resize-y"
+                                                style={{ caretColor: 'white', resize: 'none' }}
+                                                placeholder="Enter description"
                                             />
                                         ) : (
                                             <span
-                                                className={`block break-words text-sm w-full ${!readOnly && !linked ? 'cursor-pointer hover:opacity-80 relative group' : ''} ${criterion.description ? '' : 'text-gray-500'}`}
+                                                className={`block break-words break-all text-sm w-full whitespace-pre-wrap ${!readOnly && !linked ? 'cursor-pointer hover:opacity-80 relative group' : ''} ${criterion.description ? '' : 'text-gray-500'}`}
                                                 onClick={() => startEditing(index, 'description')}
                                             >
                                                 {criterion.description || 'Click to add description'}

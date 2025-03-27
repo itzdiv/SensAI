@@ -4,6 +4,11 @@ export interface QuizEditorHandle {
     save: () => Promise<void>;
     cancel: () => void;
     hasContent: () => boolean;
+    hasQuestionContent: () => boolean;
+    getCurrentQuestionType: () => 'objective' | 'subjective' | 'coding';
+    hasCorrectAnswer: () => boolean;
+    hasScorecard: () => boolean;
+    setActiveTab: (tab: 'question' | 'answer' | 'scorecard') => void;
 }
 
 export interface QuizQuestionConfig {
@@ -14,7 +19,7 @@ export interface QuizQuestionConfig {
     correctAnswerBlocks?: any[];
     codeLanguage?: string; // For code input type
     audioMaxDuration?: number; // For audio input type in seconds
-    questionType?: 'objective' | 'subjective' | 'coding';
+    questionType: 'objective' | 'subjective' | 'coding';
     scorecardData?: ScorecardTemplate;
 }
 
