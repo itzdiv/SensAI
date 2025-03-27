@@ -91,6 +91,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     const learningMaterialEditorRef = useRef<LearningMaterialEditorHandle>(null);
     const quizEditorRef = useRef<QuizEditorHandle>(null);
 
+    // Ref to store toast timeout ID
+    const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     // State to track preview mode for quizzes
     const [quizPreviewMode, setQuizPreviewMode] = useState(false);
 
@@ -116,6 +119,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     useEffect(() => {
         if (!isOpen) {
             setQuizPreviewMode(false);
+
+            // Clear any active toast timeout when dialog closes
+            if (toastTimeoutRef.current) {
+                clearTimeout(toastTimeoutRef.current);
+                toastTimeoutRef.current = null;
+            }
 
             // Make sure to clear questions from active item when the dialog closes for draft quizzes/exams
             if (activeItem &&
@@ -224,6 +233,17 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             document.removeEventListener('keydown', handleKeyDown, true);
         };
     }, [activeItem, isEditMode]);
+
+    // Add a cleanup effect for the toast timeout when the component unmounts
+    useEffect(() => {
+        return () => {
+            // Clean up toast timeout on unmount
+            if (toastTimeoutRef.current) {
+                clearTimeout(toastTimeoutRef.current);
+                toastTimeoutRef.current = null;
+            }
+        };
+    }, []);
 
     // Bail early if dialog isn't open or there's no active item
     if (!isOpen || !activeItem) return null;
@@ -391,12 +411,22 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Handle showing and hiding toast
     const displayToast = (title: string, description: string, emoji: string = "🚀") => {
+        // Clear any existing timeout to prevent premature closing of new toast
+        if (toastTimeoutRef.current) {
+            clearTimeout(toastTimeoutRef.current);
+            toastTimeoutRef.current = null;
+        }
+
+        // Set toast content
         setToastTitle(title);
         setToastDescription(description);
         setToastEmoji(emoji);
         setShowToast(true);
-        setTimeout(() => {
+
+        // Set new timeout and store the ID for future reference
+        toastTimeoutRef.current = setTimeout(() => {
             setShowToast(false);
+            toastTimeoutRef.current = null;
         }, 5000); // Auto-hide after 5 seconds
     };
 
