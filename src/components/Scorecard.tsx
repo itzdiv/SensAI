@@ -3,6 +3,7 @@ import { Trash2, Plus, X, Info, HelpCircle } from 'lucide-react';
 import { CriterionData } from './ScorecardPickerDialog';
 import './scorecard-styles.css'; // We'll create this CSS file
 import SimpleTooltip from './SimpleTooltip';
+import Toast from './Toast'; // Import the Toast component
 
 interface ScorecardProps {
     name: string;
@@ -40,11 +41,36 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     const [editValue, setEditValue] = useState<string>('');
     // State to track name input value for controlled component
     const [nameValue, setNameValue] = useState<string>(name || '');
+    // State for Toast notification
+    const [toast, setToast] = useState({
+        show: false,
+        title: '',
+        description: '',
+        emoji: ''
+    });
 
     // Update nameValue when prop changes
     useEffect(() => {
         setNameValue(name || '');
     }, [name]);
+
+    // Auto-hide toast after 5 seconds
+    useEffect(() => {
+        let toastTimer: NodeJS.Timeout | null = null;
+
+        if (toast.show) {
+            toastTimer = setTimeout(() => {
+                closeToast();
+            }, 5000); // 5 seconds
+        }
+
+        // Clean up timeout when component unmounts or toast state changes
+        return () => {
+            if (toastTimer) {
+                clearTimeout(toastTimer);
+            }
+        };
+    }, [toast.show]);
 
     // Expose the focusName method to parent components
     useImperativeHandle(ref, () => ({
@@ -80,6 +106,11 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
         onChange(updatedCriteria);
     };
 
+    // Function to close toast
+    const closeToast = () => {
+        setToast(prev => ({ ...prev, show: false }));
+    };
+
     // Function to start editing a cell
     const startEditing = (rowIndex: number, field: 'name' | 'description' | 'maxScore' | 'minScore') => {
         if (readOnly || linked) return;
@@ -103,6 +134,31 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
             // Convert to number and validate
             const numberValue = parseInt(editValue, 10);
             if (!isNaN(numberValue) && numberValue >= 0) {
+                // Check for min/max score relationship
+                if (field === 'minScore' && numberValue >= criteria[rowIndex].maxScore) {
+                    // Show toast notification
+                    setToast({
+                        show: true,
+                        title: 'Invalid Value',
+                        description: 'Minimum score must be less than the maximum score',
+                        emoji: '⚠️'
+                    });
+                    setEditingCell(null);
+                    return; // Don't save the invalid value
+                }
+
+                if (field === 'maxScore' && numberValue <= criteria[rowIndex].minScore) {
+                    // Show toast notification
+                    setToast({
+                        show: true,
+                        title: 'Invalid Value',
+                        description: 'Maximum score must be greater than the minimum score',
+                        emoji: '⚠️'
+                    });
+                    setEditingCell(null);
+                    return; // Don't save the invalid value
+                }
+
                 updatedCriteria[rowIndex] = {
                     ...updatedCriteria[rowIndex],
                     [field]: numberValue
@@ -139,6 +195,15 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
 
     return (
         <div className="w-full">
+            {/* Toast notification */}
+            <Toast
+                show={toast.show}
+                title={toast.title}
+                description={toast.description}
+                emoji={toast.emoji}
+                onClose={closeToast}
+            />
+
             {/* Linked scorecard message */}
             {linked && !readOnly && (
                 <div className="bg-gradient-to-r from-[#252525] to-[#292536] p-4 rounded-xl shadow-sm border border-[#333342] flex items-start gap-3 mb-3">

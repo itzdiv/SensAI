@@ -378,7 +378,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         setShowToast(true);
         setTimeout(() => {
             setShowToast(false);
-        }, 3000); // Auto-hide after 3 seconds
+        }, 5000); // Auto-hide after 3 seconds
     };
 
     // Handle save button click - show confirmation

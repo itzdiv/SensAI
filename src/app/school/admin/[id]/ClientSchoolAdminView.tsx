@@ -66,6 +66,18 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         emoji: ''
     });
 
+    // Add useEffect to automatically hide toast after 5 seconds
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => {
+                setShowToast(false);
+            }, 5000);
+
+            // Cleanup the timer when component unmounts or showToast changes
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
+
     // Initialize tab from URL hash
     useEffect(() => {
         // Check if there's a hash in the URL
@@ -230,11 +242,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             });
             setShowToast(true);
 
-            // Automatically hide toast after a few seconds
-            setTimeout(() => {
-                setShowToast(false);
-            }, 3000);
-
         } catch (error) {
             console.error('Error inviting members:', error);
             // Here you would typically show an error message to the user
@@ -285,11 +292,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 emoji: '✓'
             });
             setShowToast(true);
-
-            // Automatically hide toast after a few seconds
-            setTimeout(() => {
-                setShowToast(false);
-            }, 3000);
 
         } catch (error) {
             console.error('Error deleting member:', error);

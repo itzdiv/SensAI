@@ -309,6 +309,18 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         courseNames: [] as string[]
     });
 
+    // Add useEffect to automatically hide toast after 5 seconds
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => {
+                setShowToast(false);
+            }, 5000);
+
+            // Cleanup the timer when component unmounts or showToast changes
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
+
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             const target = event.target as Node;
@@ -470,11 +482,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                 setToastDescription(`"${removedCourse?.name}" has been removed from this cohort`);
                 setToastEmoji('📚');
                 setShowToast(true);
-
-                // Hide toast after 5 seconds
-                setTimeout(() => {
-                    setShowToast(false);
-                }, 5000);
             }
         } catch (error) {
             console.error("Error removing course from cohort:", error);
@@ -488,11 +495,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             setToastDescription(errorMessage);
             setToastEmoji('❌');
             setShowToast(true);
-
-            // Hide toast after 5 seconds
-            setTimeout(() => {
-                setShowToast(false);
-            }, 5000);
         } finally {
             // Reset state
             setCourseToUnlink(null);
@@ -692,12 +694,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             setToastDescription(`Removed ${memberToDelete.email} from the cohort`);
             setToastEmoji(memberToDelete.role === 'learner' ? '👋' : '👨‍🏫');
             setShowToast(true);
-
-            // Hide toast after 5 seconds
-            setTimeout(() => {
-                setShowToast(false);
-            }, 5000);
-
         } catch (error) {
             console.error('Error deleting member:', error);
 
@@ -710,11 +706,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             setToastDescription(errorMessage);
             setToastEmoji('❌');
             setShowToast(true);
-
-            // Hide toast after 5 seconds
-            setTimeout(() => {
-                setShowToast(false);
-            }, 5000);
 
             throw error;
         } finally {
@@ -739,11 +730,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                 setToastEmoji('👩‍🏫');
             }
             setShowToast(true);
-
-            // Hide toast after 5 seconds
-            setTimeout(() => {
-                setShowToast(false);
-            }, 5000);
         } catch (error) {
             console.error(`Failed to add ${role}s:`, error);
 
@@ -757,11 +743,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             setToastDescription(errorMessage);
             setToastEmoji('❌');
             setShowToast(true);
-
-            // Hide toast after 5 seconds
-            setTimeout(() => {
-                setShowToast(false);
-            }, 5000);
 
             throw error;
         } finally {
