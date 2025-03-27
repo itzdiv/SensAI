@@ -44,7 +44,7 @@ interface LearningMaterial {
 }
 
 // Helper function to extract text from all blocks in a BlockNote document
-const extractTextFromBlocks = (blocks: any[]): string => {
+export const extractTextFromBlocks = (blocks: any[]): string => {
     if (!blocks || blocks.length === 0) return "";
 
     return blocks.map(block => {
@@ -80,7 +80,7 @@ const extractTextFromBlocks = (blocks: any[]): string => {
  * @param {QuizQuestionConfig} config - The question configuration containing knowledge base data
  * @returns {Object|null} - Formatted knowledge base data for API or null if no valid content
  */
-const getKnowledgeBaseContent = (config: QuizQuestionConfig) => {
+export const getKnowledgeBaseContent = (config: QuizQuestionConfig) => {
     // Check for knowledgeBaseBlocks
     const knowledgeBaseBlocks = config.knowledgeBaseBlocks || [];
     const linkedMaterialIds = config.linkedMaterialIds || [];

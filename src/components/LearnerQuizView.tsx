@@ -4,10 +4,11 @@ import "@blocknote/core/fonts/inter.css";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
-import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse } from "../types/quiz";
+import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
 import ChatView from './ChatView';
 import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
+import { getKnowledgeBaseContent } from './QuizEditor';
 
 export interface LearnerQuizViewProps {
     questions: QuizQuestion[];
@@ -755,7 +756,8 @@ export default function LearnerQuizView({
                         "answer": validQuestions[currentQuestionIndex].config.correctAnswer || "",
                         "type": validQuestions[currentQuestionIndex].config.questionType,
                         "input_type": responseType,
-                        "scorecard": scorecard
+                        "scorecard": scorecard,
+                        "context": getKnowledgeBaseContent(validQuestions[currentQuestionIndex].config as QuizQuestionConfig)
                     }
                 };
 
