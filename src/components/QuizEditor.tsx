@@ -72,6 +72,37 @@ const extractTextFromBlocks = (blocks: any[]): string => {
     }).join("\n").trim();
 };
 
+/**
+ * Extracts and formats knowledge base content for API calls.
+ * Validates that blocks contain actual content, not just empty structures.
+ * 
+ * @param {QuizQuestionConfig} config - The question configuration containing knowledge base data
+ * @returns {Object|null} - Formatted knowledge base data for API or null if no valid content
+ */
+const getKnowledgeBaseContent = (config: QuizQuestionConfig) => {
+    // Check for knowledgeBaseBlocks
+    const knowledgeBaseBlocks = config.knowledgeBaseBlocks || [];
+    const linkedMaterialIds = config.linkedMaterialIds || [];
+
+    // Extract text from blocks to check if they contain actual content
+    const hasNonEmptyBlocks = knowledgeBaseBlocks.length > 0 &&
+        extractTextFromBlocks(knowledgeBaseBlocks).trim().length > 0;
+
+    // Check if there are any linked materials
+    const hasLinkedMaterials = linkedMaterialIds.length > 0;
+
+    // If we have either valid blocks or linked materials, return the knowledge base data
+    if (hasNonEmptyBlocks || hasLinkedMaterials) {
+        return {
+            blocks: hasNonEmptyBlocks ? knowledgeBaseBlocks : [],
+            linkedMaterialIds: hasLinkedMaterials ? linkedMaterialIds : []
+        };
+    }
+
+    // If no valid knowledge base content, return null
+    return null;
+};
+
 const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     initialQuestions = [], // Not used anymore - kept for backward compatibility
     onChange,
@@ -1067,10 +1098,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     }
                 }
 
-                // Extract knowledge base content if it exists
-                const knowledgeBaseBlocks = question.config.knowledgeBaseBlocks || [];
-                const hasKnowledgeBase = knowledgeBaseBlocks.length > 0;
-
                 // Return the formatted question object for all questions, not just those with scorecards
                 return {
                     blocks: question.content,
@@ -1084,7 +1111,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     is_feedback_shown: taskType === 'exam' ? false : true,
                     scorecard: scorecard,
                     scorecard_id: scorecardId,
-                    knowledge_base: hasKnowledgeBase ? knowledgeBaseBlocks : null
+                    context: getKnowledgeBaseContent(question.config),
                 };
             });
 
@@ -1177,17 +1204,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 const inputType = question.config.inputType;
                 console.log(`Question ${question.id} - Input type: ${inputType}`);
 
-                // Extract knowledge base content if it exists
-                const knowledgeBaseBlocks = question.config.knowledgeBaseBlocks || [];
-                const hasKnowledgeBase = knowledgeBaseBlocks.length > 0;
-
                 return {
                     id: question.id,
                     blocks: question.content,
                     answer: correctAnswerText,
                     type: questionType,
                     input_type: inputType,
-                    knowledge_base: hasKnowledgeBase ? knowledgeBaseBlocks : null
+                    context: getKnowledgeBaseContent(question.config)
                 };
             });
 

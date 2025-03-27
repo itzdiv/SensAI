@@ -220,7 +220,7 @@ const LearningMaterialLinker = ({
                     disabled={readOnly}
                 >
                     <Plus size={16} />
-                    <span>Link learning material</span>
+                    <span>Link Learning Material</span>
                 </button>
 
                 {isLearningMaterialDropdownOpen && (

@@ -128,6 +128,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 toastTimeoutRef.current = null;
             }
 
+            // Reset toast state when dialog closes to prevent stuck toasts
+            setShowToast(false);
+
             // Make sure to clear questions from active item when the dialog closes for draft quizzes/exams
             if (activeItem &&
                 (activeItem.type === 'quiz' || activeItem.type === 'exam') &&

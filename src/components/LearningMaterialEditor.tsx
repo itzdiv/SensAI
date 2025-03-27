@@ -155,6 +155,11 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     // Store the original data for reverting on cancel
                     originalDataRef.current = { ...data };
 
+                    // Initialize editorContent with the blocks from taskData
+                    if (data.blocks && data.blocks.length > 0) {
+                        setEditorContent(data.blocks);
+                    }
+
                     setIsLoading(false);
                 })
                 .catch(error => {
@@ -179,6 +184,9 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             setTimeout(() => {
                 try {
                     editor.replaceBlocks(editor.document, taskData.blocks);
+
+                    // Also update the editorContent state to ensure hasContent works correctly
+                    setEditorContent(taskData.blocks);
                 } catch (error) {
                     console.error("Error updating editor content:", error);
                 }
@@ -352,27 +360,43 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         save: handleSave,
         cancel: handleCancel,
         hasContent: () => {
-            // Check if the editor has any content using the editorContent state
-            // This is the same content that gets used when publishing
-            if (!editorContent || editorContent.length === 0) return false;
+            console.log("Checking if editor has content");
 
-            // Check if there are any blocks beyond the first default paragraph
-            if (editorContent.length > 1) return true;
+            // First check the editorContent state
+            const checkContent = (content: any[] | undefined) => {
+                if (!content || content.length === 0) return false;
 
-            // If there's only one block, check if it has actual content
-            if (editorContent.length === 1) {
-                const block = editorContent[0];
-                // Use stringify to check if there's actual content
-                const blockContent = JSON.stringify(block.content);
-                // Check if it's not just an empty paragraph
-                if (blockContent &&
-                    blockContent !== '{}' &&
-                    blockContent !== '[]' &&
-                    blockContent !== 'null' &&
-                    blockContent !== '{"text":[]}' &&
-                    blockContent !== '{"text":""}') {
-                    return true;
+                // Check if there are any blocks beyond the first default paragraph
+                if (content.length > 1) return true;
+
+                // If there's only one block, check if it has actual content
+                if (content.length === 1) {
+                    const block = content[0];
+                    // Use stringify to check if there's actual content
+                    const blockContent = JSON.stringify(block.content);
+                    // Check if it's not just an empty paragraph
+                    if (blockContent &&
+                        blockContent !== '{}' &&
+                        blockContent !== '[]' &&
+                        blockContent !== 'null' &&
+                        blockContent !== '{"text":[]}' &&
+                        blockContent !== '{"text":""}') {
+                        return true;
+                    }
                 }
+
+                return false;
+            };
+
+            // First check editorContent (which might be updated if user made changes)
+            if (checkContent(editorContent)) {
+                return true;
+            }
+
+            // If editorContent is empty but we have taskData, check that as a fallback
+            // This helps when the editor just loaded and editorContent hasn't updated yet
+            if (taskData?.blocks) {
+                return checkContent(taskData.blocks);
             }
 
             return false;

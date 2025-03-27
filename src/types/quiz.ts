@@ -30,8 +30,8 @@ export interface QuizQuestionConfig {
     audioMaxDuration?: number; // For audio input type in seconds
     questionType: 'objective' | 'subjective' | 'coding';
     scorecardData?: ScorecardTemplate;
-    knowledgeBaseBlocks?: any[]; // Add knowledge base content blocks
-    linkedMaterialIds?: string[]; // Add IDs of linked learning materials
+    knowledgeBaseBlocks: any[]; // Add knowledge base content blocks
+    linkedMaterialIds: string[]; // Add IDs of linked learning materials
 }
 
 export interface QuizQuestion {
