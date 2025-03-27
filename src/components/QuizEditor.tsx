@@ -1712,7 +1712,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     {/* Show content based on active tab */}
                                     {activeEditorTab === 'question' ? (
                                         <div className="w-full">
-                                            <div className={`editor-container h-full ${highlightedField === 'question' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                            <div className={`editor-container h-[600px] overflow-y-auto ${highlightedField === 'question' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
                                                 <BlockNoteEditor
                                                     key={`quiz-editor-question-${currentQuestionIndex}`}
                                                     initialContent={currentQuestionContent}
@@ -1725,7 +1725,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             </div>
                                         </div>
                                     ) : activeEditorTab === 'answer' ? (
-                                        <div className={`w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden ${highlightedField === 'answer' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
+                                        <div className={`w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden h-[600px] overflow-y-auto ${highlightedField === 'answer' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 // Ensure the correct answer editor keeps focus
@@ -1754,7 +1754,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             />
                                         </div>
                                     ) : activeEditorTab === 'knowledge' ? (
-                                        <div className="w-full flex flex-col">
+                                        <div className="w-full flex flex-col h-[600px] overflow-y-auto">
                                             <div className="bg-[#222222] p-3 mb-3 rounded-md flex items-center">
                                                 <Zap size={16} className="text-amber-400 mr-2 flex-shrink-0" />
                                                 <div>
@@ -1842,72 +1842,74 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     ) : (
                                         // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
                                         currentQuestionConfig.scorecardData ? (
-                                            <Scorecard
-                                                ref={scorecardRef}
-                                                name={currentQuestionConfig.scorecardData?.name || scorecardTitle}
-                                                criteria={currentQuestionConfig.scorecardData?.criteria || []}
-                                                onDelete={() => setShowScorecardDeleteConfirm(true)}
-                                                readOnly={status === 'published'}
-                                                linked={isLinkedScorecard(currentQuestionConfig.scorecardData)}
-                                                onNameChange={(newName) => {
-                                                    if (!currentQuestionConfig.scorecardData) {
-                                                        return;
-                                                    }
+                                            <div className="h-[600px] overflow-y-auto">
+                                                <Scorecard
+                                                    ref={scorecardRef}
+                                                    name={currentQuestionConfig.scorecardData?.name || scorecardTitle}
+                                                    criteria={currentQuestionConfig.scorecardData?.criteria || []}
+                                                    onDelete={() => setShowScorecardDeleteConfirm(true)}
+                                                    readOnly={status === 'published'}
+                                                    linked={isLinkedScorecard(currentQuestionConfig.scorecardData)}
+                                                    onNameChange={(newName) => {
+                                                        if (!currentQuestionConfig.scorecardData) {
+                                                            return;
+                                                        }
 
-                                                    const currentScorecardData = currentQuestionConfig.scorecardData;
+                                                        const currentScorecardData = currentQuestionConfig.scorecardData;
 
-                                                    // Update the title of the current scorecard
-                                                    const updatedScorecardData = {
-                                                        ...currentScorecardData,
-                                                        name: newName
-                                                    };
+                                                        // Update the title of the current scorecard
+                                                        const updatedScorecardData = {
+                                                            ...currentScorecardData,
+                                                            name: newName
+                                                        };
 
-                                                    handleConfigChange({
-                                                        scorecardData: updatedScorecardData
-                                                    });
+                                                        handleConfigChange({
+                                                            scorecardData: updatedScorecardData
+                                                        });
 
-                                                    // Update the scorecard in schoolScorecards state
-                                                    const updatedScorecards = schoolScorecards.map(sc =>
-                                                        sc.id === currentScorecardData.id ? { ...sc, name: newName } : sc
-                                                    );
-                                                    setSchoolScorecards(updatedScorecards);
+                                                        // Update the scorecard in schoolScorecards state
+                                                        const updatedScorecards = schoolScorecards.map(sc =>
+                                                            sc.id === currentScorecardData.id ? { ...sc, name: newName } : sc
+                                                        );
+                                                        setSchoolScorecards(updatedScorecards);
 
-                                                    // If this is a source scorecard (created by user in this quiz),
-                                                    // sync all linked scorecards to reflect the name change
-                                                    if (currentScorecardData.new) {
-                                                        syncLinkedScorecards(currentScorecardData.id, newName);
-                                                    }
-                                                }}
-                                                onChange={(updatedCriteria) => {
-                                                    if (!currentQuestionConfig.scorecardData) {
-                                                        return;
-                                                    }
+                                                        // If this is a source scorecard (created by user in this quiz),
+                                                        // sync all linked scorecards to reflect the name change
+                                                        if (currentScorecardData.new) {
+                                                            syncLinkedScorecards(currentScorecardData.id, newName);
+                                                        }
+                                                    }}
+                                                    onChange={(updatedCriteria) => {
+                                                        if (!currentQuestionConfig.scorecardData) {
+                                                            return;
+                                                        }
 
-                                                    const currentScorecardData = currentQuestionConfig.scorecardData;
+                                                        const currentScorecardData = currentQuestionConfig.scorecardData;
 
-                                                    // Update the current question's scorecard
-                                                    const updatedScorecardData = {
-                                                        ...currentScorecardData,
-                                                        criteria: updatedCriteria
-                                                    };
+                                                        // Update the current question's scorecard
+                                                        const updatedScorecardData = {
+                                                            ...currentScorecardData,
+                                                            criteria: updatedCriteria
+                                                        };
 
-                                                    handleConfigChange({
-                                                        scorecardData: updatedScorecardData
-                                                    });
+                                                        handleConfigChange({
+                                                            scorecardData: updatedScorecardData
+                                                        });
 
-                                                    // Update the scorecard in schoolScorecards state
-                                                    const updatedScorecards = schoolScorecards.map(sc =>
-                                                        sc.id === currentScorecardData.id ? { ...sc, criteria: updatedCriteria } : sc
-                                                    );
-                                                    setSchoolScorecards(updatedScorecards);
+                                                        // Update the scorecard in schoolScorecards state
+                                                        const updatedScorecards = schoolScorecards.map(sc =>
+                                                            sc.id === currentScorecardData.id ? { ...sc, criteria: updatedCriteria } : sc
+                                                        );
+                                                        setSchoolScorecards(updatedScorecards);
 
-                                                    // If this is a source scorecard (created by user in this quiz),
-                                                    // sync all linked scorecards to reflect the criteria changes
-                                                    if (currentScorecardData.new) {
-                                                        syncLinkedScorecards(currentScorecardData.id, undefined, updatedCriteria);
-                                                    }
-                                                }}
-                                            />
+                                                        // If this is a source scorecard (created by user in this quiz),
+                                                        // sync all linked scorecards to reflect the criteria changes
+                                                        if (currentScorecardData.new) {
+                                                            syncLinkedScorecards(currentScorecardData.id, undefined, updatedCriteria);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
                                         ) : (
                                             <div className="w-full flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-700 rounded-lg bg-[#1A1A1A]">
                                                 <div className="max-w-md">
