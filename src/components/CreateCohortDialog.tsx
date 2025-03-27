@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface CreateCohortDialogProps {
@@ -13,6 +13,15 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort }: Cr
     const [cohortName, setCohortName] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Reset form state when dialog is opened
+    useEffect(() => {
+        if (open) {
+            setCohortName('');
+            setError('');
+            setIsLoading(false);
+        }
+    }, [open]);
 
     const handleSubmit = () => {
         // Validate cohort name

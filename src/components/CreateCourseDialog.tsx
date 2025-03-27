@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface CreateCourseDialogProps {
@@ -13,6 +13,15 @@ export default function CreateCourseDialog({ open, onClose, onCreateCourse }: Cr
     const [courseName, setCourseName] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Reset form state when dialog is opened
+    useEffect(() => {
+        if (open) {
+            setCourseName('');
+            setError('');
+            setIsLoading(false);
+        }
+    }, [open]);
 
     const handleSubmit = async () => {
         // Validate course name
