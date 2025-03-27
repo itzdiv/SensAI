@@ -250,7 +250,7 @@ function InviteModal({
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={!emailInputs.some(input => input.email.trim() && !input.error) || isSubmitting}
+                        disabled={isSubmitting}
                         className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                         {isSubmitting ? (role === 'learner' ? 'Inviting...' : 'Adding...') : submitButtonText}
