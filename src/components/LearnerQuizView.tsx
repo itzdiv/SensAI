@@ -768,7 +768,7 @@ export default function LearnerQuizView({
                         "response_type": validQuestions[currentQuestionIndex].config.responseType,
                         "answer": validQuestions[currentQuestionIndex].config.correctAnswer,
                         "type": validQuestions[currentQuestionIndex].config.questionType,
-                        "input_type": responseType,
+                        "input_type": validQuestions[currentQuestionIndex].config.inputType,
                         "scorecard": scorecard,
                         "coding_languages": validQuestions[currentQuestionIndex].config.codingLanguages,
                         "context": getKnowledgeBaseContent(validQuestions[currentQuestionIndex].config as QuizQuestionConfig)
@@ -1724,7 +1724,7 @@ export default function LearnerQuizView({
                                     <path d="M14 4L18 8M18 8V18M18 8H8M6 20L10 16M10 16H20M10 16V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                                 <p>Run your code to see the preview here.</p>
-                                <p className="text-xs mt-2">For HTML/CSS/JavaScript, you will see a live preview. For other languages, you will see the console output.</p>
+                                <p className="text-xs mt-2">For HTML/CSS/JavaScript/React, you will see a live preview. For other languages, you will see the console output.</p>
                             </div>
                         )}
                     </div>

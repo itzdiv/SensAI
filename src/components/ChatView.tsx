@@ -81,6 +81,11 @@ const ChatView: React.FC<ChatViewProps> = ({
         ['html', 'css', 'javascript', 'js'].includes(lang?.toLowerCase())
     );
 
+    // Check if React preview is available
+    const hasReactLanguages = codingLanguages.some((lang: string) =>
+        ['react'].includes(lang?.toLowerCase())
+    );
+
     // Determine if this question is completed
     const isQuestionCompleted = currentQuestionId ? completedQuestionIds[currentQuestionId] : false;
 
@@ -165,7 +170,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                 isRunning,
                 previewContent,
                 output,
-                hasWebLanguages
+                hasWebLanguages: hasWebLanguages || hasReactLanguages // Combined check for preview capability
             };
 
             // Only call onCodeStateChange if the state has actually changed
@@ -174,7 +179,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                 onCodeStateChange(currentState);
             }
         }
-    }, [isViewingCode, isRunning, previewContent, output, hasWebLanguages, isCodingQuestion, onCodeStateChange]);
+    }, [isViewingCode, isRunning, previewContent, output, hasWebLanguages, hasReactLanguages, isCodingQuestion, onCodeStateChange]);
 
     // Toggle between chat and code views
     const toggleCodeView = () => {

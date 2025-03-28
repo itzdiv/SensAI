@@ -63,11 +63,11 @@ export const codingLanguageOptions: DropdownOption[] = [
     //     "value": "python",
     //     "color": "#2C5282",
     // },
-    // {
-    //     "label": "React",
-    //     "value": "react",
-    //     "color": "#2C7A7B",
-    // },
+    {
+        "label": "React",
+        "value": "react",
+        "color": "#2C7A7B",
+    },
     // {
     //     "label": "SQL",
     //     "value": "sql",

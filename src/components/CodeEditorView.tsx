@@ -23,6 +23,67 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
     output,
     isWebPreview
 }) => {
+    const [isIframeLoading, setIsIframeLoading] = useState(true);
+
+    // Reset loading state when new content is provided
+    useEffect(() => {
+        if (previewContent) {
+            setIsIframeLoading(true);
+        }
+    }, [previewContent]);
+
+    // Create a modified HTML content with a loading indicator
+    const enhancedPreviewContent = isWebPreview && previewContent ? `
+        ${previewContent.replace(
+        '</body>',
+        `
+            <style>
+                #iframe-loading-indicator {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: white;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                    transition: opacity 0.3s ease-out;
+                }
+                #iframe-loading-indicator.hidden {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+                .iframe-spinner {
+                    width: 40px;
+                    height: 40px;
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #3498db;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+            <div id="iframe-loading-indicator">
+                <div class="iframe-spinner"></div>
+            </div>
+            <script>
+                // Hide the loading indicator when the page is fully loaded
+                window.addEventListener('load', function() {
+                    setTimeout(function() {
+                        document.getElementById('iframe-loading-indicator').classList.add('hidden');
+                    }, 500); // Small delay to ensure everything is rendered
+                });
+            </script>
+            </body>
+            `
+    )}
+    ` : previewContent;
+
     return (
         <div className="flex-1 flex flex-col bg-[#111111] overflow-hidden h-full">
             <div className="px-4 py-2 bg-[#222222] text-white text-sm font-medium">
@@ -34,12 +95,20 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-white"></div>
                     </div>
                 ) : isWebPreview ? (
-                    <iframe
-                        srcDoc={previewContent}
-                        title="Code Preview"
-                        className="w-full h-full bg-white"
-                        sandbox="allow-scripts"
-                    />
+                    <div className="relative w-full h-full">
+                        {isIframeLoading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+                                <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#f3f3f3] border-t-[#3498db]"></div>
+                            </div>
+                        )}
+                        <iframe
+                            srcDoc={enhancedPreviewContent}
+                            title="Code Preview"
+                            className="w-full h-full bg-white"
+                            sandbox="allow-scripts"
+                            onLoad={() => setIsIframeLoading(false)}
+                        />
+                    </div>
                 ) : (
                     <pre className="p-4 text-white whitespace-pre-wrap font-mono text-sm">
                         {output || 'Run your code to see output here'}
@@ -54,6 +123,66 @@ const DEFAULT_LANGUAGE_CONTENTS = {
     'javascript': 'function changeText() {\n  document.getElementById("greeting").textContent = "Hello from JavaScript!";\n}\n\nconsole.log("Hello, world!");\n',
     'html': '<!DOCTYPE html>\n<html>\n<head>\n  <title>My Page</title>\n</head>\n<body>\n  <h1 id="greeting">Hello, world!</h1>\n  <button onclick="changeText()">Change Text</button>\n</body>\n</html>\n',
     'css': 'body {\n  font-family: sans-serif;\n  margin: 20px;\n}\n\nh1 {\n  color: navy;\n}\n',
+    'react': `// === REACT PLAYGROUND GUIDE ===
+// 
+// This playground runs React 18 directly in the browser using Babel for JSX transformation.
+// Here's how to use this editor effectively:
+//
+// 1. COMPONENT DEFINITION:
+//    - Define your components using either function or class syntax
+//    - Example: function MyComponent() { return <div>Hello</div>; }
+//
+// 2. USING HOOKS:
+//    - React hooks work normally (useState, useEffect, etc.)
+//    - Access them directly from the React object (React.useState)
+//
+// 3. RENDERING TO DOM:
+//    - IMPORTANT: Always render your main component to the "root" div
+//    - Use React 18's createRoot API as shown below
+// 
+// 4. LIMITATIONS:
+//    - No npm imports (use only built-in React functionality)
+//    - Libraries like React Router won't work here
+//    - For CSS, add inline styles or use the CSS tab
+//
+// The example below demonstrates a basic counter component:
+// ======
+
+// Define your main component
+function App() {
+  // Use React hooks just like in a normal React app
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <div style={{ fontFamily: "sans-serif", textAlign: "center", marginTop: "50px" }}>
+      <h1>Hello from React!</h1>
+      <p>You clicked the button {count} times</p>
+      <button 
+        onClick={() => setCount(count + 1)}
+        style={{
+          padding: "8px 16px",
+          borderRadius: "4px",
+          backgroundColor: "#0070f3",
+          color: "white",
+          border: "none",
+          cursor: "pointer"
+        }}
+      >
+        Click me
+      </button>
+    </div>
+  );
+}
+
+// REQUIRED: Create a root and render your App component
+// This is the React 18 way of rendering components
+const rootElement = document.getElementById("root");
+const root = ReactDOM.createRoot(rootElement);
+root.render(<App />);
+
+// You can add more components above the App component
+// Just make sure your final component is rendered to the DOM
+`,
     'python': 'print("Hello, world!")\n',
     'java': 'public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello, world!");\n  }\n}\n',
     'c': '#include <stdio.h>\n\nint main() {\n  printf("Hello, world!\\n");\n  return 0;\n}\n',
@@ -82,6 +211,7 @@ const LANGUAGE_MAPPING: Record<string, string> = {
     'typescript': 'typescript',
     'ts': 'typescript',
     'php': 'php',
+    'react': 'javascript', // React uses JavaScript syntax with JSX
 };
 
 // Prettier language display names
@@ -97,6 +227,7 @@ const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
     'ruby': 'Ruby',
     'typescript': 'TypeScript',
     'php': 'PHP',
+    'react': 'React',
 };
 
 const CodeEditorView: React.FC<CodeEditorViewProps> = ({
@@ -105,26 +236,39 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     handleCodeSubmit,
     onCodeRun,
 }) => {
-    // Normalize languages to their canonical form
-    const normalizedLanguages = languages.map(lang =>
-        LANGUAGE_MAPPING[lang.toLowerCase()] || lang.toLowerCase()
-    ).filter((lang, index, self) =>
-        // Remove duplicates
-        self.indexOf(lang) === index &&
-        // Ensure we have a default content for this language
-        Object.keys(LANGUAGE_MAPPING).includes(lang)
+    // Check if React is in the original languages array
+    const hasReactLanguages = languages.some(lang =>
+        lang.toLowerCase() === 'react'
     );
 
-    // If no valid languages, default to JavaScript
-    const validLanguages = normalizedLanguages.length > 0
-        ? normalizedLanguages
-        : ['javascript'];
+    console.log('Original languages:', languages);
+    console.log('Has React languages:', hasReactLanguages);
+
+    // When only React is selected, don't normalize languages (skip the mapping to JavaScript)
+    let normalizedLanguages: string[];
+
+    if (hasReactLanguages) {
+        // When React is the only language, skip normalization and just use React
+        normalizedLanguages = ['react'];
+        console.log('Using only React tab');
+    } else {
+        // Otherwise normalize languages as usual
+        normalizedLanguages = languages.map(lang =>
+            LANGUAGE_MAPPING[lang.toLowerCase()] || lang.toLowerCase()
+        ).filter((lang, index, self) =>
+            // Remove duplicates
+            self.indexOf(lang) === index &&
+            // Ensure we have a default content for this language
+            Object.keys(LANGUAGE_MAPPING).includes(lang)
+        );
+    }
 
     // Initialize code state with provided initialCode or defaults
     const [code, setCode] = useState<Record<string, string>>(() => {
         const initialState: Record<string, string> = {};
 
-        validLanguages.forEach(lang => {
+        // Add entries for all valid languages
+        normalizedLanguages.forEach(lang => {
             initialState[lang] = initialCode[lang] || DEFAULT_LANGUAGE_CONTENTS[lang] || '';
         });
 
@@ -132,7 +276,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     });
 
     // State for the active language tab
-    const [activeLanguage, setActiveLanguage] = useState<string>(validLanguages[0]);
+    const [activeLanguage, setActiveLanguage] = useState<string>(normalizedLanguages[0]);
 
     // Preview state
     const [previewContent, setPreviewContent] = useState<string>('');
@@ -140,7 +284,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     const [output, setOutput] = useState<string>('');
 
     // Check if web preview is available (HTML, CSS, JS)
-    const hasWebLanguages = validLanguages.some(lang =>
+    const hasWebLanguages = normalizedLanguages.some(lang =>
         ['html', 'css', 'javascript'].includes(lang)
     );
 
@@ -164,13 +308,53 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         }
     };
 
-    // Prepare and run the code
-    const handleRunCode = () => {
+    // Handle code run
+    const handleCodeRun = () => {
         setIsRunning(true);
+        console.log('Running code for activeLanguage:', activeLanguage);
 
         try {
+            // For React code
+            if (activeLanguage === 'react') {
+                console.log('Running React code');
+                // Create a basic HTML template with React and ReactDOM loaded from CDN with specific version
+                const reactTemplate = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>React Preview</title>
+                    <!-- Load React and ReactDOM from CDN with specific version -->
+                    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+                    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+                    <!-- Load Babel for JSX support -->
+                    <script src="https://unpkg.com/@babel/standalone@7.21.4/babel.min.js"></script>
+                    ${code['css'] ? `<style>${code['css']}</style>` : ''}
+                </head>
+                <body>
+                    <div id="root"></div>
+                    <script type="text/babel">
+                    ${code['react']}
+                    </script>
+                </body>
+                </html>`;
+
+                setPreviewContent(reactTemplate);
+                setOutput('React preview updated');
+
+                // Notify parent component
+                if (onCodeRun) {
+                    onCodeRun(reactTemplate, 'React preview updated');
+                }
+
+                // Delay setting isRunning to false to give time for the iframe to start loading
+                setTimeout(() => {
+                    setIsRunning(false);
+                }, 300);
+            }
             // For web-based languages, create a preview
-            if (hasWebLanguages) {
+            else if (hasWebLanguages) {
                 // Generate HTML preview with CSS and JavaScript
                 const htmlContent = code['html'] || '';
                 const cssContent = code['css'] ? `<style>${code['css']}</style>` : '';
@@ -188,6 +372,11 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 if (onCodeRun) {
                     onCodeRun(fullHtmlContent, 'Preview updated');
                 }
+
+                // Delay setting isRunning to false to give time for the iframe to start loading
+                setTimeout(() => {
+                    setIsRunning(false);
+                }, 300);
             }
             // For non-web languages, execute the code if possible
             else {
@@ -257,15 +446,27 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         editor.focus();
     };
 
+    // Get the correct Monaco editor language based on active language
+    const getMonacoLanguage = (lang: string) => {
+        if (lang === 'react') {
+            return 'javascript'; // React uses JavaScript syntax
+        }
+        return lang;
+    };
+
     return (
         <div className="flex flex-col h-full overflow-hidden">
             {/* Language tabs */}
-            {validLanguages.length > 1 && (
+            {normalizedLanguages.length > 0 ? (
                 <div className="flex items-center overflow-x-auto bg-[#1D1D1D] hide-scrollbar">
-                    {validLanguages.map((lang) => (
+                    {/* Show all language tabs */}
+                    {normalizedLanguages.map((lang) => (
                         <button
                             key={lang}
-                            onClick={() => setActiveLanguage(lang)}
+                            onClick={() => {
+                                console.log('Setting active language to:', lang);
+                                setActiveLanguage(lang);
+                            }}
                             className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${activeLanguage === lang
                                 ? 'bg-[#2D2D2D] text-white border-b-2 border-white'
                                 : 'text-gray-400 hover:text-white hover:bg-[#222222]'
@@ -275,13 +476,13 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                         </button>
                     ))}
                 </div>
-            )}
+            ) : null}
 
             {/* Code editor (without preview) */}
             <div className="flex-1 overflow-hidden">
                 <Editor
                     height="100%"
-                    language={activeLanguage}
+                    language={getMonacoLanguage(activeLanguage)}
                     value={code[activeLanguage]}
                     onChange={handleCodeChange}
                     theme="vs-dark"
@@ -301,7 +502,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
             {/* Action buttons */}
             <div className="flex items-center justify-between p-4 border-t border-[#222222]">
                 <button
-                    onClick={handleRunCode}
+                    onClick={handleCodeRun}
                     disabled={isRunning}
                     className="flex items-center space-x-2 bg-[#333333] hover:bg-[#444444] text-white rounded-full px-4 py-2 cursor-pointer"
                 >
