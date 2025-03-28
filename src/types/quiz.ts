@@ -24,9 +24,8 @@ export interface QuizEditorHandle {
 export interface QuizQuestionConfig {
     inputType: 'text' | 'code' | 'audio';
     responseType: 'chat' | 'report';
-    correctAnswer?: string;
-    correctAnswerBlocks?: any[];
-    codeLanguage?: string; // For code input type
+    correctAnswer?: any[];
+    codingLanguages?: string[]; // For multiple coding languages
     audioMaxDuration?: number; // For audio input type in seconds
     questionType: 'objective' | 'subjective' | 'coding';
     scorecardData?: ScorecardTemplate;
@@ -96,6 +95,7 @@ export interface APIQuestionResponse {
         blocks?: any[];
         linkedMaterialIds?: string[];
     };
+    coding_languages?: string[];
 } 
 
 
@@ -105,7 +105,7 @@ export interface ChatMessage {
     content: string;
     sender: 'user' | 'ai';
     timestamp: Date;
-    messageType?: 'text' | 'audio';
+    messageType?: 'text' | 'audio' | 'code';
     audioData?: string; // base64 encoded audio data
     scorecard?: ScorecardItem[]; // Add scorecard field for detailed feedback
 }   

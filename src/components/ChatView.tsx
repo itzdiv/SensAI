@@ -1,8 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, ScorecardItem, QuizQuestion } from '../types/quiz';
 import ChatPlaceholderView from './ChatPlaceholderView';
 import ChatHistoryView from './ChatHistoryView';
 import AudioInputComponent from './AudioInputComponent';
+import CodeEditorView, { CodePreview } from './CodeEditorView';
+import { MessageCircle, Code } from 'lucide-react';
+import isEqual from 'lodash/isEqual';
 
 interface ChatViewProps {
     currentChatHistory: ChatMessage[];
@@ -16,13 +19,24 @@ interface ChatViewProps {
     currentAnswer: string;
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     handleKeyPress: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    handleSubmitAnswer: () => void;
+    handleSubmitAnswer: (responseType?: 'text' | 'code') => void;
     handleAudioSubmit: (audioBlob: Blob) => void;
     handleViewScorecard: (scorecard: ScorecardItem[]) => void;
     readOnly: boolean;
     completedQuestionIds: Record<string, boolean>;
     currentQuestionId?: string;
     handleRetry?: () => void;
+    onCodeStateChange?: (state: CodeViewState) => void;
+    initialIsViewingCode?: boolean;
+}
+
+// Export interface for code view state to be used by parent components
+export interface CodeViewState {
+    isViewingCode: boolean;
+    isRunning: boolean;
+    previewContent: string;
+    output: string;
+    hasWebLanguages: boolean;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({
@@ -43,12 +57,166 @@ const ChatView: React.FC<ChatViewProps> = ({
     readOnly,
     completedQuestionIds,
     currentQuestionId = '',
-    handleRetry
+    handleRetry,
+    onCodeStateChange,
+    initialIsViewingCode = false
 }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    // Add state for code editor toggle and preview
+    const [isViewingCode, setIsViewingCode] = useState(initialIsViewingCode);
+    const [codeContent, setCodeContent] = useState<Record<string, string>>({});
+    const [previewContent, setPreviewContent] = useState('');
+    const [output, setOutput] = useState('');
+    const [isRunning, setIsRunning] = useState(false);
+
+    // Determine if this is a coding question
+    const isCodingQuestion = currentQuestionConfig?.questionType === 'coding';
+
+    // Get coding languages from question config
+    const codingLanguages = currentQuestionConfig?.codingLanguages || ['javascript'];
+
+    // Check if web preview is available (HTML, CSS, JS)
+    const hasWebLanguages = codingLanguages.some((lang: string) =>
+        ['html', 'css', 'javascript', 'js'].includes(lang?.toLowerCase())
+    );
+
     // Determine if this question is completed
     const isQuestionCompleted = currentQuestionId ? completedQuestionIds[currentQuestionId] : false;
+
+    // Store the previous state for comparison
+    const prevStateRef = useRef<CodeViewState | null>(null);
+
+    // Update view state when question config changes
+    useEffect(() => {
+        // Set isViewingCode to true when a coding question is loaded
+        if (isCodingQuestion) {
+            setIsViewingCode(true);
+        } else {
+            setIsViewingCode(false);
+        }
+    }, [currentQuestionConfig, isCodingQuestion]);
+
+    // Extract code from chat history for coding questions
+    useEffect(() => {
+        if (isCodingQuestion && currentChatHistory.length > 0) {
+            // Filter messages to find code type messages
+            const codeMessages = currentChatHistory.filter(
+                message => message.messageType === 'code' && message.sender === 'user'
+            );
+
+            // Use the most recent code message if any exists
+            if (codeMessages.length > 0) {
+                const lastCodeMessage = codeMessages[codeMessages.length - 1];
+                const codeContent = lastCodeMessage.content;
+                const codeByLanguage: Record<string, string> = {};
+
+                try {
+                    // Try to parse code sections based on language markers
+                    const languagePattern = /\/\/ ([A-Z]+)\n([\s\S]*?)(?=\/\/ [A-Z]+\n|$)/g;
+                    let match;
+                    let foundAnyMatches = false;
+
+                    while ((match = languagePattern.exec(codeContent)) !== null) {
+                        foundAnyMatches = true;
+                        const lang = match[1].toLowerCase();
+                        const code = match[2].trim();
+
+                        // Map common language variations
+                        const normalizedLang =
+                            lang === 'javascript' || lang === 'js' ? 'javascript' :
+                                lang === 'html' ? 'html' :
+                                    lang === 'css' ? 'css' :
+                                        lang === 'python' || lang === 'py' ? 'python' :
+                                            lang === 'typescript' || lang === 'ts' ? 'typescript' :
+                                                lang;
+
+                        codeByLanguage[normalizedLang] = code;
+                    }
+
+                    // If no language headers were found, use the content as the first language
+                    if (!foundAnyMatches && codingLanguages.length > 0) {
+                        codeByLanguage[codingLanguages[0].toLowerCase()] = codeContent;
+                    }
+
+                    // Ensure all configured languages have an entry
+                    codingLanguages.forEach((lang: string) => {
+                        const normalizedLang = lang.toLowerCase();
+                        if (!codeByLanguage[normalizedLang]) {
+                            // If a language doesn't have code yet, initialize with empty string
+                            codeByLanguage[normalizedLang] = '';
+                        }
+                    });
+
+                    // Set the code content for the editor
+                    setCodeContent(codeByLanguage);
+                } catch (error) {
+                    console.error('Error parsing code from chat history:', error);
+                }
+            }
+        }
+    }, [currentChatHistory, isCodingQuestion, codingLanguages]);
+
+    // Notify parent of code state changes
+    useEffect(() => {
+        if (onCodeStateChange && isCodingQuestion) {
+            const currentState = {
+                isViewingCode,
+                isRunning,
+                previewContent,
+                output,
+                hasWebLanguages
+            };
+
+            // Only call onCodeStateChange if the state has actually changed
+            if (!prevStateRef.current || !isEqual(prevStateRef.current, currentState)) {
+                prevStateRef.current = currentState;
+                onCodeStateChange(currentState);
+            }
+        }
+    }, [isViewingCode, isRunning, previewContent, output, hasWebLanguages, isCodingQuestion, onCodeStateChange]);
+
+    // Toggle between chat and code views
+    const toggleCodeView = () => {
+        setIsViewingCode(prev => !prev);
+    };
+
+    // Handle code run
+    const handleCodeRun = (newPreviewContent: string, newOutput: string) => {
+        setPreviewContent(newPreviewContent);
+        setOutput(newOutput);
+        setIsRunning(false);
+    };
+
+    // Handle code submission
+    const handleCodeSubmit = (code: Record<string, string>) => {
+        // Add code to chat history as a user message
+        if (Object.values(code).some(content => content.trim())) {
+            // Format the code for display in the chat
+            // You could display just the active language or all languages
+            // For simplicity, we'll combine all languages with headers
+            let formattedCode = '';
+
+            // Create a formatted version of the code with language headers
+            Object.entries(code).forEach(([lang, content]) => {
+                if (content.trim()) {
+                    formattedCode += `// ${lang.toUpperCase()}\n${content}\n\n`;
+                }
+            });
+
+            // Use the existing handleSubmitAnswer, but first set the currentAnswer to the code
+            // This is a workaround to reuse existing logic
+            handleInputChange({
+                target: { value: formattedCode.trim() }
+            } as React.ChangeEvent<HTMLTextAreaElement>);
+
+            // Then call the submit function
+            handleSubmitAnswer('code');
+
+            // Switch back to chat view
+            setIsViewingCode(false);
+        }
+    };
 
     // Function to adjust textarea height based on content
     const adjustTextareaHeight = () => {
@@ -89,10 +257,10 @@ const ChatView: React.FC<ChatViewProps> = ({
 
     // Focus the textarea when the component mounts
     useEffect(() => {
-        if (textareaRef.current && !readOnly) {
+        if (textareaRef.current && !readOnly && !isViewingCode) {
             textareaRef.current.focus();
         }
-    }, [readOnly]);
+    }, [readOnly, isViewingCode]);
 
     // Modified handleKeyPress for textarea
     const handleTextareaKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -100,6 +268,98 @@ const ChatView: React.FC<ChatViewProps> = ({
         if (e.key === 'Enter' && !e.shiftKey && currentAnswer.trim() && !readOnly) {
             e.preventDefault(); // Prevent new line
             handleSubmitAnswer();
+        }
+    };
+
+    // Render the code editor or chat view based on state
+    const renderMainContent = () => {
+        if (isViewingCode && isCodingQuestion) {
+            return (
+                <CodeEditorView
+                    initialCode={codeContent}
+                    languages={codingLanguages}
+                    handleCodeSubmit={handleCodeSubmit}
+                    onCodeRun={handleCodeRun}
+                />
+            );
+        } else {
+            return (
+                <>
+                    {currentChatHistory.length === 0 ? (
+                        <ChatPlaceholderView
+                            taskType={taskType}
+                            isChatHistoryLoaded={isChatHistoryLoaded}
+                            isTestMode={isTestMode}
+                            inputType={currentQuestionConfig?.inputType}
+                        />
+                    ) : (
+                        <ChatHistoryView
+                            chatHistory={currentChatHistory}
+                            onViewScorecard={handleViewScorecard}
+                            isAiResponding={isAiResponding}
+                            showPreparingReport={showPreparingReport}
+                            currentQuestionConfig={currentQuestionConfig}
+                            onRetry={handleRetry}
+                        />
+                    )}
+
+                    {/* Input area with fixed position at bottom */}
+                    <div className="pt-2 bg-[#111111]">
+                        {!(taskType === 'exam' && isQuestionCompleted) && (
+                            /* Input area - conditional render based on input type */
+                            <>
+                                {currentQuestionConfig?.inputType === 'audio' ? (
+                                    <AudioInputComponent
+                                        onAudioSubmit={handleAudioSubmit}
+                                        isSubmitting={isSubmitting || isAiResponding}
+                                        maxDuration={currentQuestionConfig?.audioMaxDuration || 120}
+                                    />
+                                ) : (
+                                    /* Completely restructured textarea container */
+                                    <div className="relative flex items-center bg-[#111111] rounded-3xl py-1 overflow-hidden border border-[#222222]">
+                                        <div className="flex-1 flex items-center">
+                                            <textarea
+                                                id="no-border-textarea"
+                                                ref={textareaRef}
+                                                placeholder="Type your answer here"
+                                                className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
+                                                value={currentAnswer}
+                                                onChange={handleInputChange as any}
+                                                onKeyPress={handleTextareaKeyPress}
+                                                autoFocus={!readOnly}
+                                                disabled={false}
+                                                rows={1}
+                                                style={{
+                                                    border: "none",
+                                                    outline: "none",
+                                                    boxShadow: "none",
+                                                    padding: "12px 24px",
+                                                    resize: "none"
+                                                }}
+                                            />
+                                        </div>
+                                        <button
+                                            className={`bg-white rounded-full w-10 h-10 mr-2 cursor-pointer flex items-center justify-center ${isSubmitting || isAiResponding ? 'opacity-50' : ''}`}
+                                            onClick={() => handleSubmitAnswer('text')}
+                                            disabled={!currentAnswer.trim() || isSubmitting || isAiResponding}
+                                            aria-label="Submit answer"
+                                            type="button"
+                                        >
+                                            {isSubmitting ? (
+                                                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </>
+            );
         }
     };
 
@@ -146,81 +406,64 @@ const ChatView: React.FC<ChatViewProps> = ({
                     -ms-overflow-style: none;
                     scrollbar-width: none;
                 }
+
+                /* Toggle switch styles */
+                .code-toggle-switch {
+                    position: relative;
+                    display: inline-block;
+                    height: 32px;
+                    border-radius: 16px;
+                    overflow: hidden;
+                    background-color: #111111;
+                    border: 1px solid #333333;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                }
+                
+                .code-toggle-option {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    padding: 0 12px;
+                    cursor: pointer;
+                    user-select: none;
+                    color: #999999;
+                    font-size: 12px;
+                    transition: all 0.2s ease;
+                    position: relative;
+                    z-index: 2;
+                }
+                
+                .code-toggle-option.active {
+                    color: #ffffff;
+                    background-color: #222222;
+                }
             `}</style>
 
-            {currentChatHistory.length === 0 ? (
-                <ChatPlaceholderView
-                    taskType={taskType}
-                    isChatHistoryLoaded={isChatHistoryLoaded}
-                    isTestMode={isTestMode}
-                    inputType={currentQuestionConfig?.inputType}
-                />
-            ) : (
-                <ChatHistoryView
-                    chatHistory={currentChatHistory}
-                    onViewScorecard={handleViewScorecard}
-                    isAiResponding={isAiResponding}
-                    showPreparingReport={showPreparingReport}
-                    currentQuestionConfig={currentQuestionConfig}
-                    onRetry={handleRetry}
-                />
+            {/* Toggle button for coding questions */}
+            {isCodingQuestion && (
+                <div className="flex justify-end mb-4">
+                    <div className="code-toggle-switch">
+                        <div
+                            className={`code-toggle-option ${!isViewingCode ? 'active' : ''}`}
+                            onClick={() => setIsViewingCode(false)}
+                        >
+                            <MessageCircle size={16} className="mr-1" />
+                            <span>Chat</span>
+                        </div>
+                        <div
+                            className={`code-toggle-option ${isViewingCode ? 'active' : ''}`}
+                            onClick={() => setIsViewingCode(true)}
+                        >
+                            <Code size={16} className="mr-1" />
+                            <span>Code</span>
+                        </div>
+                    </div>
+                </div>
             )}
 
-            {/* Input area with fixed position at bottom */}
-            <div className="fpt-2 bg-[#111111]">
-                {!(taskType === 'exam' && isQuestionCompleted) && (
-                    /* Input area - conditional render based on input type */
-                    <>
-                        {currentQuestionConfig?.inputType === 'audio' ? (
-                            <AudioInputComponent
-                                onAudioSubmit={handleAudioSubmit}
-                                isSubmitting={isSubmitting || isAiResponding}
-                                maxDuration={currentQuestionConfig?.audioMaxDuration || 120}
-                            />
-                        ) : (
-                            /* Completely restructured textarea container */
-                            <div className="relative flex items-center bg-[#111111] rounded-3xl py-1 overflow-hidden border border-[#222222]">
-                                <div className="flex-1 flex items-center">
-                                    <textarea
-                                        id="no-border-textarea"
-                                        ref={textareaRef}
-                                        placeholder="Type your answer here"
-                                        className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
-                                        value={currentAnswer}
-                                        onChange={handleInputChange as any}
-                                        onKeyPress={handleTextareaKeyPress}
-                                        autoFocus={!readOnly}
-                                        disabled={false}
-                                        rows={1}
-                                        style={{
-                                            border: "none",
-                                            outline: "none",
-                                            boxShadow: "none",
-                                            padding: "12px 24px",
-                                            resize: "none"
-                                        }}
-                                    />
-                                </div>
-                                <button
-                                    className={`bg-white rounded-full w-10 h-10 mr-2 cursor-pointer flex items-center justify-center ${isSubmitting || isAiResponding ? 'opacity-50' : ''}`}
-                                    onClick={handleSubmitAnswer}
-                                    disabled={!currentAnswer.trim() || isSubmitting || isAiResponding}
-                                    aria-label="Submit answer"
-                                    type="button"
-                                >
-                                    {isSubmitting ? (
-                                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                                    ) : (
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    )}
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
+            {/* Main content area with code editor or chat view */}
+            {renderMainContent()}
         </div>
     );
 };

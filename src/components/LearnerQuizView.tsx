@@ -5,10 +5,12 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
-import ChatView from './ChatView';
+import ChatView, { CodeViewState } from './ChatView';
 import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
-import { getKnowledgeBaseContent } from './QuizEditor';
+import { getKnowledgeBaseContent, extractTextFromBlocks } from './QuizEditor';
+import { CodePreview } from './CodeEditorView';
+import isEqual from 'lodash/isEqual';
 
 export interface LearnerQuizViewProps {
     questions: QuizQuestion[];
@@ -16,7 +18,6 @@ export interface LearnerQuizViewProps {
     isDarkMode?: boolean;
     className?: string;
     readOnly?: boolean;
-    showCorrectAnswers?: boolean;
     taskType?: 'quiz' | 'exam';
     currentQuestionId?: string;
     onQuestionChange?: (questionId: string) => void;
@@ -33,7 +34,6 @@ export default function LearnerQuizView({
     isDarkMode = true,
     className = "",
     readOnly = false,
-    showCorrectAnswers = false,
     taskType = 'quiz',
     currentQuestionId,
     onQuestionChange,
@@ -74,9 +74,10 @@ export default function LearnerQuizView({
                         inputType: 'text',
                         responseType: 'chat',
                         questionType: 'objective',
-                        correctAnswer: "",
+                        correctAnswer: [],
                         audioMaxDuration: 120, // Default to 2 minutes
-                        scorecardData: undefined
+                        scorecardData: undefined,
+                        codingLanguages: [] // Default code language
                     }
                 };
             }
@@ -89,9 +90,10 @@ export default function LearnerQuizView({
                     inputType: q.config?.inputType || 'text',
                     responseType: q.config?.responseType,
                     questionType: q.config?.questionType,
-                    correctAnswer: q.config?.correctAnswer || "",
+                    correctAnswer: q.config?.correctAnswer || [],
                     audioMaxDuration: q.config?.audioMaxDuration || 120,
-                    scorecardData: q.config?.scorecardData
+                    scorecardData: q.config?.scorecardData,
+                    codingLanguages: q.config?.codingLanguages || [] // Ensure code language is set
                 };
                 return {
                     ...q,
@@ -110,9 +112,10 @@ export default function LearnerQuizView({
                         inputType: config.inputType || 'text',
                         responseType: config.responseType,
                         questionType: config.questionType,
-                        correctAnswer: config.correctAnswer || "",
+                        correctAnswer: config.correctAnswer || [],
                         audioMaxDuration: config.audioMaxDuration || 120,
-                        scorecardData: config.scorecardData
+                        scorecardData: config.scorecardData,
+                        codingLanguages: config.codingLanguages || [] // Ensure code language is set
                     }
                 };
             }
@@ -127,9 +130,10 @@ export default function LearnerQuizView({
                     inputType: config.inputType || 'text',
                     responseType: config.responseType,
                     questionType: config.questionType,
-                    correctAnswer: config.correctAnswer || "",
+                    correctAnswer: config.correctAnswer || [],
                     audioMaxDuration: config.audioMaxDuration || 120,
-                    scorecardData: config.scorecardData
+                    scorecardData: config.scorecardData,
+                    codingLanguages: config.codingLanguages || [] // Ensure code language is set
                 }
             };
         });
@@ -631,7 +635,7 @@ export default function LearnerQuizView({
     const processUserResponse = useCallback(
         async (
             responseContent: string,
-            responseType: 'text' | 'audio' = 'text',
+            responseType: 'text' | 'audio' | 'code' = 'text',
             audioData?: string
         ) => {
             if (!validQuestions || validQuestions.length === 0 || currentQuestionIndex >= validQuestions.length) {
@@ -654,6 +658,14 @@ export default function LearnerQuizView({
                 scorecard: []
             };
 
+            // Handle code type message differently for UI display
+            // Only set messageType to 'code' when it actually comes from the code editor
+            // or when the responseType is explicitly set to 'code'
+            if (responseType === 'code') {
+                userMessage.messageType = 'code';
+            }
+            // Don't automatically convert text messages to code messages for coding questions
+
             // Immediately add the user's message to chat history
             setChatHistories(prev => ({
                 ...prev,
@@ -661,7 +673,7 @@ export default function LearnerQuizView({
             }));
 
             // Clear the input field after submission (only for text input)
-            if (responseType === 'text') {
+            if (responseType === 'text' || responseType === 'code') {
                 setCurrentAnswer("");
                 currentAnswerRef.current = "";
 
@@ -749,27 +761,19 @@ export default function LearnerQuizView({
                 requestBody = {
                     user_response: responseType === 'audio' ? audioData : responseContent,
                     ...(responseType === 'audio' && { response_type: "audio" }),
+                    ...(responseType === 'code' && { response_type: "code" }),
                     chat_history: formattedChatHistory,
                     question: {
                         "blocks": validQuestions[currentQuestionIndex].content,
                         "response_type": validQuestions[currentQuestionIndex].config.responseType,
-                        "answer": validQuestions[currentQuestionIndex].config.correctAnswer || "",
+                        "answer": validQuestions[currentQuestionIndex].config.correctAnswer,
                         "type": validQuestions[currentQuestionIndex].config.questionType,
                         "input_type": responseType,
                         "scorecard": scorecard,
+                        "coding_languages": validQuestions[currentQuestionIndex].config.codingLanguages,
                         "context": getKnowledgeBaseContent(validQuestions[currentQuestionIndex].config as QuizQuestionConfig)
                     }
                 };
-
-                // Log the question data for debugging purposes (only for text input)
-                if (responseType === 'text') {
-                    console.log("Test mode question data:", {
-                        questionId: currentQuestionId,
-                        blocks: validQuestions[currentQuestionIndex].content,
-                        answer: validQuestions[currentQuestionIndex].config.correctAnswer || "",
-                        has_answer: !!validQuestions[currentQuestionIndex].config.correctAnswer
-                    });
-                }
             } else {
                 // In normal mode, send question_id and user_id
                 requestBody = {
@@ -1165,14 +1169,14 @@ export default function LearnerQuizView({
     );
 
     // Modified handleSubmitAnswer function to use shared logic
-    const handleSubmitAnswer = useCallback(() => {
+    const handleSubmitAnswer = useCallback((responseType: 'text' | 'code' = 'text') => {
         // Get the current answer from the ref
         const answer = currentAnswerRef.current;
 
         if (!answer.trim()) return;
 
         // Use the shared processing function
-        processUserResponse(answer);
+        processUserResponse(answer, responseType);
     }, [processUserResponse]);
 
     // New function to handle audio submission using shared logic
@@ -1551,14 +1555,72 @@ export default function LearnerQuizView({
         }
     }, [isAiResponding, onAiRespondingChange]);
 
+    // Add new state for code view
+    const [codeViewState, setCodeViewState] = useState<CodeViewState>({
+        isViewingCode: false,
+        isRunning: false,
+        previewContent: '',
+        output: '',
+        hasWebLanguages: false
+    });
+
+    // Handle code view state changes from ChatView
+    const handleCodeStateChange = (newState: CodeViewState) => {
+        // Only update state if there are actual changes to prevent infinite loops
+        setCodeViewState(prevState => {
+            // Return previous state if new state is deeply equal to prevent unnecessary updates
+            if (isEqual(prevState, newState)) {
+                return prevState;
+            }
+            return newState;
+        });
+    };
+
+    // Determine if we should show the 3-column layout
+    const isCodeQuestion = useMemo(() => {
+        if (!validQuestions || validQuestions.length === 0) return false;
+        return validQuestions[currentQuestionIndex]?.config?.questionType === 'coding';
+    }, [validQuestions, currentQuestionIndex]);
+
     return (
         <div className={`w-full h-full ${className}`}>
             {/* Add the custom styles */}
             <style jsx>{customStyles}</style>
+            <style jsx>{`
+                .three-column-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 0.75fr;
+                    height: 100%;
+                }
+                
+                .two-column-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    height: 100%;
+                }
+                
+                .preview-placeholder {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100%;
+                    background-color: #1A1A1A;
+                    color: #666666;
+                    font-size: 0.9rem;
+                    text-align: center;
+                    padding: 1rem;
+                }
+                
+                .preview-placeholder svg {
+                    margin-bottom: 1rem;
+                    opacity: 0.5;
+                }
+            `}</style>
 
-            <div className="flex h-full bg-[#111111] rounded-md overflow-hidden">
-                {/* Left side - Question (50%) */}
-                <div className="w-1/2 p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A]">
+            <div className={`rounded-md overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} bg-[#111111]`}>
+                {/* Left side - Question (33% or 50% depending on layout) */}
+                <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A]">
                     {/* Navigation controls at the top of left side - only show if more than one question */}
                     {validQuestions.length > 1 ? (
                         <div className="flex items-center justify-between w-full mb-6">
@@ -1610,8 +1672,8 @@ export default function LearnerQuizView({
                     </div>
                 </div>
 
-                {/* Right side - Chat or Scorecard View (50%) */}
-                <div className="w-1/2 flex flex-col bg-[#111111] h-full overflow-hidden">
+                {/* Middle column - Chat/Code View */}
+                <div className="flex flex-col bg-[#111111] h-full overflow-hidden">
                     {isViewingScorecard ? (
                         /* Use the ScorecardView component */
                         <ScorecardView
@@ -1640,9 +1702,33 @@ export default function LearnerQuizView({
                             completedQuestionIds={completedQuestionIds}
                             currentQuestionId={validQuestions[currentQuestionIndex]?.id}
                             handleRetry={handleRetry}
+                            onCodeStateChange={handleCodeStateChange}
+                            initialIsViewingCode={isCodeQuestion}
                         />
                     )}
                 </div>
+
+                {/* Third column - Code Preview (only shown for coding questions) */}
+                {isCodeQuestion && codeViewState.isViewingCode && (
+                    <div className="border-l border-[#222222] bg-[#111111] h-full overflow-hidden">
+                        {codeViewState.previewContent || codeViewState.output ? (
+                            <CodePreview
+                                isRunning={codeViewState.isRunning}
+                                previewContent={codeViewState.previewContent}
+                                output={codeViewState.output}
+                                isWebPreview={codeViewState.hasWebLanguages}
+                            />
+                        ) : (
+                            <div className="preview-placeholder">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14 4L18 8M18 8V18M18 8H8M6 20L10 16M10 16H20M10 16V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                <p>Run your code to see the preview here.</p>
+                                <p className="text-xs mt-2">For HTML/CSS/JavaScript, you will see a live preview. For other languages, you will see the console output.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Navigation Confirmation Dialog */}

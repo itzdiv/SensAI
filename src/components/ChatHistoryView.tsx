@@ -1,6 +1,52 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, ScorecardItem } from '../types/quiz';
 
+// Code message display component
+const CodeMessageDisplay = ({ code, language }: { code: string, language?: string }) => {
+    // Check if the code contains language headers (e.g., "// JAVASCRIPT", "// HTML", etc.)
+    const hasLanguageHeaders = code.includes('// ') && code.includes('\n');
+
+    if (hasLanguageHeaders) {
+        // Split the code by language sections
+        const sections = code.split(/\/\/ ([A-Z]+)\n/).filter(Boolean);
+
+        // Create an array of [language, code] pairs
+        const languageSections = [];
+        for (let i = 0; i < sections.length; i += 2) {
+            if (i + 1 < sections.length) {
+                languageSections.push([sections[i], sections[i + 1]]);
+            }
+        }
+
+        return (
+            <div className="w-full rounded bg-[#1D1D1D] overflow-hidden">
+                {languageSections.map(([lang, codeSection], index) => (
+                    <div key={index} className="mb-2 last:mb-0">
+                        <div className="flex items-center justify-between bg-[#2D2D2D] px-3 py-1.5 text-xs text-gray-300">
+                            <span>{lang}</span>
+                        </div>
+                        <pre className="p-3 overflow-x-auto text-xs text-gray-200">
+                            <code>{codeSection}</code>
+                        </pre>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    // If no language headers, display as a single code block
+    return (
+        <div className="w-full rounded bg-[#1D1D1D] overflow-hidden">
+            <div className="flex items-center justify-between bg-[#2D2D2D] px-3 py-1.5 text-xs text-gray-300">
+                <span>{language || 'code'}</span>
+            </div>
+            <pre className="p-3 overflow-x-auto text-xs text-gray-200">
+                <code>{code}</code>
+            </pre>
+        </div>
+    );
+};
+
 interface ChatHistoryViewProps {
     chatHistory: ChatMessage[];
     onViewScorecard: (scorecard: ScorecardItem[]) => void;
@@ -216,7 +262,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             <div
-                                className={`rounded-2xl px-4 py-2 ${message.messageType === 'audio' ? 'w-[75%]' : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`}`}
+                                className={`rounded-2xl px-4 py-2 ${message.messageType === 'audio'
+                                    ? 'w-[75%]'
+                                    : message.messageType === 'code'
+                                        ? 'bg-[#282828] text-white w-[90%]'
+                                        : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`
+                                    }`}
                             >
                                 {message.messageType === 'audio' && message.audioData ? (
                                     <div className="flex flex-col space-y-2">
@@ -226,6 +277,16 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                             src={`data:audio/wav;base64,${message.audioData}`}
                                         />
                                     </div>
+                                ) : message.messageType === 'code' ? (
+                                    <CodeMessageDisplay
+                                        code={message.content}
+                                        language={
+                                            Array.isArray(currentQuestionConfig?.codingLanguages) &&
+                                                currentQuestionConfig?.codingLanguages.length > 0
+                                                ? currentQuestionConfig?.codingLanguages[0]
+                                                : undefined
+                                        }
+                                    />
                                 ) : (
                                     <div>
                                         <p className="text-sm break-words whitespace-normal break-anywhere">{message.content}</p>

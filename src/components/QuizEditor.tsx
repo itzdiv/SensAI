@@ -20,7 +20,7 @@ import ScorecardPickerDialog, { CriterionData, ScorecardTemplate } from "./Score
 // Import the new Scorecard component
 import Scorecard, { ScorecardHandle } from "./Scorecard";
 // Import dropdown options
-import { questionTypeOptions, answerTypeOptions } from "./dropdownOptions";
+import { questionTypeOptions, answerTypeOptions, codingLanguageOptions } from "./dropdownOptions";
 // Import quiz types
 import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
 // Add import for LearningMaterialLinker
@@ -233,9 +233,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                             // Map API question type to local questionType
                             const questionType = question.type;
 
-
-                            // Create correct answer blocks from the answer text if it exists
-                            const correctAnswerBlocks = [
+                            // Use answer blocks directly from the API if available,
+                            // otherwise create a default paragraph block
+                            const correctAnswer = (question.answer ? question.answer : [
                                 {
                                     type: "paragraph",
                                     content: [
@@ -246,7 +246,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         }
                                     ]
                                 }
-                            ];
+                            ]);
 
                             // Handle scorecard data if scorecard_id is present
                             let scorecardData = undefined;
@@ -289,12 +289,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 config: {
                                     inputType: question.input_type || 'text' as 'text' | 'code' | 'audio',
                                     responseType: question.response_type,
-                                    correctAnswer: question.answer || '',
-                                    correctAnswerBlocks: correctAnswerBlocks,
+                                    correctAnswer: correctAnswer,
                                     questionType: questionType as 'objective' | 'subjective' | 'coding',
                                     scorecardData: scorecardData,
                                     knowledgeBaseBlocks: knowledgeBaseBlocks,
-                                    linkedMaterialIds: linkedMaterialIds
+                                    linkedMaterialIds: linkedMaterialIds,
+                                    codingLanguages: question.coding_languages || []
                                 }
                             };
                         });
@@ -463,11 +463,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
      * @returns True if correct answer exists and is non-empty, false otherwise
      */
     const validateCorrectAnswer = useCallback((questionConfig: QuizQuestionConfig) => {
-        if (questionConfig.correctAnswerBlocks && questionConfig.correctAnswerBlocks.length > 0) {
-            const textContent = extractTextFromBlocks(questionConfig.correctAnswerBlocks);
+        if (questionConfig.correctAnswer && questionConfig.correctAnswer.length > 0) {
+            const textContent = extractTextFromBlocks(questionConfig.correctAnswer);
             return textContent.trim().length > 0;
-        } else if (questionConfig.correctAnswer) {
-            return questionConfig.correctAnswer.trim().length > 0;
         }
         return false;
     }, []);
@@ -843,7 +841,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             ...updatedQuestions[currentQuestionIndex],
             config: {
                 ...updatedQuestions[currentQuestionIndex].config,
-                correctAnswerBlocks: content
+                correctAnswer: content
             }
         };
         setQuestions(updatedQuestions);
@@ -899,22 +897,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             onChange(updatedQuestions);
         }
     }, [questions, currentQuestionIndex, schoolScorecards, onChange]);
-
-    // Function to get current correct answer text from editor
-    const extractCurrentCorrectAnswer = useCallback(() => {
-        if (!correctAnswerEditorRef.current) return "";
-
-        try {
-            const blocks = correctAnswerEditorRef.current.document;
-            if (blocks && blocks.length > 0) {
-                return extractTextFromBlocks(blocks);
-            }
-        } catch (e) {
-            console.error("Error extracting text from correct answer editor:", e);
-        }
-
-        return "";
-    }, []);
 
     // Add a new question
     const addQuestion = useCallback(() => {
@@ -1078,7 +1060,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     };
 
-    // Modified handleConfirmPublish to extract correct answer at publish time
+    // Modified handleConfirmPublish to send raw blocks of the correct answer
     const handleConfirmPublish = async () => {
         if (!taskId) {
             console.error("Cannot publish: taskId is not provided");
@@ -1095,20 +1077,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const currentTitle = dialogTitleElement?.textContent || '';
 
             // Format questions for the API
-            const formattedQuestions = questions.map((question, index) => {
-                let correctAnswerText = "";
-
-                // If this is the current question, extract directly from the editor
-                if (index === currentQuestionIndex) {
-                    correctAnswerText = extractCurrentCorrectAnswer();
-                } else if (question.config.correctAnswerBlocks) {
-                    // For other questions, extract from stored blocks if available
-                    correctAnswerText = extractTextFromBlocks(question.config.correctAnswerBlocks);
-                } else if (question.config.correctAnswer) {
-                    // Fallback to stored text answer
-                    correctAnswerText = question.config.correctAnswer;
-                }
-
+            const formattedQuestions = questions.map((question) => {
                 // Map questionType to API type
                 const questionType = question.config.questionType;
                 // Map inputType
@@ -1140,10 +1109,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 // Return the formatted question object for all questions, not just those with scorecards
                 return {
                     blocks: question.content,
-                    answer: correctAnswerText,
+                    answer: question.config.correctAnswer || [],
                     input_type: inputType,
                     response_type: questionType === 'subjective' ? "report" : "chat",
-                    coding_languages: null,
+                    coding_languages: question.config.codingLanguages || [],
                     generation_model: null,
                     type: questionType,
                     max_attempts: taskType === 'exam' ? 1 : null,
@@ -1209,7 +1178,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     };
 
-    // Modified handleSave for edit mode to extract correct answer at save time
+    // Modified handleSave for edit mode to send raw blocks of the correct answer
     const handleSave = async () => {
         if (!taskId) {
             console.error("Cannot save: taskId is not provided");
@@ -1222,22 +1191,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const currentTitle = dialogTitleElement?.textContent || '';
 
             // Format questions for the API
-            const formattedQuestions = questions.map((question, index) => {
-                let correctAnswerText = "";
-
-                // If this is the current question, extract directly from the editor
-                if (question.config.correctAnswerBlocks) {
-                    // For other questions, extract from stored blocks if available
-                    correctAnswerText = extractTextFromBlocks(question.config.correctAnswerBlocks);
-                    console.log(correctAnswerText)
-                } else if (question.config.correctAnswer) {
-                    // Fallback to stored text answer
-                    correctAnswerText = question.config.correctAnswer;
-                    console.log(correctAnswerText)
-                }
-
-                console.log(correctAnswerText)
-
+            const formattedQuestions = questions.map((question) => {
                 // Map questionType to API type
                 const questionType = question.config.questionType;
 
@@ -1248,7 +1202,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 return {
                     id: question.id,
                     blocks: question.content,
-                    answer: correctAnswerText,
+                    answer: question.config.correctAnswer || [],
+                    coding_languages: question.config.codingLanguages || [],
                     type: questionType,
                     input_type: inputType,
                     context: getKnowledgeBaseContent(question.config)
@@ -1356,19 +1311,16 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Update the MemoizedLearnerQuizView to include the correct answer
     const MemoizedLearnerQuizView = useMemo(() => {
-        // Extract the current correct answer before passing to preview
-        let questionsWithCorrectAnswers = questions;
-
-        // No validation checks - directly use the questions array and update the current answer
+        // No validation checks - directly use the questions array
         // Make a deep copy of questions
-        questionsWithCorrectAnswers = JSON.parse(JSON.stringify(questions));
+        let questionsWithCorrectAnswers = JSON.parse(JSON.stringify(questions));
 
-        // Update the current question with the latest correct answer if possible
+        // Update the current question with the latest correct answer blocks if possible
         if (correctAnswerEditorRef.current && currentQuestionIndex >= 0 && currentQuestionIndex < questionsWithCorrectAnswers.length) {
-            const currentCorrectAnswer = extractCurrentCorrectAnswer();
+            const currentCorrectAnswer = correctAnswerEditorRef.current.document || [];
             questionsWithCorrectAnswers[currentQuestionIndex].config = {
                 ...questionsWithCorrectAnswers[currentQuestionIndex].config,
-                correctAnswer: currentCorrectAnswer || questionsWithCorrectAnswers[currentQuestionIndex].config.correctAnswer || "",
+                correctAnswer: currentCorrectAnswer
             };
         }
 
@@ -1393,7 +1345,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 isTestMode={true}
             />
         );
-    }, [questions, isDarkMode, readOnly, onSubmitAnswer, taskType, activeQuestionId, userId, currentQuestionIndex, extractCurrentCorrectAnswer]);
+    }, [questions, isDarkMode, readOnly, onSubmitAnswer, taskType, activeQuestionId, userId, currentQuestionIndex]);
 
     // Define dropdown options
     // Now removed and imported from dropdownOptions.ts
@@ -1407,6 +1359,56 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         return answerTypeOptions.find(option => option.value === type) || answerTypeOptions[0];
     }, []);
 
+    // Handle question type change
+    const handleQuestionTypeChange = useCallback((option: DropdownOption | DropdownOption[]) => {
+        // We know this is a single-select dropdown
+        if (!Array.isArray(option)) {
+            setSelectedQuestionType(option);
+
+            // Update the question config with the new question type
+            handleConfigChange({
+                questionType: option.value as 'objective' | 'subjective' | 'coding',
+                responseType: option.value === 'subjective' ? 'report' : 'chat'
+            });
+
+            // Set active tab to question whenever question type changes
+            setActiveEditorTab('question');
+        }
+    }, [handleConfigChange]);
+
+    // Handle answer type change
+    const handleAnswerTypeChange = useCallback((option: DropdownOption | DropdownOption[]) => {
+        // We know this is a single-select dropdown
+        if (!Array.isArray(option)) {
+            setSelectedAnswerType(option);
+
+            // Update the question config with the new input type
+            handleConfigChange({
+                inputType: option.value as 'text' | 'code' | 'audio'
+            });
+
+            // Ensure question state is updated immediately in case we save right after changing
+            console.log(`Answer type changed to: ${option.value}`);
+        }
+    }, [handleConfigChange]);
+
+    // Handle coding language change
+    const handleCodingLanguageChange = useCallback((option: DropdownOption | DropdownOption[]) => {
+        // Cast to array since we know this is a multiselect dropdown
+        const selectedOptions = Array.isArray(option) ? option : [option];
+        setSelectedCodingLanguages(selectedOptions);
+
+        // Update the question config with the selected coding languages
+        handleConfigChange({
+            codingLanguages: selectedOptions.map(opt => opt.value)
+        });
+    }, [handleConfigChange]);
+
+    // State for type dropdown
+    const [selectedQuestionType, setSelectedQuestionType] = useState<DropdownOption>(questionTypeOptions[0]);
+    const [selectedAnswerType, setSelectedAnswerType] = useState<DropdownOption>(answerTypeOptions[0]);
+    const [selectedCodingLanguages, setSelectedCodingLanguages] = useState<DropdownOption[]>([codingLanguageOptions[0]]);
+
     // Update the selected options based on the current question's config
     useEffect(() => {
         if (questions.length > 0 && currentQuestionIndex >= 0 && currentQuestionIndex < questions.length) {
@@ -1417,39 +1419,18 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             // Set answer type based on config.inputType or default to 'text'
             setSelectedAnswerType(getAnswerTypeOption(currentConfig.inputType));
+
+            // Set coding languages based on config.codingLanguages or default to first option
+            if (currentConfig.codingLanguages && currentConfig.codingLanguages.length > 0) {
+                const selectedLanguages = currentConfig.codingLanguages.map((langValue: string) => {
+                    return codingLanguageOptions.find(opt => opt.value === langValue) || codingLanguageOptions[0];
+                }).filter(Boolean);
+                setSelectedCodingLanguages(selectedLanguages.length > 0 ? selectedLanguages : [codingLanguageOptions[0]]);
+            } else {
+                setSelectedCodingLanguages([]);
+            }
         }
     }, [currentQuestionIndex, questions, getQuestionTypeOption, getAnswerTypeOption]);
-
-    // Handle question type change
-    const handleQuestionTypeChange = useCallback((option: DropdownOption) => {
-        setSelectedQuestionType(option);
-
-        // Update the question config with the new question type
-        handleConfigChange({
-            questionType: option.value as 'objective' | 'subjective' | 'coding',
-            responseType: option.value === 'subjective' ? 'report' : 'chat'
-        });
-
-        // Set active tab to question whenever question type changes
-        setActiveEditorTab('question');
-    }, [handleConfigChange]);
-
-    // Handle answer type change
-    const handleAnswerTypeChange = useCallback((option: DropdownOption) => {
-        setSelectedAnswerType(option);
-
-        // Update the question config with the new input type
-        handleConfigChange({
-            inputType: option.value as 'text' | 'code' | 'audio'
-        });
-
-        // Ensure question state is updated immediately in case we save right after changing
-        console.log(`Answer type changed to: ${option.value}`);
-    }, [handleConfigChange]);
-
-    // State for type dropdown
-    const [selectedQuestionType, setSelectedQuestionType] = useState<DropdownOption>(questionTypeOptions[0]);
-    const [selectedAnswerType, setSelectedAnswerType] = useState<DropdownOption>(answerTypeOptions[0]);
 
     // Helper function to check if a scorecard is a published scorecard
     const isPublishedScorecard = (scorecardData: ScorecardTemplate): boolean => {
@@ -1647,17 +1628,31 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         </div>
                                     )}
 
-
-                                    <div className="mb-4 flex items-center">
-                                        <Dropdown
-                                            icon={<Pen size={16} />}
-                                            title="Answer Type"
-                                            options={answerTypeOptions}
-                                            selectedOption={selectedAnswerType}
-                                            onChange={handleAnswerTypeChange}
-                                            disabled={readOnly}
-                                        />
-                                    </div>
+                                    {selectedQuestionType.value !== 'coding' ? (
+                                        <div className="mb-4 flex items-center">
+                                            <Dropdown
+                                                icon={<Pen size={16} />}
+                                                title="Answer Type"
+                                                options={answerTypeOptions}
+                                                selectedOption={selectedAnswerType}
+                                                onChange={handleAnswerTypeChange}
+                                                disabled={readOnly}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="mb-4 flex items-center">
+                                            <Dropdown
+                                                icon={<Pen size={16} />}
+                                                title="Languages"
+                                                options={codingLanguageOptions}
+                                                selectedOptions={selectedCodingLanguages}
+                                                onChange={handleCodingLanguageChange}
+                                                disabled={readOnly}
+                                                multiselect={true}
+                                                placeholder="Select one or more languages"
+                                            />
+                                        </div>
+                                    )}
 
                                 </div>
 
@@ -1674,7 +1669,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             <HelpCircle size={16} className="mr-2" />
                                             Question
                                         </button>
-                                        {selectedQuestionType.value === 'objective' ? (
+                                        {selectedQuestionType.value !== 'subjective' ? (
                                             <button
                                                 className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'answer'
                                                     ? 'bg-[#333333] text-white'
@@ -1746,7 +1741,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         >
                                             <BlockNoteEditor
                                                 key={`correct-answer-editor-${currentQuestionIndex}`}
-                                                initialContent={currentQuestionConfig.correctAnswerBlocks}
+                                                initialContent={currentQuestionConfig.correctAnswer}
                                                 onChange={handleCorrectAnswerChange}
                                                 isDarkMode={isDarkMode}
                                                 readOnly={readOnly}

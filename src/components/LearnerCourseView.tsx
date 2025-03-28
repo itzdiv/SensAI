@@ -324,7 +324,9 @@ export default function LearnerCourseView({
                         config: {
                             inputType: q.input_type,
                             responseType: q.response_type,
-                            correctAnswer: q.answer || ''
+                            correctAnswer: q.answer,
+                            questionType: q.type,
+                            codingLanguages: q.coding_languages || []
                         }
                     };
                 });
