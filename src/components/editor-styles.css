@@ -489,14 +489,14 @@ div[role="dialog"]>div {
 }
 
 /* Hide all UI elements in the correct answer editor */
-.correct-answer-editor .bn-container [role="toolbar"],
+/* .correct-answer-editor .bn-container [role="toolbar"],
 .correct-answer-editor .bn-toolbar,
 .correct-answer-editor .bn-side-menu,
 .correct-answer-editor .bn-slash-menu,
 .correct-answer-editor .bn-file-panel,
 .correct-answer-editor .bn-link-toolbar {
     display: none !important;
-}
+} */
 
 /* Make the correct answer editor more compact */
 .correct-answer-editor .ProseMirror {

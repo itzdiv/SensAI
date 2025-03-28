@@ -193,12 +193,10 @@ export default function CourseModuleList({
                 for (const selector of selectors) {
                     const el = document.querySelector(selector);
                     if (el instanceof HTMLElement) {
-                        console.log('Found and focusing editor element:', selector);
                         el.focus();
                         return; // Exit once we've focused an element
                     }
                 }
-                console.log('Could not find editor element to focus');
             } catch (err) {
                 console.error('Error focusing editor:', err);
             }

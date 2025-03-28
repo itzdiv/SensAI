@@ -96,6 +96,8 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     inputType: 'text',
     responseType: 'chat',
     questionType: 'objective',
+    knowledgeBaseBlocks: [],
+    linkedMaterialIds: [],
 };
 
 // Add TaskData interface at the top of the file with the other interfaces
