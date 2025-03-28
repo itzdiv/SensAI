@@ -501,7 +501,7 @@ div[role="dialog"]>div {
 /* Make the correct answer editor more compact */
 .correct-answer-editor .ProseMirror {
     min-height: 100px !important;
-    max-height: 400px !important;
+    max-height: 600px !important;
     overflow-y: auto !important;
 }
 
@@ -527,7 +527,7 @@ div[role="dialog"]>div {
 /* Make the quiz question editor have a max height with scroll */
 .quiz-editor .ProseMirror {
     min-height: 100px !important;
-    max-height: 400px !important;
+    max-height: 600px !important;
     overflow-y: auto !important;
 }
 
