@@ -67,6 +67,11 @@ export default function LearningStreak({ streakDays, activeDays }: LearningStrea
 
     // Function to check if a day is active based on index
     const isDayActive = (index: number): boolean => {
+        // If the day is in the future (after the current day at index 3), it should never be active
+        if (index > 3) {
+            return false;
+        }
+
         // Get the identifier for this position
         const identifier = dayToIdentifierMap[index];
         return activeDays.includes(identifier);
