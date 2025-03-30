@@ -1,0 +1,480 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Trash2, Plus, Mail, Upload, X } from "lucide-react";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
+import Toast from "@/components/Toast";
+
+interface Member {
+    id: number;
+    email: string;
+    role: 'learner' | 'mentor';
+}
+
+interface Cohort {
+    id: number;
+    name: string;
+    members: Member[];
+}
+
+interface EmailInput {
+    id: string;
+    email: string;
+    error?: string;
+}
+
+interface InviteModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (emails: string[]) => Promise<void>;
+    submitButtonText: string;
+    isSubmitting: boolean;
+    role: 'learner' | 'mentor';
+}
+
+interface CohortMemberManagementProps {
+    cohort: Cohort;
+    role: 'learner' | 'mentor';
+    cohortId: string;
+    onShowToast: (title: string, description: string, emoji: string) => void;
+    updateCohort: (updatedMembers: Member[]) => void;
+}
+
+function InviteModal({
+    isOpen,
+    onClose,
+    onSubmit,
+    submitButtonText,
+    isSubmitting,
+    role
+}: InviteModalProps) {
+    const [emailInputs, setEmailInputs] = useState<EmailInput[]>([{ id: '1', email: '' }]);
+    const [focusedInputId, setFocusedInputId] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+    const [newlyAddedId, setNewlyAddedId] = useState<string | null>(null);
+
+    // Effect to focus and scroll to newly added inputs
+    useEffect(() => {
+        if (!newlyAddedId || !isOpen) return;
+
+        // Focus the input
+        const inputElement = inputRefs.current[newlyAddedId];
+        if (inputElement) {
+            setTimeout(() => {
+                inputElement.focus();
+
+                // Scroll the container to show the new input
+                if (scrollContainerRef.current) {
+                    const containerRect = scrollContainerRef.current.getBoundingClientRect();
+                    const inputRect = inputElement.getBoundingClientRect();
+
+                    // If the input is below the visible area, scroll to it
+                    if (inputRect.bottom > containerRect.bottom) {
+                        inputElement.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }
+                }
+            }, 50); // Small delay to ensure the DOM is updated
+        }
+
+        // Reset the newly added id
+        setNewlyAddedId(null);
+    }, [newlyAddedId, isOpen]);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async () => {
+        const newInputs = emailInputs.map(input => ({
+            ...input,
+            error: !input.email.trim() ? 'Email is required' :
+                !validateEmail(input.email.trim()) ? 'Invalid email' :
+                    undefined
+        }));
+        setEmailInputs(newInputs);
+
+        if (!newInputs.some(input => input.error)) {
+            const validEmails = newInputs
+                .filter(input => input.email.trim())
+                .map(input => input.email.trim());
+
+            try {
+                await onSubmit(validEmails);
+                setEmailInputs([{ id: '1', email: '' }]);
+                onClose();
+            } catch (error) {
+                console.error(`Failed to add ${role}s:`, error);
+                // Errors are now handled in the parent component through the rejected Promise
+            }
+        }
+    };
+
+    return (
+        <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={onClose}
+        >
+            <div
+                className={`w-full max-w-lg bg-[#1A1A1A] rounded-lg shadow-2xl py-2`}
+                onClick={e => e.stopPropagation()}
+            >
+
+                <div className="px-6 py-4">
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`flex items-center gap-4 text-gray-400 hover:text-white transition-colors cursor-pointer w-full mb-4 bg-[#0A0A0A] rounded-lg p-4 pr-2 border border-dashed border-[#0A0A0A] hover:border-white hover:bg-[#111] focus:outline-none group`}
+                    >
+                        <div className="w-12 h-12 rounded-full bg-[#1A1A1A] flex items-center justify-center">
+                            <Upload size={20} className="text-gray-400 group-hover:text-white transition-colors" />
+                        </div>
+                        <div className="flex flex-col items-start">
+                            <span className={`text-white text-base font-light`}>Import CSV</span>
+                            <span className={`text-gray-400 text-sm`}>Upload a CSV file with one email per row</span>
+                        </div>
+                    </button>
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".csv"
+                        className="hidden"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    const text = event.target?.result as string;
+                                    const emails = text.split(/\r?\n/).filter(email => email.trim());
+                                    const newInputs = emails.map((email, index) => ({
+                                        id: Math.random().toString(),
+                                        email: email.trim(),
+                                        error: validateEmail(email.trim()) ? undefined : 'Invalid email'
+                                    }));
+                                    setEmailInputs(newInputs);
+                                };
+                                reader.readAsText(file);
+                            }
+                        }}
+                    />
+
+                    <div
+                        ref={scrollContainerRef}
+                        className="max-h-[300px] overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent"
+                    >
+                        {emailInputs.map((input, index) => (
+                            <div key={input.id} className="flex items-center gap-2">
+                                <div className="flex-1">
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                            <Mail
+                                                size={18}
+                                                className={`transition-colors ${focusedInputId === input.id ? 'text-white' : 'text-gray-500'}`}
+                                            />
+                                        </div>
+                                        <input
+                                            ref={el => {
+                                                inputRefs.current[input.id] = el;
+                                            }}
+                                            type="email"
+                                            value={input.email}
+                                            onChange={(e) => {
+                                                const newInputs = [...emailInputs];
+                                                newInputs[index].email = e.target.value;
+                                                newInputs[index].error = validateEmail(e.target.value) ? undefined : 'Invalid email';
+                                                setEmailInputs(newInputs);
+                                            }}
+                                            onFocus={() => setFocusedInputId(input.id)}
+                                            onBlur={() => setFocusedInputId(null)}
+                                            placeholder="Enter email address"
+                                            className={`w-full bg-[#0A0A0A] pl-10 pr-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none ${input.error && focusedInputId !== input.id
+                                                ? 'border-2 border-red-500'
+                                                : focusedInputId === input.id
+                                                    ? 'border border-white'
+                                                    : 'border-0'
+                                                } focus:border focus:!border-white focus:ring-0 transition-all duration-0`}
+                                        />
+                                    </div>
+                                    {input.error && focusedInputId !== input.id && (
+                                        <p className="text-red-500 text-sm mt-1">{input.error}</p>
+                                    )}
+                                </div>
+                                {emailInputs.length > 1 && (
+                                    <button
+                                        onClick={() => {
+                                            setEmailInputs(emailInputs.filter(e => e.id !== input.id));
+                                        }}
+                                        className="text-gray-400 hover:text-white transition-colors p-2 cursor-pointer focus:outline-none self-start mt-1.5"
+                                    >
+                                        <Trash2 size={20} />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            const newId = Math.random().toString();
+                            setEmailInputs([...emailInputs, { id: newId, email: '' }]);
+                            setFocusedInputId(newId);
+                            setNewlyAddedId(newId);
+                        }}
+                        className={`flex items-center gap-2 text-gray-400 hover:text-white w-full py-3 px-4 rounded-lg transition-colors mt-2 cursor-pointer focus:outline-none hover:bg-[#111]`}
+                    >
+                        <Plus size={20} />
+                        <span>Add another email</span>
+                    </button>
+                </div>
+
+                <div className={`flex justify-end gap-4 px-6 py-4`}>
+                    <button
+                        onClick={() => {
+                            onClose();
+                            setEmailInputs([{ id: '1', email: '' }]);
+                        }}
+                        className="px-4 py-2 text-gray-400 hover:text-white transition-colors font-light cursor-pointer focus:outline-none"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                        {isSubmitting ? (role === 'learner' ? 'Inviting...' : 'Adding...') : submitButtonText}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+export default function CohortMemberManagement({ cohort, role, cohortId, onShowToast, updateCohort }: CohortMemberManagementProps) {
+
+    const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+    const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
+
+    // Get filtered members based on role
+    const members = cohort?.members?.filter(member => member.role === role) || [];
+
+    // Text content that changes based on role
+    const roleText = {
+        title: role === 'learner' ? 'Start building your cohort' : 'Guide your learners',
+        description: role === 'learner' ? 'Create a group of learners who will take your course together' : 'Add mentors to support and inspire your learners',
+        buttonText: role === 'learner' ? 'Add Learners' : 'Add Mentors',
+        modalTitle: role === 'learner' ? 'Invite Learners' : 'Invite Mentors',
+        successToastTitle: 'Bumping it up',
+        successToastEmoji: role === 'learner' ? '📧' : '👩‍🏫',
+    };
+
+    const handleDeleteMember = (member: Member) => {
+        setMemberToDelete(member);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    const confirmDeleteMember = async () => {
+        if (!memberToDelete || !cohortId) return;
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/members`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    member_ids: [memberToDelete.id]
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to delete member: ${response.status}`);
+            }
+
+            // Update the cohort state in the parent component
+            const updatedMembers = cohort.members.filter(member => member.id !== memberToDelete.id);
+            updateCohort(updatedMembers);
+
+            // Show success toast
+            onShowToast(
+                'Scaling it down',
+                `Removed ${memberToDelete.email} from the cohort`,
+                memberToDelete.role === 'learner' ? '👋' : '👨‍🏫'
+            );
+        } catch (error) {
+            console.error('Error deleting member:', error);
+
+            // Show error toast
+            let errorMessage = 'Failed to remove member. Please try again.';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+            onShowToast('Error', errorMessage, '❌');
+
+            throw error;
+        } finally {
+            setIsDeleteConfirmOpen(false);
+            setMemberToDelete(null);
+        }
+    };
+
+    const handleAddMembers = async (emails: string[]) => {
+        setIsSubmitting(true);
+        try {
+            await addMembers(emails, emails.map(() => role));
+
+            // Show success toast based on role
+            onShowToast(
+                roleText.successToastTitle,
+                `Added ${emails.length} ${role}${emails.length > 1 ? 's' : ''} to the cohort`,
+                roleText.successToastEmoji
+            );
+        } catch (error) {
+            console.error(`Failed to add ${role}s:`, error);
+
+            // Show error toast
+            let errorMessage = 'Failed to add members. Please try again.';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+            onShowToast('Error', errorMessage, '❌');
+
+            throw error;
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const addMembers = async (emails: string[], roles: string[]) => {
+        if (!cohortId) return;
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/members`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    emails,
+                    roles,
+                }),
+            });
+
+            if (!response.ok) {
+                // Try to extract more detailed error message from response
+                let errorText = 'Failed to add members. Please try again.';
+                try {
+                    const errorData = await response.json();
+                    if (errorData.detail) {
+                        // Use the specific detail message from the API
+                        errorText = errorData.detail;
+                    } else if (errorData.message) {
+                        errorText = errorData.message;
+                    } else if (errorData.error) {
+                        errorText = errorData.error;
+                    }
+                } catch (parseError) {
+                    // If parsing JSON fails, use default error message
+                    console.error('Could not parse error response:', parseError);
+                }
+                throw new Error(errorText);
+            }
+
+            // Fetch updated cohort data to get the new members
+            const cohortResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}`);
+            const cohortData = await cohortResponse.json();
+
+            // Update the parent component with the new members
+            updateCohort(cohortData.members || []);
+
+        } catch (error) {
+            console.error('Error adding members:', error);
+            throw error;
+        }
+    };
+
+    return (
+        <div>
+            {members.length > 0 && (
+                <div className="flex justify-start items-center mb-6">
+                    <button
+                        className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                        onClick={() => setIsAddMemberOpen(true)}
+                    >
+                        {roleText.buttonText}
+                    </button>
+                </div>
+            )}
+
+            {members.length > 0 ? (
+                <div className="overflow-hidden rounded-lg border border-gray-800">
+                    <table className="min-w-full divide-y divide-gray-800">
+                        <thead className="bg-gray-900">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-[#111] divide-y divide-gray-800">
+                            {members.map(member => (
+                                <tr key={member.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 flex justify-between items-center">
+                                        {member.email}
+                                        <button
+                                            onClick={() => handleDeleteMember(member)}
+                                            className="text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center py-20">
+                    <h2 className="text-4xl font-light mb-4">{roleText.title}</h2>
+                    <p className="text-gray-400 mb-8">{roleText.description}</p>
+                    <button
+                        className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                        onClick={() => setIsAddMemberOpen(true)}
+                    >
+                        {roleText.buttonText}
+                    </button>
+                </div>
+            )}
+
+            {/* Invite Modal */}
+            <InviteModal
+                isOpen={isAddMemberOpen}
+                onClose={() => setIsAddMemberOpen(false)}
+                onSubmit={handleAddMembers}
+                submitButtonText={roleText.modalTitle}
+                isSubmitting={isSubmitting}
+                role={role}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                open={isDeleteConfirmOpen}
+                title={`Remove ${memberToDelete?.role === 'learner' ? 'Learner' : 'Mentor'}`}
+                message={`Are you sure you want to remove ${memberToDelete?.email} from this cohort?`}
+                confirmButtonText="Remove"
+                onConfirm={confirmDeleteMember}
+                onCancel={() => setIsDeleteConfirmOpen(false)}
+                type="delete"
+            />
+        </div>
+    );
+}
+
+// Email validation utility function
+function validateEmail(email: string): boolean {
+    if (!email) return true;
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+} 
