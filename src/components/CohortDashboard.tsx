@@ -116,10 +116,10 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
                         {/* Task Completion Rate - 75% width */}
                         <div className="bg-[#111] p-8 rounded-lg w-2/3">
                             <h3 className="text-gray-400 text-sm mb-2 flex items-center">
-                                <span>Task Completion</span>
+                                <span className="inline-block">Task Completion</span>
                                 <Tooltip content="Average percentage of tasks completed by a learner" position="top">
-                                    <span className="ml-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-300 cursor-pointer">
-                                        <HelpCircle size={14} className="translate-y-0" />
+                                    <span className="ml-2 inline-flex items-center">
+                                        <HelpCircle size={14} className="relative top-[0.1em]" />
                                     </span>
                                 </Tooltip>
                             </h3>
@@ -149,10 +149,10 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
                         {/* Active Learners - 25% width */}
                         <div className="bg-[#111] p-8 rounded-lg w-1/3">
                             <h3 className="text-gray-400 text-sm mb-2 flex items-center">
-                                <span>Active Learners</span>
+                                <span className="inline-block">Active Learners</span>
                                 <Tooltip content="Number of learners who have attempted at least one task" position="top">
-                                    <span className="ml-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-300 cursor-pointer">
-                                        <HelpCircle size={14} className="translate-y-0" />
+                                    <span className="ml-2 inline-flex items-center">
+                                        <HelpCircle size={14} className="relative top-[0.1em]" />
                                     </span>
                                 </Tooltip>
                             </h3>
@@ -190,10 +190,10 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
                 {courseMetrics && (
                     <div className="mt-8">
                         <h3 className="text-gray-400 text-sm mb-4 flex items-center pl-2">
-                            <span>Completion by Type</span>
+                            <span className="inline-block">Completion by Type</span>
                             <Tooltip content="Average completion by a learner for each type of task" position="top">
-                                <span className="ml-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-300 cursor-pointer">
-                                    <HelpCircle size={14} className="translate-y-0" />
+                                <span className="ml-2 inline-flex items-center">
+                                    <HelpCircle size={14} className="relative top-[0.1em]" />
                                 </span>
                             </Tooltip>
                         </h3>
