@@ -53,24 +53,24 @@ export const codingLanguageOptions: DropdownOption[] = [
         "value": "javascript",
         "color": "#8A6D00",
     },
-    // {
-    //     "label": "NodeJS",
-    //     "value": "nodejs",
-    //     "color": "#2F6846",
-    // },
-    // {
-    //     "label": "Python",
-    //     "value": "python",
-    //     "color": "#2C5282",
-    // },
+    {
+        "label": "NodeJS",
+        "value": "nodejs",
+        "color": "#2F6846",
+    },
+    {
+        "label": "Python",
+        "value": "python",
+        "color": "#4B5563",
+    },
     {
         "label": "React",
         "value": "react",
         "color": "#2C7A7B",
     },
-    // {
-    //     "label": "SQL",
-    //     "value": "sql",
-    //     "color": "#3182CE",
-    // }
+    {
+        "label": "SQL",
+        "value": "sql",
+        "color": "#3182CE",
+    }
 ];

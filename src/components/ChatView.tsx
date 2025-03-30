@@ -3,7 +3,7 @@ import { ChatMessage, ScorecardItem, QuizQuestion } from '../types/quiz';
 import ChatPlaceholderView from './ChatPlaceholderView';
 import ChatHistoryView from './ChatHistoryView';
 import AudioInputComponent from './AudioInputComponent';
-import CodeEditorView, { CodePreview } from './CodeEditorView';
+import CodeEditorView from './CodeEditorView';
 import { MessageCircle, Code } from 'lucide-react';
 import isEqual from 'lodash/isEqual';
 
@@ -37,6 +37,7 @@ export interface CodeViewState {
     previewContent: string;
     output: string;
     hasWebLanguages: boolean;
+    executionTime?: string;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({
@@ -69,6 +70,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     const [previewContent, setPreviewContent] = useState('');
     const [output, setOutput] = useState('');
     const [isRunning, setIsRunning] = useState(false);
+    const [executionTime, setExecutionTime] = useState('');
 
     // Determine if this is a coding question
     const isCodingQuestion = currentQuestionConfig?.questionType === 'coding';
@@ -78,12 +80,7 @@ const ChatView: React.FC<ChatViewProps> = ({
 
     // Check if web preview is available (HTML, CSS, JS)
     const hasWebLanguages = codingLanguages.some((lang: string) =>
-        ['html', 'css', 'javascript', 'js'].includes(lang?.toLowerCase())
-    );
-
-    // Check if React preview is available
-    const hasReactLanguages = codingLanguages.some((lang: string) =>
-        ['react'].includes(lang?.toLowerCase())
+        ['html', 'css', 'javascript', 'js', 'sql', 'react'].includes(lang?.toLowerCase())
     );
 
     // Determine if this question is completed
@@ -170,7 +167,8 @@ const ChatView: React.FC<ChatViewProps> = ({
                 isRunning,
                 previewContent,
                 output,
-                hasWebLanguages: hasWebLanguages || hasReactLanguages // Combined check for preview capability
+                hasWebLanguages: hasWebLanguages,
+                executionTime
             };
 
             // Only call onCodeStateChange if the state has actually changed
@@ -179,7 +177,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                 onCodeStateChange(currentState);
             }
         }
-    }, [isViewingCode, isRunning, previewContent, output, hasWebLanguages, hasReactLanguages, isCodingQuestion, onCodeStateChange]);
+    }, [isViewingCode, isRunning, previewContent, output, hasWebLanguages, isCodingQuestion, onCodeStateChange, executionTime]);
 
     // Toggle between chat and code views
     const toggleCodeView = () => {
@@ -187,10 +185,52 @@ const ChatView: React.FC<ChatViewProps> = ({
     };
 
     // Handle code run
-    const handleCodeRun = (newPreviewContent: string, newOutput: string) => {
+    const handleCodeRun = (newPreviewContent: string, newOutput: string, newExecutionTime?: string, newIsRunning?: boolean) => {
         setPreviewContent(newPreviewContent);
         setOutput(newOutput);
-        setIsRunning(false);
+
+        // Update isRunning based on the parameter if provided, otherwise use previous logic
+        if (newIsRunning !== undefined) {
+            setIsRunning(newIsRunning);
+        } else if (newPreviewContent) {
+            // Only set isRunning to false for web preview
+            setIsRunning(false);
+        }
+
+        if (newExecutionTime !== undefined) {
+            setExecutionTime(newExecutionTime);
+        }
+
+        // Update parent component with current state
+        if (onCodeStateChange) {
+            onCodeStateChange({
+                isViewingCode,
+                isRunning: newIsRunning !== undefined ? newIsRunning : (newPreviewContent ? false : isRunning),
+                previewContent: newPreviewContent,
+                output: newOutput,
+                hasWebLanguages: hasWebLanguages,
+                executionTime: newExecutionTime || executionTime
+            });
+        }
+    };
+
+    // Handle clearing code output
+    const handleClearOutput = () => {
+        setPreviewContent('');
+        setOutput('');
+        setExecutionTime('');
+
+        // Update the state for LearnerQuizView
+        if (onCodeStateChange) {
+            onCodeStateChange({
+                isViewingCode,
+                isRunning: false,
+                previewContent: '',
+                output: '',
+                hasWebLanguages: hasWebLanguages,
+                executionTime: ''
+            });
+        }
     };
 
     // Handle code submission
@@ -285,6 +325,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                     languages={codingLanguages}
                     handleCodeSubmit={handleCodeSubmit}
                     onCodeRun={handleCodeRun}
+                    onClearOutput={handleClearOutput}
                 />
             );
         } else {
