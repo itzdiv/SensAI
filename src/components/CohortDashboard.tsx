@@ -224,15 +224,6 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
                                         availableTypes === 2 ? 'md:grid-cols-2' :
                                             'md:grid-cols-3'
                                         } gap-4`}>
-                                        {/* Quiz Card */}
-                                        {courseMetrics.task_type_metrics.quiz && (
-                                            <TaskTypeMetricCard
-                                                title="Quiz"
-                                                count={courseMetrics.task_type_metrics.quiz.count}
-                                                completionRate={courseMetrics.task_type_metrics.quiz.completion_rate}
-                                                color="indigo"
-                                            />
-                                        )}
 
                                         {/* Learning Material Card */}
                                         {courseMetrics.task_type_metrics.learning_material && (
@@ -241,6 +232,16 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
                                                 count={courseMetrics.task_type_metrics.learning_material.count}
                                                 completionRate={courseMetrics.task_type_metrics.learning_material.completion_rate}
                                                 color="purple"
+                                            />
+                                        )}
+
+                                        {/* Quiz Card */}
+                                        {courseMetrics.task_type_metrics.quiz && (
+                                            <TaskTypeMetricCard
+                                                title="Quiz"
+                                                count={courseMetrics.task_type_metrics.quiz.count}
+                                                completionRate={courseMetrics.task_type_metrics.quiz.completion_rate}
+                                                color="indigo"
                                             />
                                         )}
 

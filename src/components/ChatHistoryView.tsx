@@ -202,7 +202,8 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     }
 
     .highlight-animation {
-      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 25%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 75%);
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 25%, rgba(255,255,255,0.9) 50%, 
+      rgba(255,255,255,0) 75%);
       background-size: 200% auto;
       color: rgba(255, 255, 255, 0.6);
       background-clip: text;
@@ -354,6 +355,25 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Add global styles for animation */}
+            <style jsx global>{`
+                @keyframes highlightText {
+                    0% { background-position: -200% center; }
+                    100% { background-position: 300% center; }
+                }
+                
+                .highlight-animation {
+                    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 25%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 75%);
+                    background-size: 200% auto;
+                    color: rgba(255, 255, 255, 0.6);
+                    background-clip: text;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    animation: highlightText 2s linear infinite;
+                    transition: opacity 0.2s ease-in-out;
+                }
+            `}</style>
         </>
     );
 };
