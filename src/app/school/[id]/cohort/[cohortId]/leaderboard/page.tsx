@@ -35,8 +35,8 @@ export default async function LeaderboardPage({
     const cohortName = await getCohortName(params.cohortId);
 
     return <ClientLeaderboardView
-        schoolId={params.id}
         cohortId={params.cohortId}
         cohortName={cohortName}
+        view='learner'
     />;
 } 

@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Toast from "@/components/Toast";
 import CoursePublishSuccessBanner from "@/components/CoursePublishSuccessBanner";
-import TopPerformers from "@/components/TopPerformers";
+import ClientLeaderboardView from "@/app/school/[id]/cohort/[cohortId]/leaderboard/ClientLeaderboardView";
 
 interface Course {
     id: number;
@@ -1090,12 +1090,12 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                     </div>
                                 </div>
 
-                                {/* Right side - Top Performers */}
-                                <div className="lg:w-1/3 space-y-6">
-                                    {/* Use the self-contained TopPerformers component */}
-                                    <TopPerformers
-                                        schoolId={schoolId}
+                                {/* Right side - Leaderboard */}
+                                <div className="lg:w-1/2 space-y-6">
+                                    {/* Use ClientLeaderboardView instead of TopPerformers */}
+                                    <ClientLeaderboardView
                                         cohortId={cohortId}
+                                        cohortName={cohort?.name}
                                         view='admin'
                                     />
                                 </div>

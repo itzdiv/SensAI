@@ -9,13 +9,13 @@ import { Header } from "@/components/layout/header";
 import { Performer } from "@/components/TopPerformers";
 
 export default function ClientLeaderboardView({
-    schoolId,
     cohortId,
     cohortName: initialCohortName,
+    view
 }: {
-    schoolId: string;
     cohortId: string;
     cohortName?: string;
+    view: 'learner' | 'admin'
 }) {
     const router = useRouter();
     const { user } = useAuth();
@@ -101,11 +101,11 @@ export default function ClientLeaderboardView({
 
     return (
         <div className="min-h-screen bg-black text-white">
-            <Header showCreateCourseButton={false} />
+            {view === 'learner' && <Header showCreateCourseButton={false} />}
 
-            <main className="container mx-auto px-4 py-8">
+            <main className={`container mx-auto ${view === 'admin' ? '' : 'px-4 py-8'}`}>
                 {/* Back button and page title */}
-                <div className="flex mb-8">
+                {view === 'learner' && <div className="flex mb-8">
                     <div className="flex-1 text-center">
                         <h1 className="flex">
                             <span
@@ -121,7 +121,7 @@ export default function ClientLeaderboardView({
 
                     {/* Empty div for flex balance */}
                     <div className="w-24"></div>
-                </div>
+                </div>}
 
                 {loading ? (
                     <div className="flex justify-center my-12">
@@ -144,11 +144,11 @@ export default function ClientLeaderboardView({
                 ) : (
                     <div className="bg-[#121212] rounded-lg border border-gray-800 overflow-hidden">
                         {/* Column Headers */}
-                        <div className="grid grid-cols-12 gap-2 px-4 py-4 border-b border-gray-800 bg-[#2A2000] text-sm font-light">
+                        <div className={`grid ${view === 'admin' ? 'grid-cols-8' : 'grid-cols-12'} gap-2 px-4 py-4 border-b border-gray-800 bg-[#2A2000] text-sm font-light`}>
                             <div className="col-span-1 text-center">Rank</div>
-                            <div className="col-span-5 lg:col-span-6">Learner</div>
-                            <div className="col-span-3 lg:col-span-2 text-center">Streak</div>
-                            <div className="col-span-3 lg:col-span-3 text-right pr-2">Tasks Completed</div>
+                            <div className={`${view === 'admin' ? 'col-span-4' : 'col-span-5 lg:col-span-6'}`}>Learner</div>
+                            <div className={`${view === 'admin' ? 'col-span-1' : 'col-span-3 lg:col-span-2'} text-center`}>Streak</div>
+                            <div className={`${view === 'admin' ? 'col-span-2' : 'col-span-3 lg:col-span-3'} text-right pr-2`}>Tasks Completed</div>
                         </div>
 
                         {/* Performers List */}
@@ -156,17 +156,17 @@ export default function ClientLeaderboardView({
                             {performers.map((performer, index) => (
                                 <div
                                     key={index}
-                                    className={`grid grid-cols-12 gap-2 px-4 py-4 items-center ${isCurrentUser(performer) ? 'bg-blue-900/20' : ''}`}
+                                    className={`grid ${view === 'admin' ? 'grid-cols-8' : 'grid-cols-12'} gap-2 px-4 py-4 items-center ${isCurrentUser(performer) ? 'bg-blue-900/20' : ''}`}
                                 >
                                     {/* Position Column */}
                                     <div className="col-span-1 flex justify-center">
                                         {shouldShowMedal(performer) ? (
-                                            <div className="w-10 h-10 flex items-center justify-center">
+                                            <div className={`${view === 'admin' ? 'w-8 h-8' : 'w-10 h-10'} flex items-center justify-center`}>
                                                 <Image
                                                     src={getPositionBadge(performer.position)!}
                                                     alt={`Position ${performer.position}`}
-                                                    width={36}
-                                                    height={36}
+                                                    width={view === 'admin' ? 32 : 36}
+                                                    height={view === 'admin' ? 32 : 36}
                                                 />
                                             </div>
                                         ) : (
@@ -182,7 +182,7 @@ export default function ClientLeaderboardView({
                                     </div>
 
                                     {/* Name Column */}
-                                    <div className="col-span-5 lg:col-span-6 flex items-center">
+                                    <div className={`${view === 'admin' ? 'col-span-4' : 'col-span-5 lg:col-span-6'} flex items-center`}>
                                         <div className="font-medium text-white flex items-center">
                                             {performer.name}
                                             {isCurrentUser(performer) && (
@@ -194,12 +194,12 @@ export default function ClientLeaderboardView({
                                     </div>
 
                                     {/* Completion Column */}
-                                    <div className="col-span-3 lg:col-span-2 text-center text-gray-400">
+                                    <div className={`${view === 'admin' ? 'col-span-1' : 'col-span-3 lg:col-span-2'} text-center text-gray-400`}>
                                         {performer.streakDays} Day{performer.streakDays === 1 ? "" : "s"}
                                     </div>
 
                                     {/* Tasks Solved Column */}
-                                    <div className="col-span-3 lg:col-span-3 text-right pr-2 text-gray-400">
+                                    <div className={`${view === 'admin' ? 'col-span-2' : 'col-span-3 lg:col-span-3'} text-right pr-2 text-gray-400`}>
                                         {performer.tasksSolved}
                                     </div>
                                 </div>
