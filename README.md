@@ -19,7 +19,7 @@ To learn more about making a contribution to SensAI, please see our [Contributin
   git clone https://gitlab.com/hvacademy/sensai-frontend.git
   cd sensai-frontend
   ```
-- Copy `.env.example` to `.env.local` and set the environment variables.
+- Copy `.env.example` to `.env.local` and set the environment variables. We use Judge0 for code execution. You will need to add the Judge0 API key to the `.env.local` file. Either self-host it or use the publicly available Judge0 instance. Please refer to the [Judge0 installation guide](https://gitlab.com/hvacademy/sensai-ai/-/blob/main/docs/INSTALL.md#judge0) for more information. Set up your Google OAuth account and enter those   credentials in the `.env.local` file.
 - Install dependencies:
   ```
   npm ci

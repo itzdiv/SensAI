@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
-import { Play, Send } from 'lucide-react';
+import { Play, Send, Terminal } from 'lucide-react';
+import Toast from './Toast';
 
 interface CodeEditorViewProps {
     initialCode?: Record<string, string>;
     languages?: string[];
     handleCodeSubmit: (code: Record<string, string>) => void;
-    onCodeRun?: (previewContent: string, output: string) => void;
+    onCodeRun?: (previewContent: string, output: string, executionTime?: string, isRunning?: boolean) => void;
+    onClearOutput?: () => void;
 }
 
 // Preview component that can be used in a separate column
@@ -15,13 +17,17 @@ export interface CodePreviewProps {
     previewContent: string;
     output: string;
     isWebPreview: boolean;
+    executionTime?: string;
+    onClear?: () => void;
 }
 
 export const CodePreview: React.FC<CodePreviewProps> = ({
     isRunning,
     previewContent,
     output,
-    isWebPreview
+    isWebPreview,
+    executionTime,
+    onClear
 }) => {
     const [isIframeLoading, setIsIframeLoading] = useState(true);
 
@@ -31,6 +37,21 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
             setIsIframeLoading(true);
         }
     }, [previewContent]);
+
+    // Format console output with syntax highlighting
+    const formatConsoleOutput = (text: string) => {
+        if (!text) return 'Run your code to see output here';
+
+        // Replace [ERROR], [WARN], and [INFO] tags with styled spans
+        return text
+            .replace(/\[ERROR\]/g, '<span class="text-red-500 font-bold">[ERROR]</span>')
+            .replace(/\[WARN\]/g, '<span class="text-yellow-500 font-bold">[WARN]</span>')
+            .replace(/\[INFO\]/g, '<span class="text-blue-500 font-bold">[INFO]</span>')
+            .replace(/---.*?---/g, '<span class="text-gray-400">$&</span>')
+            .replace(/→ Return value:/g, '<span class="text-green-500 font-semibold">→ Return value:</span>')
+            .replace(/(Error:[\s\S]*?)(?=\n\n|$)/g, '<span class="text-red-500">$1</span>')
+            .replace(/(Compilation Error:[\s\S]*?)(?=\n\n|$)/g, '<span class="text-red-500">$1</span>');
+    };
 
     // Create a modified HTML content with a loading indicator
     const enhancedPreviewContent = isWebPreview && previewContent ? `
@@ -44,7 +65,7 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                     left: 0;
                     width: 100%;
                     height: 100%;
-                    background-color: white;
+                    background-color: #1a1a1a;
                     display: flex;
                     justify-content: center;
                     align-items: center;
@@ -58,8 +79,8 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                 .iframe-spinner {
                     width: 40px;
                     height: 40px;
-                    border: 4px solid #f3f3f3;
-                    border-top: 4px solid #3498db;
+                    border: 4px solid #2a2a2a;
+                    border-top: 4px solid #a0a0a0;
                     border-radius: 50%;
                     animation: spin 1s linear infinite;
                 }
@@ -86,13 +107,32 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
 
     return (
         <div className="flex-1 flex flex-col bg-[#111111] overflow-hidden h-full">
-            <div className="px-4 py-2 bg-[#222222] text-white text-sm font-medium">
-                {isWebPreview ? 'Preview' : 'Output'}
+            <div className="px-4 bg-[#222222] text-white font-medium flex justify-between items-center">
+                <span className="text-sm py-2">{isWebPreview ? 'Preview' : 'Output'}</span>
+                <div className="flex items-center gap-2">
+                    {(!isWebPreview && output && onClear) && (
+                        <button
+                            onClick={onClear}
+                            className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-[#333333] transition-colors cursor-pointer"
+                            aria-label="Clear output"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
             </div>
             <div className="flex-1 overflow-auto">
                 {isRunning ? (
                     <div className="flex items-center justify-center h-full">
                         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-white"></div>
+                    </div>
+                ) : !previewContent && !output ? (
+                    <div className="flex flex-col items-center justify-center h-full preview-placeholder">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M14 4L18 8M18 8V18M18 8H8M6 20L10 16M10 16H20M10 16V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <p>Run your code to see the preview here</p>
+                        <p className="text-xs mt-2 text-center px-4">For HTML/CSS/JavaScript/React, you will see a live preview. For other languages, you will see the console output.</p>
                     </div>
                 ) : isWebPreview ? (
                     <div className="relative w-full h-full">
@@ -110,9 +150,12 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
                         />
                     </div>
                 ) : (
-                    <pre className="p-4 text-white whitespace-pre-wrap font-mono text-sm">
-                        {output || 'Run your code to see output here'}
-                    </pre>
+                    <div className="p-4 text-white font-mono text-sm terminal-output bg-[#1A1A1A]">
+                        <div
+                            className="whitespace-pre-wrap"
+                            dangerouslySetInnerHTML={{ __html: formatConsoleOutput(output) }}
+                        />
+                    </div>
                 )}
             </div>
         </div>
@@ -191,6 +234,80 @@ root.render(<App />);
     'ruby': 'puts "Hello, world!"\n',
     'typescript': 'const message: string = "Hello, world!";\nconsole.log(message);\n',
     'php': '<?php\necho "Hello, world!";\n?>\n',
+    'nodejs': `// Node.js example
+// Data processing example
+const users = [
+  { id: 1, name: 'Alice', age: 28, role: 'developer' },
+  { id: 2, name: 'Bob', age: 35, role: 'manager' },
+  { id: 3, name: 'Charlie', age: 24, role: 'designer' },
+  { id: 4, name: 'Diana', age: 31, role: 'developer' },
+  { id: 5, name: 'Evan', age: 40, role: 'admin' }
+];
+
+// Filter developers
+const developers = users.filter(user => user.role === 'developer');
+console.log('Developers in the team:');
+developers.forEach(dev => console.log(\` - \${dev.name}, \${dev.age} years old\`));
+
+// Calculate average age
+const totalAge = users.reduce((sum, user) => sum + user.age, 0);
+const averageAge = totalAge / users.length;
+console.log(\`\nAverage team age: \${averageAge.toFixed(1)} years\`);
+
+// Find oldest team member
+const oldest = users.reduce((oldest, user) => user.age > oldest.age ? user : oldest, users[0]);
+console.log(\`Oldest team member: \${oldest.name} (\${oldest.age} years old, \${oldest.role})\`);`,
+    'sql': `-- SQL example
+-- Create tables
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    amount DECIMAL(10, 2),
+    order_date DATE,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+
+-- Insert sample data
+INSERT INTO customers (customer_id, name, email) VALUES
+(1, 'John Doe', 'john@example.com'),
+(2, 'Jane Smith', 'jane@example.com'),
+(3, 'Bob Johnson', 'bob@example.com'),
+(4, 'Alice Brown', 'alice@example.com'),
+(5, 'Charlie Davis', 'charlie@example.com');
+
+INSERT INTO orders (order_id, customer_id, amount, order_date) VALUES
+(101, 1, 150.50, '2023-01-15'),
+(102, 1, 75.25, '2023-02-20'),
+(103, 2, 200.00, '2023-01-10'),
+(104, 3, 50.75, '2023-03-05'),
+(105, 3, 125.30, '2023-03-15'),
+(106, 3, 45.80, '2023-04-02'),
+(107, 5, 350.00, '2023-02-28');
+
+-- Query the data
+SELECT 
+    customers.customer_id,
+    customers.name,
+    customers.email,
+    COUNT(orders.order_id) AS total_orders,
+    SUM(orders.amount) AS total_spent
+FROM 
+    customers
+LEFT JOIN 
+    orders ON customers.customer_id = orders.customer_id
+GROUP BY 
+    customers.customer_id
+HAVING 
+    COUNT(orders.order_id) > 0
+ORDER BY 
+    total_spent DESC
+LIMIT 10;`
 } as Record<string, string>;
 
 // Map language to Monaco editor language identifiers
@@ -212,6 +329,8 @@ const LANGUAGE_MAPPING: Record<string, string> = {
     'ts': 'typescript',
     'php': 'php',
     'react': 'javascript', // React uses JavaScript syntax with JSX
+    'nodejs': 'javascript',
+    'sql': 'sql',
 };
 
 // Prettier language display names
@@ -230,6 +349,19 @@ const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
     'react': 'React',
 };
 
+// Judge0 language IDs - see https://judge0.com/
+const JUDGE0_LANGUAGE_IDS: Record<string, number> = {
+    'python': 71,      // Python 3.8.1
+    'sql': 82,         // SQL (SQLite 3.27.2)
+    'javascript': 63,  // JavaScript (Node.js 12.14.0)
+    'nodejs': 63,      // Node.js 12.14.0
+};
+
+// Judge0 API URL - using environment variables for flexibility
+const JUDGE0_API_URL = process.env.JUDGE0_API_URL || '';
+// Whether to use proxy approach to avoid CORS issues
+const USE_PROXY_API = true;
+
 const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     initialCode = {},
     languages = ['javascript'],
@@ -237,20 +369,28 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     onCodeRun,
 }) => {
     // Check if React is in the original languages array
-    const hasReactLanguages = languages.some(lang =>
+    const hasReact = languages.some(lang =>
         lang.toLowerCase() === 'react'
     );
 
+    const hasNodejs = languages.some(lang =>
+        lang.toLowerCase() === 'nodejs'
+    );
+
     console.log('Original languages:', languages);
-    console.log('Has React languages:', hasReactLanguages);
+    console.log('Has React languages:', hasReact);
 
     // When only React is selected, don't normalize languages (skip the mapping to JavaScript)
     let normalizedLanguages: string[];
 
-    if (hasReactLanguages) {
+    if (hasReact) {
         // When React is the only language, skip normalization and just use React
         normalizedLanguages = ['react'];
         console.log('Using only React tab');
+    } else if (hasNodejs) {
+        // When Node.js is the only language, skip normalization and just use Node.js
+        normalizedLanguages = ['nodejs'];
+        console.log('Using only Node.js tab');
     } else {
         // Otherwise normalize languages as usual
         normalizedLanguages = languages.map(lang =>
@@ -267,6 +407,8 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     const [code, setCode] = useState<Record<string, string>>(() => {
         const initialState: Record<string, string> = {};
 
+        console.log(normalizedLanguages);
+
         // Add entries for all valid languages
         normalizedLanguages.forEach(lang => {
             initialState[lang] = initialCode[lang] || DEFAULT_LANGUAGE_CONTENTS[lang] || '';
@@ -282,11 +424,41 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     const [previewContent, setPreviewContent] = useState<string>('');
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [output, setOutput] = useState<string>('');
+    const [executionTime, setExecutionTime] = useState<string>('');
+    // Input state (for languages that need stdin)
+    const [showInputPanel, setShowInputPanel] = useState<boolean>(false);
+    const [stdInput, setStdInput] = useState<string>('');
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     // Check if web preview is available (HTML, CSS, JS)
     const hasWebLanguages = normalizedLanguages.some(lang =>
         ['html', 'css', 'javascript'].includes(lang)
     );
+
+    // Add state for input validation and toast
+    const [inputError, setInputError] = useState<boolean>(false);
+    const [showToast, setShowToast] = useState<boolean>(false);
+    const [toastData, setToastData] = useState<{
+        title: string;
+        description: string;
+        emoji: string;
+    }>({
+        title: '',
+        description: '',
+        emoji: '',
+    });
+
+    // Auto-close toast after 5 seconds
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => {
+                setShowToast(false);
+            }, 5000);
+
+            // Cleanup the timer when component unmounts or showToast changes
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
 
     // Update code state when initialCode changes
     useEffect(() => {
@@ -308,8 +480,90 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         }
     };
 
-    // Handle code run
+    // Function to count the number of input() calls in Python code
+    const countPythonInputs = (code: string): number => {
+        // Match different variations of input calls
+        // This regex matches:
+        // 1. Standard input() calls
+        // 2. input("prompt") with any string prompt
+        // 3. Assigned input() calls like x = input()
+        // 4. Complex variations like x = int(input())
+
+        // Remove comments first
+        const codeWithoutComments = code.replace(/#.*$/gm, '');
+
+        // Look for different input patterns
+        const patterns = [
+            /\binput\s*\([^)]*\)/g,               // Standard input() or input("prompt")
+            /\beval\s*\(\s*input\s*\([^)]*\)\s*\)/g, // eval(input())
+            /\bint\s*\(\s*input\s*\([^)]*\)\s*\)/g,  // int(input())
+            /\bfloat\s*\(\s*input\s*\([^)]*\)\s*\)/g, // float(input())
+            /\bstr\s*\(\s*input\s*\([^)]*\)\s*\)/g    // str(input())
+        ];
+
+        // Count all occurrences of input calls
+        let totalInputCalls = 0;
+
+        patterns.forEach(pattern => {
+            const matches = codeWithoutComments.match(pattern);
+            if (matches) {
+                // Count all occurrences, not just unique ones
+                totalInputCalls += matches.length;
+            }
+        });
+
+        // Add debug logging
+        console.log('Detected input calls:', totalInputCalls);
+
+        return totalInputCalls;
+    };
+
+    // Function to count the number of provided inputs
+    const countProvidedInputs = (input: string): number => {
+        if (!input) return 0;
+        // Count all lines
+        return input.split('\n').length;
+    };
+
+    // Handle code run with input validation
     const handleCodeRun = () => {
+        setInputError(false); // Reset input error state
+
+        // Check for Python input validation
+        if (activeLanguage === 'python') {
+            const requiredInputs = countPythonInputs(code['python']);
+            console.log('Required inputs:', requiredInputs);
+
+            if (requiredInputs > 0) {
+                const providedInputs = countProvidedInputs(stdInput);
+
+                // If inputs are required but input panel is not open, show it
+                if (!showInputPanel) {
+                    setShowInputPanel(true);
+                    setInputError(true); // Add error state when automatically opening input panel
+                    setToastData({
+                        title: 'Input Required',
+                        description: `Your code requires ${requiredInputs} input${requiredInputs > 1 ? 's' : ''}. Please provide ${requiredInputs > 1 ? 'them' : 'it'} in the input panel.`,
+                        emoji: '⌨️',
+                    });
+                    setShowToast(true);
+                    return; // Don't run code yet
+                }
+
+                // If insufficient inputs, show error
+                if (providedInputs < requiredInputs) {
+                    setInputError(true);
+                    setToastData({
+                        title: 'Insufficient Inputs',
+                        description: `Your code requires ${requiredInputs} input${requiredInputs > 1 ? 's' : ''}, but ${providedInputs === 0 ? 'no input was provided' : `only ${providedInputs} ${providedInputs === 1 ? 'input was' : 'inputs were'} provided`}`,
+                        emoji: '⚠️',
+                    });
+                    setShowToast(true);
+                    return; // Don't run code with insufficient inputs
+                }
+            }
+        }
+
         setIsRunning(true);
         console.log('Running code for activeLanguage:', activeLanguage);
 
@@ -345,92 +599,400 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
                 // Notify parent component
                 if (onCodeRun) {
-                    onCodeRun(reactTemplate, 'React preview updated');
+                    onCodeRun(reactTemplate, 'React preview updated', undefined, true);
                 }
 
                 // Delay setting isRunning to false to give time for the iframe to start loading
                 setTimeout(() => {
                     setIsRunning(false);
+                    // Update parent again when loading is complete
+                    if (onCodeRun) {
+                        onCodeRun(reactTemplate, 'React preview updated', undefined, false);
+                    }
                 }, 300);
             }
             // For web-based languages, create a preview
             else if (hasWebLanguages) {
-                // Generate HTML preview with CSS and JavaScript
-                const htmlContent = code['html'] || '';
-                const cssContent = code['css'] ? `<style>${code['css']}</style>` : '';
-                const jsContent = code['javascript'] ? `<script>${code['javascript']}</script>` : '';
+                // For SQL, we'll handle the preview later in executeWithJudge0
+                if (activeLanguage === 'sql') {
+                    executeWithJudge0(activeLanguage, code[activeLanguage]);
+                } else {
+                    // Generate HTML preview with CSS and JavaScript
+                    const htmlContent = code['html'] || '';
+                    const cssContent = code['css'] ? `<style>${code['css']}</style>` : '';
+                    const jsContent = code['javascript'] ? `<script>${code['javascript']}</script>` : '';
 
-                // Combine all content
-                const fullHtmlContent = htmlContent
-                    .replace('</head>', `${cssContent}</head>`)
-                    .replace('</body>', `${jsContent}</body>`);
+                    // Combine all content
+                    const fullHtmlContent = htmlContent
+                        .replace('</head>', `${cssContent}</head>`)
+                        .replace('</body>', `${jsContent}</body>`);
 
-                setPreviewContent(fullHtmlContent);
-                setOutput('Preview updated');
-
-                // Notify parent component
-                if (onCodeRun) {
-                    onCodeRun(fullHtmlContent, 'Preview updated');
-                }
-
-                // Delay setting isRunning to false to give time for the iframe to start loading
-                setTimeout(() => {
-                    setIsRunning(false);
-                }, 300);
-            }
-            // For non-web languages, execute the code if possible
-            else {
-                // In a real implementation, you would send this code to a server for execution
-                // For now, we'll show a placeholder message
-                const outputMessage = `Code execution for ${LANGUAGE_DISPLAY_NAMES[activeLanguage] || activeLanguage} would happen on a server.`;
-                setOutput(outputMessage);
-
-                // For JavaScript, we can run it in the browser (for demo purposes)
-                if (activeLanguage === 'javascript') {
-                    const originalConsoleLog = console.log;
-                    let consoleOutput = '';
-
-                    console.log = (...args) => {
-                        consoleOutput += args.join(' ') + '\n';
-                    };
-
-                    try {
-                        // This is just for demo purposes and should be replaced with a secure solution
-                        // eslint-disable-next-line no-eval
-                        const result = eval(code['javascript']);
-
-                        if (result !== undefined) {
-                            consoleOutput += 'Return value: ' + result + '\n';
-                        }
-                    } catch (error) {
-                        consoleOutput += 'Error: ' + (error as Error).message + '\n';
-                    }
-
-                    // Restore original console
-                    console.log = originalConsoleLog;
-
-                    setOutput(consoleOutput || 'No output');
+                    setPreviewContent(fullHtmlContent);
+                    setOutput('Preview updated');
 
                     // Notify parent component
                     if (onCodeRun) {
-                        onCodeRun('', consoleOutput || 'No output');
+                        onCodeRun(fullHtmlContent, 'Preview updated', undefined, true);
                     }
-                } else {
+
+                    // Delay setting isRunning to false to give time for the iframe to start loading
+                    setTimeout(() => {
+                        setIsRunning(false);
+                        // Update parent again when loading is complete
+                        if (onCodeRun) {
+                            onCodeRun(fullHtmlContent, 'Preview updated', undefined, false);
+                        }
+                    }, 300);
+                }
+            }
+            // For non-web languages, execute the code if possible
+            else {
+                // Send all supported languages to Judge0, including JavaScript and Node.js
+                if (Object.keys(JUDGE0_LANGUAGE_IDS).includes(activeLanguage)) {
+                    // Notify parent component that code execution is starting
+                    if (onCodeRun) {
+                        // Pass isRunning=true to indicate execution has started
+                        onCodeRun('', 'Executing code...', undefined, true);
+                    }
+                    executeWithJudge0(activeLanguage, code[activeLanguage]);
+                }
+                else {
+                    // For other languages, show placeholder message
+                    const outputMessage = `Code execution for ${LANGUAGE_DISPLAY_NAMES[activeLanguage] || activeLanguage} would happen on a server.`;
+                    setOutput(outputMessage);
+
                     // Notify parent component for other languages
                     if (onCodeRun) {
                         onCodeRun('', outputMessage);
                     }
+                    setIsRunning(false);
                 }
             }
         } catch (error) {
             const errorMessage = `Error: ${(error as Error).message}`;
             setOutput(errorMessage);
+            setExecutionTime(''); // Reset execution time on error
 
             // Notify parent component
             if (onCodeRun) {
-                onCodeRun('', errorMessage);
+                onCodeRun('', errorMessage, undefined, false);
             }
-        } finally {
+
+            // Set isRunning to false in case of an error
+            setIsRunning(false);
+        }
+    };
+
+    // Execute code using Judge0 API
+    const executeWithJudge0 = async (language: string, sourceCode: string) => {
+        try {
+            setIsRunning(true);
+            setExecutionTime(''); // Reset execution time when starting new execution
+
+            // Check if language is supported by Judge0
+            const languageId = JUDGE0_LANGUAGE_IDS[language];
+            if (!languageId) {
+                throw new Error(`Language '${language}' is not supported for execution`);
+            }
+
+            // Prepare request data
+            const requestData = {
+                source_code: sourceCode,
+                language_id: languageId,
+                stdin: stdInput,  // Use the input from the input panel
+                expected_output: null,
+                cpu_time_limit: 2,  // 2 seconds
+                cpu_extra_time: 0.5,
+                wall_time_limit: 5,
+                memory_limit: 128000, // 128MB
+                stack_limit: 64000,  // 64MB
+                max_processes_and_or_threads: 60,
+                enable_per_process_and_thread_time_limit: false,
+                enable_per_process_and_thread_memory_limit: false,
+                compiler_options: '',
+                command_line_arguments: '',
+            };
+
+            let token;
+
+            // Step 1: Create a submission (using proxy if needed)
+            // Using Next.js API route to proxy the request and avoid CORS issues
+            const createResponse = await fetch(`/api/code/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+            });
+
+            if (!createResponse.ok) {
+                throw new Error(`Failed to submit code: ${createResponse.status}`);
+            }
+
+            const submission = await createResponse.json();
+            token = submission.token;
+
+            if (!token) {
+                throw new Error('No token received from Judge0');
+            }
+
+            // Step 2: Poll for results
+            let result;
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            while (attempts < maxAttempts) {
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+
+                let statusResponse;
+
+                // Using Next.js API route to proxy the request
+                statusResponse = await fetch(`/api/code/status?token=${token}`);
+
+                if (!statusResponse.ok) {
+                    throw new Error(`Failed to get submission status: ${statusResponse.status}`);
+                }
+
+                result = await statusResponse.json();
+
+                // Check if processing is complete
+                // 1 = In Queue, 2 = Processing, 3 = Accepted, 4+ = Various errors
+                if (result.status_id >= 3) {
+                    break;
+                }
+
+                // If still processing, continue polling
+                console.log('Code still executing, waiting...');
+            }
+
+            // Step 3: Handle the result
+            if (!result) {
+                throw new Error('Failed to get execution result');
+            }
+
+            let outputText = '';
+
+            // Build output based on what's available
+            if (result.compile_output) {
+                outputText += `Compilation Error:\n${result.compile_output}\n`;
+            }
+
+            if (result.stderr) {
+                outputText += `Error:\n${result.stderr}\n`;
+
+                if (result.message) {
+                    outputText += `${result.message}`;
+                }
+            }
+
+            // For SQL results, create HTML table instead of showing raw output
+            if (language === 'sql') {
+                try {
+                    // Generate HTML table from SQL results
+                    const sqlOutput = result.stdout ? result.stdout.trim() : '';
+
+                    if (sqlOutput) {
+                        // Check if there are query results (not just success messages from CREATE/INSERT)
+                        if (sqlOutput.includes('|')) {
+                            // Create HTML table preview content
+                            const tableHtml = generateTableFromSqlOutput(sqlOutput);
+
+                            // Set preview content with styled table
+                            const htmlContent = `
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <style>
+                                    body {
+                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                                        padding: 16px;
+                                        background-color: #1a1a1a;
+                                        color: #e2e2e2;
+                                        font-size: 12px;
+                                    }
+                                    table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        font-size: 12px;
+                                    }
+                                    th {
+                                        font-weight: 500;
+                                        text-align: left;
+                                        padding: 6px 8px;
+                                        border-bottom: 1px solid #333;
+                                        color: #a0a0a0;
+                                    }
+                                    td {
+                                        padding: 6px 8px;
+                                        border-bottom: 1px solid #222;
+                                    }
+                                    tr:hover {
+                                        background-color: #222;
+                                    }
+                                    .sql-results-title {
+                                        margin-bottom: 12px;
+                                        color: #e2e2e2;
+                                        font-size: 14px;
+                                        font-weight: 500;
+                                    }
+                                    .no-results {
+                                        color: #a0a0a0;
+                                        padding: 16px;
+                                        text-align: center;
+                                        font-size: 12px;
+                                        background-color: #222;
+                                        border-radius: 3px;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                ${tableHtml}
+                            </body>
+                            </html>`;
+
+                            setPreviewContent(htmlContent);
+
+                            // Still set a minimal text output
+                            outputText = "Query executed successfully. Results displayed in the table.";
+
+                            // Notify parent component with both HTML content and text output
+                            if (onCodeRun) {
+                                // Use true for isWebPreview
+                                onCodeRun(htmlContent, outputText, result.time, false);
+                            }
+                        } else {
+                            // For non-query operations (CREATE, INSERT, etc.)
+                            outputText = sqlOutput;
+
+                            // Show a message in the preview
+                            const htmlContent = `
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <style>
+                                    body {
+                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                                        padding: 16px;
+                                        background-color: #1a1a1a;
+                                        color: #e2e2e2;
+                                        font-size: 12px;
+                                    }
+                                    .message {
+                                        padding: 12px 16px;
+                                        background-color: #252525;
+                                        border-radius: 3px;
+                                        margin-bottom: 16px;
+                                        font-size: 12px;
+                                    }
+                                    .message h3 {
+                                        font-weight: 500;
+                                        font-size: 13px;
+                                        margin-top: 0;
+                                        margin-bottom: 8px;
+                                        color: #e2e2e2;
+                                    }
+                                    .message p {
+                                        margin: 4px 0;
+                                        color: #a0a0a0;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="message">
+                                    <h3>SQL Operation Successful</h3>
+                                    <p>Your SQL commands executed successfully.</p>
+                                    <p>Run a SELECT query to see results in a table format.</p>
+                                </div>
+                            </body>
+                            </html>`;
+
+                            setPreviewContent(htmlContent);
+
+                            if (onCodeRun) {
+                                // Use true for isWebPreview
+                                onCodeRun(htmlContent, outputText, result.time, false);
+                            }
+                        }
+                    } else {
+                        // Empty result
+                        const htmlContent = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <style>
+                                body {
+                                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                                    padding: 16px;
+                                    background-color: #1a1a1a;
+                                    color: #e2e2e2;
+                                    font-size: 12px;
+                                }
+                                .message {
+                                    padding: 16px;
+                                    background-color: #252525;
+                                    border-radius: 3px;
+                                    text-align: center;
+                                    font-size: 12px;
+                                    color: #a0a0a0;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="message">
+                                <p>Your query did not return any results. Run a SELECT query to see results in a table format.</p>
+                            </div>
+                        </body>
+                        </html>`;
+
+                        setPreviewContent(htmlContent);
+                        outputText = "Query executed successfully, but returned no results.";
+
+                        if (onCodeRun) {
+                            // Use true for isWebPreview
+                            onCodeRun(htmlContent, outputText, result.time, false);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Error formatting SQL results:", error);
+                    // If table generation fails, fall back to regular output display
+                    outputText += `${result.stdout}`;
+                }
+            } else if (result.stdout) {
+                // For non-SQL languages, use normal output display
+                outputText += `${result.stdout}`;
+            }
+
+            // Store execution time separately instead of adding to output
+            if (result.time) {
+                setExecutionTime(result.time);
+            }
+
+            // If no output was generated
+            if (!outputText) {
+                outputText = 'No output generated.';
+            }
+
+            setOutput(outputText);
+
+            // For non-SQL languages, make sure to notify parent component with updated outputs
+            if (language !== 'sql' && onCodeRun) {
+                onCodeRun('', outputText, result.time, false);
+            }
+
+            // Only set isRunning to false after everything is complete
+            setIsRunning(false);
+        } catch (error) {
+            const errorMessage = `Error: ${(error as Error).message}`;
+            setOutput(errorMessage);
+            setExecutionTime(''); // Reset execution time on error
+
+            // Notify parent component
+            if (onCodeRun) {
+                onCodeRun('', errorMessage, undefined, false);
+            }
+
+            // Set isRunning to false in case of an error
             setIsRunning(false);
         }
     };
@@ -448,14 +1010,60 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
     // Get the correct Monaco editor language based on active language
     const getMonacoLanguage = (lang: string) => {
-        if (lang === 'react') {
-            return 'javascript'; // React uses JavaScript syntax
+        if (lang === 'react' || lang === 'nodejs') {
+            return 'javascript'; // React and Node.js use JavaScript syntax
         }
         return lang;
     };
 
+    // Helper function to generate HTML table from SQL output
+    const generateTableFromSqlOutput = (sqlOutput: string): string => {
+        // Split output into lines
+        const lines = sqlOutput.trim().split('\n');
+
+        if (lines.length < 3) {
+            return '<div class="no-results">No data returned from query</div>';
+        }
+
+        // Start building HTML table
+        let tableHtml = '<table><tbody>';
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue; // Skip empty lines
+
+            // Replace multiple spaces with a single delimiter
+            const normalizedLine = line.replace(/\s{2,}/g, '|');
+            const cells = normalizedLine.split('|').map(c => c.trim()).filter(c => c);
+
+            tableHtml += '<tr>';
+            cells.forEach(cell => {
+                // Handle NULL values with italic styling
+                const cellContent = cell === 'NULL'
+                    ? '<em style="color: #a0aec0;">NULL</em>'
+                    : cell;
+
+                // Treat all rows the same - no special header row
+                tableHtml += `<td>${cellContent}</td>`;
+            });
+            tableHtml += '</tr>';
+        }
+
+        tableHtml += '</tbody></table>';
+        return tableHtml;
+    };
+
     return (
         <div className="flex flex-col h-full overflow-hidden">
+            {/* Toast notification for input validation */}
+            <Toast
+                show={showToast}
+                title={toastData.title}
+                description={toastData.description}
+                emoji={toastData.emoji}
+                onClose={() => setShowToast(false)}
+            />
+
             {/* Language tabs */}
             {normalizedLanguages.length > 0 ? (
                 <div className="flex items-center overflow-x-auto bg-[#1D1D1D] hide-scrollbar">
@@ -478,45 +1086,102 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 </div>
             ) : null}
 
-            {/* Code editor (without preview) */}
-            <div className="flex-1 overflow-hidden">
-                <Editor
-                    height="100%"
-                    language={getMonacoLanguage(activeLanguage)}
-                    value={code[activeLanguage]}
-                    onChange={handleCodeChange}
-                    theme="vs-dark"
-                    options={{
-                        minimap: { enabled: false },
-                        fontSize: 12,
-                        scrollBeyondLastLine: false,
-                        automaticLayout: true,
-                        tabSize: 2,
-                        wordWrap: 'on',
-                        lineNumbers: 'off',
-                    }}
-                    onMount={handleEditorDidMount}
-                />
+            {/* Main editor area with potential split for input */}
+            <div className="flex-1 overflow-hidden flex flex-col">
+                {/* Code editor */}
+                <div className={`flex-1 overflow-hidden ${showInputPanel && 'h-2/3'}`}>
+                    <Editor
+                        height="100%"
+                        language={getMonacoLanguage(activeLanguage)}
+                        value={code[activeLanguage]}
+                        onChange={handleCodeChange}
+                        theme="vs-dark"
+                        options={{
+                            minimap: { enabled: false },
+                            fontSize: 12,
+                            scrollBeyondLastLine: false,
+                            automaticLayout: true,
+                            tabSize: 2,
+                            wordWrap: 'on',
+                            lineNumbers: 'off',
+                        }}
+                        onMount={handleEditorDidMount}
+                    />
+                </div>
+
+                {/* Input panel (conditionally shown) */}
+                {showInputPanel && (
+                    <div className="h-1/3 border-t border-[#444444] flex flex-col">
+                        <div className={`px-4 py-2 ${inputError ? 'bg-red-800' : 'bg-[#222222]'} text-white text-sm font-medium flex justify-between items-center`}>
+                            <span>{inputError ? 'Input Required' : 'Input (stdin)'}</span>
+                        </div>
+                        <textarea
+                            ref={inputRef}
+                            className={`flex-1 bg-[#1E1E1E] text-white p-4 resize-none font-mono text-sm ${inputError ? 'border border-red-500' : ''}`}
+                            value={stdInput}
+                            onChange={(e) => {
+                                setStdInput(e.target.value);
+                                setInputError(false); // Clear error on input change
+                            }}
+                            placeholder="Add every input to your program in a new line"
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Action buttons */}
             <div className="flex items-center justify-between p-4 border-t border-[#222222]">
-                <button
-                    onClick={handleCodeRun}
-                    disabled={isRunning}
-                    className="flex items-center space-x-2 bg-[#333333] hover:bg-[#444444] text-white rounded-full px-4 py-2 cursor-pointer"
-                >
-                    <Play size={16} />
-                    <span>{isRunning ? 'Running...' : 'Run Code'}</span>
-                </button>
+                <div>
+                    <button
+                        onClick={handleCodeRun}
+                        disabled={isRunning}
+                        className="flex items-center space-x-2 bg-[#333333] hover:bg-[#444444] text-white rounded-full px-4 py-2 cursor-pointer"
+                    >
+                        {isRunning ? (
+                            <>
+                                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                                <span>Run</span>
+                            </>
+                        ) : (
+                            <>
+                                <Play size={16} />
+                                <span>Run</span>
+                            </>
+                        )}
+                    </button>
+                </div>
 
-                <button
-                    onClick={handleSubmit}
-                    className="flex items-center space-x-2 bg-white hover:bg-gray-200 text-black rounded-full px-4 py-2 cursor-pointer"
-                >
-                    <Send size={16} />
-                    <span>Submit Code</span>
-                </button>
+                {/* Only show the input toggle for languages that typically need input */}
+                {(['python'].includes(activeLanguage)) && (
+                    <div>
+                        <button
+                            onClick={() => {
+                                setShowInputPanel(!showInputPanel);
+                                // Focus the input textarea when showing
+                                setTimeout(() => {
+                                    if (!showInputPanel && inputRef.current) {
+                                        inputRef.current.focus();
+                                    }
+                                }, 100);
+                            }}
+                            className={`flex items-center space-x-2 ${showInputPanel ? 'bg-[#444444] text-white' : inputError ? 'bg-red-700 text-white' : 'bg-[#333333] hover:bg-[#444444] text-white'
+                                } rounded-full px-4 py-2 cursor-pointer`}
+                        >
+                            <Terminal size={16} />
+                            <span>Input</span>
+                        </button>
+                    </div>
+                )}
+
+                <div>
+                    <button
+                        onClick={handleSubmit}
+                        className="flex items-center space-x-2 bg-white hover:bg-gray-200 text-black rounded-full px-4 py-2 cursor-pointer"
+                    >
+                        <Send size={16} />
+                        <span>Submit</span>
+                    </button>
+                </div>
             </div>
         </div>
     );
