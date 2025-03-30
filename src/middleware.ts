@@ -38,8 +38,6 @@ export async function middleware(request: NextRequest) {
   // Protect other routes - redirect to login if not authenticated
   if (!token) {
     // Create login URL with the correct base URL
-    console.log('here')
-    console.log(process.env.NEXT_PUBLIC_APP_URL)
     const loginUrl = new URL('/login', process.env.NEXT_PUBLIC_APP_URL);
     // Set the callback URL to the correct path with the proper domain
     loginUrl.searchParams.set('callbackUrl', encodeURI(`${process.env.NEXT_PUBLIC_APP_URL}`));
