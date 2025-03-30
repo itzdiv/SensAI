@@ -297,7 +297,6 @@ CREATE TABLE orders (
 );
 
 -- Step 2: Insert sample data
--- First populate the customers table (referenced by foreign keys)
 INSERT INTO customers (customer_id, name, email) VALUES
 (1, 'John Doe', 'john@example.com'),
 (2, 'Jane Smith', 'jane@example.com'),
@@ -305,7 +304,6 @@ INSERT INTO customers (customer_id, name, email) VALUES
 (4, 'Alice Brown', 'alice@example.com'),
 (5, 'Charlie Davis', 'charlie@example.com');
 
--- Then populate the orders table (contains foreign keys)
 INSERT INTO orders (order_id, customer_id, amount, order_date) VALUES
 (101, 1, 150.50, '2023-01-15'),
 (102, 1, 75.25, '2023-02-20'),
@@ -316,22 +314,20 @@ INSERT INTO orders (order_id, customer_id, amount, order_date) VALUES
 (107, 5, 350.00, '2023-02-28');
 
 -- Step 3: Query the data
--- Example query: Find customers with orders and analyze their spending
 SELECT 
-    c.customer_id,
-    c.name,
-    c.email,
-    COUNT(o.order_id) AS total_orders,
-    SUM(o.amount) AS total_spent,
-    AVG(o.amount) AS average_order
+    customers.customer_id,
+    customers.name,
+    customers.email,
+    COUNT(orders.order_id) AS total_orders,
+    SUM(orders.amount) AS total_spent
 FROM 
-    customers c
+    customers
 LEFT JOIN 
-    orders o ON c.customer_id = o.customer_id
+    orders ON customers.customer_id = orders.customer_id
 GROUP BY 
-    c.customer_id
+    customers.customer_id
 HAVING 
-    COUNT(o.order_id) > 0
+    COUNT(orders.order_id) > 0
 ORDER BY 
     total_spent DESC
 LIMIT 10;`
@@ -582,7 +578,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                     setInputError(true);
                     setToastData({
                         title: 'Insufficient Inputs',
-                        description: `Your code requires ${requiredInputs} input${requiredInputs > 1 ? 's' : ''}, but ${providedInputs === 0 ? 'no input was provided' : `only ${providedInputs} ${providedInputs === 1 ? 'input was' : 'inputs were'} provided`} `,
+                        description: `Your code requires ${requiredInputs} input${requiredInputs > 1 ? 's' : ''}, but ${providedInputs === 0 ? 'no input was provided' : `only ${providedInputs} ${providedInputs === 1 ? 'input was' : 'inputs were'} provided`}`,
                         emoji: '⚠️',
                     });
                     setShowToast(true);
@@ -600,25 +596,25 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 console.log('Running React code');
                 // Create a basic HTML template with React and ReactDOM loaded from CDN with specific version
                 const reactTemplate = `
-    < !DOCTYPE html >
-        <html>
-            <head>
-                <meta charset="UTF-8">
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>React Preview</title>
-                        <!-- Load React and ReactDOM from CDN with specific version -->
-                        <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
-                        <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
-                        <!-- Load Babel for JSX support -->
-                        <script src="https://unpkg.com/@babel/standalone@7.21.4/babel.min.js"></script>
-                        ${code['css'] ? `<style>${code['css']}</style>` : ''}
-                    </head>
-                    <body>
-                        <div id="root"></div>
-                        <script type="text/babel">
-                            ${code['react']}
-                        </script>
-                    </body>
+                    <title>React Preview</title>
+                    <!-- Load React and ReactDOM from CDN with specific version -->
+                    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+                    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+                    <!-- Load Babel for JSX support -->
+                    <script src="https://unpkg.com/@babel/standalone@7.21.4/babel.min.js"></script>
+                    ${code['css'] ? `<style>${code['css']}</style>` : ''}
+                </head>
+                <body>
+                    <div id="root"></div>
+                    <script type="text/babel">
+                    ${code['react']}
+                    </script>
+                </body>
                 </html>`;
 
                 setPreviewContent(reactTemplate);
@@ -652,7 +648,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                     // Combine all content
                     const fullHtmlContent = htmlContent
                         .replace('</head>', `${cssContent}</head>`)
-                        .replace('</body>', `${jsContent}</body > `);
+                        .replace('</body>', `${jsContent}</body>`);
 
                     setPreviewContent(fullHtmlContent);
                     setOutput('Preview updated');
@@ -696,7 +692,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 }
             }
         } catch (error) {
-            const errorMessage = `Error: ${(error as Error).message} `;
+            const errorMessage = `Error: ${(error as Error).message}`;
             setOutput(errorMessage);
             setExecutionTime(''); // Reset execution time on error
 
@@ -744,7 +740,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
             // Step 1: Create a submission (using proxy if needed)
             // Using Next.js API route to proxy the request and avoid CORS issues
-            const createResponse = await fetch(`/ api / code / submit`, {
+            const createResponse = await fetch(`/api/code/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -753,7 +749,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
             });
 
             if (!createResponse.ok) {
-                throw new Error(`Failed to submit code: ${createResponse.status} `);
+                throw new Error(`Failed to submit code: ${createResponse.status}`);
             }
 
             const submission = await createResponse.json();
@@ -775,10 +771,10 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 let statusResponse;
 
                 // Using Next.js API route to proxy the request
-                statusResponse = await fetch(`/ api / code / status ? token = ${token} `);
+                statusResponse = await fetch(`/api/code/status?token=${token}`);
 
                 if (!statusResponse.ok) {
-                    throw new Error(`Failed to get submission status: ${statusResponse.status} `);
+                    throw new Error(`Failed to get submission status: ${statusResponse.status}`);
                 }
 
                 result = await statusResponse.json();
@@ -802,14 +798,14 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
             // Build output based on what's available
             if (result.compile_output) {
-                outputText += `Compilation Error: \n${result.compile_output} \n`;
+                outputText += `Compilation Error:\n${result.compile_output}\n`;
             }
 
             if (result.stderr) {
-                outputText += `Error: \n${result.stderr} \n`;
+                outputText += `Error:\n${result.stderr}\n`;
 
                 if (result.message) {
-                    outputText += `${result.message} `;
+                    outputText += `${result.message}`;
                 }
             }
 
@@ -827,56 +823,56 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
                             // Set preview content with styled table
                             const htmlContent = `
-    < !DOCTYPE html >
-        <html>
-            <head>
-                <style>
-                    body {
-                        font - family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                    padding: 16px;
-                    background-color: #1a1a1a;
-                    color: #e2e2e2;
-                    font-size: 12px;
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <style>
+                                    body {
+                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                                        padding: 16px;
+                                        background-color: #1a1a1a;
+                                        color: #e2e2e2;
+                                        font-size: 12px;
                                     }
-                    table {
-                        width: 100%;
-                    border-collapse: collapse;
-                    font-size: 12px;
+                                    table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        font-size: 12px;
                                     }
-                    th {
-                        font - weight: 500;
-                    text-align: left;
-                    padding: 6px 8px;
-                    border-bottom: 1px solid #333;
-                    color: #a0a0a0;
+                                    th {
+                                        font-weight: 500;
+                                        text-align: left;
+                                        padding: 6px 8px;
+                                        border-bottom: 1px solid #333;
+                                        color: #a0a0a0;
                                     }
-                    td {
-                        padding: 6px 8px;
-                    border-bottom: 1px solid #222;
+                                    td {
+                                        padding: 6px 8px;
+                                        border-bottom: 1px solid #222;
                                     }
-                    tr:hover {
-                        background - color: #222;
+                                    tr:hover {
+                                        background-color: #222;
                                     }
-                    .sql-results-title {
-                        margin - bottom: 12px;
-                    color: #e2e2e2;
-                    font-size: 14px;
-                    font-weight: 500;
+                                    .sql-results-title {
+                                        margin-bottom: 12px;
+                                        color: #e2e2e2;
+                                        font-size: 14px;
+                                        font-weight: 500;
                                     }
-                    .no-results {
-                        color: #a0a0a0;
-                    padding: 16px;
-                    text-align: center;
-                    font-size: 12px;
-                    background-color: #222;
-                    border-radius: 3px;
+                                    .no-results {
+                                        color: #a0a0a0;
+                                        padding: 16px;
+                                        text-align: center;
+                                        font-size: 12px;
+                                        background-color: #222;
+                                        border-radius: 3px;
                                     }
-                </style>
-            </head>
-            <body>
-                ${tableHtml}
-            </body>
-        </html>`;
+                                </style>
+                            </head>
+                            <body>
+                                ${tableHtml}
+                            </body>
+                            </html>`;
 
                             setPreviewContent(htmlContent);
 
@@ -894,45 +890,45 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
                             // Show a message in the preview
                             const htmlContent = `
-            < !DOCTYPE html >
-                <html>
-                    <head>
-                        <style>
-                            body {
-                                font - family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                            padding: 16px;
-                            background-color: #1a1a1a;
-                            color: #e2e2e2;
-                            font-size: 12px;
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <style>
+                                    body {
+                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                                        padding: 16px;
+                                        background-color: #1a1a1a;
+                                        color: #e2e2e2;
+                                        font-size: 12px;
                                     }
-                            .message {
-                                padding: 12px 16px;
-                            background-color: #252525;
-                            border-radius: 3px;
-                            margin-bottom: 16px;
-                            font-size: 12px;
+                                    .message {
+                                        padding: 12px 16px;
+                                        background-color: #252525;
+                                        border-radius: 3px;
+                                        margin-bottom: 16px;
+                                        font-size: 12px;
                                     }
-                            .message h3 {
-                                font - weight: 500;
-                            font-size: 13px;
-                            margin-top: 0;
-                            margin-bottom: 8px;
-                            color: #e2e2e2;
+                                    .message h3 {
+                                        font-weight: 500;
+                                        font-size: 13px;
+                                        margin-top: 0;
+                                        margin-bottom: 8px;
+                                        color: #e2e2e2;
                                     }
-                            .message p {
-                                margin: 4px 0;
-                            color: #a0a0a0;
+                                    .message p {
+                                        margin: 4px 0;
+                                        color: #a0a0a0;
                                     }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="message">
-                            <h3>SQL Operation Successful</h3>
-                            <p>Your SQL commands executed successfully.</p>
-                            <p>Run a SELECT query to see results in a table format.</p>
-                        </div>
-                    </body>
-                </html>`;
+                                </style>
+                            </head>
+                            <body>
+                                <div class="message">
+                                    <h3>SQL Operation Successful</h3>
+                                    <p>Your SQL commands executed successfully.</p>
+                                    <p>Run a SELECT query to see results in a table format.</p>
+                                </div>
+                            </body>
+                            </html>`;
 
                             setPreviewContent(htmlContent);
 
@@ -944,32 +940,32 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                     } else {
                         // Empty result
                         const htmlContent = `
-                    < !DOCTYPE html >
+                        <!DOCTYPE html>
                         <html>
-                            <head>
-                                <style>
-                                    body {
-                                        font - family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                        <head>
+                            <style>
+                                body {
+                                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                                     padding: 16px;
                                     background-color: #1a1a1a;
                                     color: #e2e2e2;
                                     font-size: 12px;
                                 }
-                                    .message {
-                                        padding: 16px;
+                                .message {
+                                    padding: 16px;
                                     background-color: #252525;
                                     border-radius: 3px;
                                     text-align: center;
                                     font-size: 12px;
                                     color: #a0a0a0;
                                 }
-                                </style>
-                            </head>
-                            <body>
-                                <div class="message">
-                                    <p>Your query did not return any results. Run a SELECT query to see results in a table format.</p>
-                                </div>
-                            </body>
+                            </style>
+                        </head>
+                        <body>
+                            <div class="message">
+                                <p>Your query did not return any results. Run a SELECT query to see results in a table format.</p>
+                            </div>
+                        </body>
                         </html>`;
 
                         setPreviewContent(htmlContent);
@@ -983,11 +979,11 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 } catch (error) {
                     console.error("Error formatting SQL results:", error);
                     // If table generation fails, fall back to regular output display
-                    outputText += `${result.stdout} `;
+                    outputText += `${result.stdout}`;
                 }
             } else if (result.stdout) {
                 // For non-SQL languages, use normal output display
-                outputText += `${result.stdout} `;
+                outputText += `${result.stdout}`;
             }
 
             // Store execution time separately instead of adding to output
@@ -1010,7 +1006,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
             // Only set isRunning to false after everything is complete
             setIsRunning(false);
         } catch (error) {
-            const errorMessage = `Error: ${(error as Error).message} `;
+            const errorMessage = `Error: ${(error as Error).message}`;
             setOutput(errorMessage);
             setExecutionTime(''); // Reset execution time on error
 
@@ -1071,7 +1067,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                     : cell;
 
                 // Treat all rows the same - no special header row
-                tableHtml += `< td > ${cellContent}</td > `;
+                tableHtml += `<td>${cellContent}</td>`;
             });
             tableHtml += '</tr>';
         }
@@ -1102,10 +1098,10 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                                 console.log('Setting active language to:', lang);
                                 setActiveLanguage(lang);
                             }}
-                            className={`px - 4 py - 2 text - sm font - medium transition - colors cursor - pointer ${activeLanguage === lang
+                            className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${activeLanguage === lang
                                 ? 'bg-[#2D2D2D] text-white border-b-2 border-white'
                                 : 'text-gray-400 hover:text-white hover:bg-[#222222]'
-                                } `}
+                                }`}
                         >
                             {LANGUAGE_DISPLAY_NAMES[lang] || lang}
                         </button>
@@ -1116,7 +1112,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
             {/* Main editor area with potential split for input */}
             <div className="flex-1 overflow-hidden flex flex-col">
                 {/* Code editor */}
-                <div className={`flex - 1 overflow - hidden ${showInputPanel && 'h-2/3'} `}>
+                <div className={`flex-1 overflow-hidden ${showInputPanel && 'h-2/3'}`}>
                     <Editor
                         height="100%"
                         language={getMonacoLanguage(activeLanguage)}
@@ -1139,12 +1135,12 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 {/* Input panel (conditionally shown) */}
                 {showInputPanel && (
                     <div className="h-1/3 border-t border-[#444444] flex flex-col">
-                        <div className={`px - 4 py - 2 ${inputError ? 'bg-red-800' : 'bg-[#222222]'} text - white text - sm font - medium flex justify - between items - center`}>
+                        <div className={`px-4 py-2 ${inputError ? 'bg-red-800' : 'bg-[#222222]'} text-white text-sm font-medium flex justify-between items-center`}>
                             <span>{inputError ? 'Input Required' : 'Input (stdin)'}</span>
                         </div>
                         <textarea
                             ref={inputRef}
-                            className={`flex - 1 bg - [#1E1E1E] text - white p - 4 resize - none font - mono text - sm ${inputError ? 'border border-red-500' : ''} `}
+                            className={`flex-1 bg-[#1E1E1E] text-white p-4 resize-none font-mono text-sm ${inputError ? 'border border-red-500' : ''}`}
                             value={stdInput}
                             onChange={(e) => {
                                 setStdInput(e.target.value);
@@ -1191,8 +1187,8 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                                     }
                                 }, 100);
                             }}
-                            className={`flex items - center space - x - 2 ${showInputPanel ? 'bg-[#444444] text-white' : inputError ? 'bg-red-700 text-white' : 'bg-[#333333] hover:bg-[#444444] text-white'
-                                } rounded - full px - 4 py - 2 cursor - pointer`}
+                            className={`flex items-center space-x-2 ${showInputPanel ? 'bg-[#444444] text-white' : inputError ? 'bg-red-700 text-white' : 'bg-[#333333] hover:bg-[#444444] text-white'
+                                } rounded-full px-4 py-2 cursor-pointer`}
                         >
                             <Terminal size={16} />
                             <span>Input</span>
