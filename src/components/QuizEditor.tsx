@@ -1368,7 +1368,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Update the question config with the new question type
             handleConfigChange({
                 questionType: option.value as 'objective' | 'subjective' | 'coding',
-                responseType: option.value === 'subjective' ? 'report' : 'chat'
+                responseType: option.value === 'subjective' ? 'report' : 'chat',
+                inputType: option.value === 'coding' ? 'text' : currentQuestionConfig.inputType
             });
 
             // Set active tab to question whenever question type changes
