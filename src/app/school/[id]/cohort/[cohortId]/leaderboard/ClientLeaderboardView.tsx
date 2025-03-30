@@ -11,11 +11,13 @@ import { Performer } from "@/components/TopPerformers";
 export default function ClientLeaderboardView({
     cohortId,
     cohortName: initialCohortName,
-    view
+    view,
+    topN
 }: {
     cohortId: string;
     cohortName?: string;
     view: 'learner' | 'admin'
+    topN?: number;
 }) {
     const router = useRouter();
     const { user } = useAuth();
@@ -42,7 +44,7 @@ export default function ClientLeaderboardView({
 
                 // Transform API response to match Performer interface
                 const performersData: Performer[] = data.stats.map((stat: any, index: number) => {
-                    const userName = [stat.user.first_name, stat.user.last_name].filter(Boolean).join(' ');
+                    const userName = [stat.user.first_name, stat.user.last_name].filter(Boolean).join(' ') || stat.user.email;
                     return {
                         name: userName,
                         streakDays: stat.streak_count,
@@ -100,7 +102,7 @@ export default function ClientLeaderboardView({
     };
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className={`${view === 'admin' ? '' : 'min-h-screen'} bg-black text-white`}>
             {view === 'learner' && <Header showCreateCourseButton={false} />}
 
             <main className={`container mx-auto ${view === 'admin' ? '' : 'px-4 py-8'}`}>
@@ -153,7 +155,7 @@ export default function ClientLeaderboardView({
 
                         {/* Performers List */}
                         <div className="divide-y divide-gray-800">
-                            {performers.map((performer, index) => (
+                            {performers.slice(0, topN !== undefined ? topN : performers.length).map((performer, index) => (
                                 <div
                                     key={index}
                                     className={`grid ${view === 'admin' ? 'grid-cols-8' : 'grid-cols-12'} gap-2 px-4 py-4 items-center ${isCurrentUser(performer) ? 'bg-blue-900/20' : ''}`}

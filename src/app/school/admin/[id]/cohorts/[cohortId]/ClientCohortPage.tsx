@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "@/components/layout/header";
-import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText } from "lucide-react";
+import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
@@ -1097,7 +1097,19 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                         cohortId={cohortId}
                                         cohortName={cohort?.name}
                                         view='admin'
+                                        topN={5}
                                     />
+                                    {/* View All Leaderboard Button */}
+                                    {cohort?.members?.length > 5 && <div className="flex justify-center mt-4">
+                                        <Link
+                                            href={`/school/${schoolId}/cohort/${cohortId}/leaderboard`}
+                                            className="group px-4 py-2 font-light rounded-md transition-all duration-200 flex items-center 
+                        bg-white/10 hover:bg-white/15 text-gray-200 cursor-pointer"
+                                        >
+                                            <span>View Full Leaderboard</span>
+                                            <ChevronRight size={16} className="ml-1 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                        </Link>
+                                    </div>}
                                 </div>
                             </div>
                         )}
