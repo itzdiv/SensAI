@@ -188,12 +188,18 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
             if (cohort?.courses) {
                 const removedCourse = cohort.courses.find(course => course.id === courseId);
+                const updatedCourses = cohort.courses.filter(course => course.id !== courseId);
+
+                // Check if this was the last course and set tab to 'learners' if so
+                if (updatedCourses.length === 0) {
+                    setTab('learners');
+                }
 
                 setCohort(prev => {
                     if (!prev) return prev;
                     return {
                         ...prev,
-                        courses: prev.courses?.filter(course => course.id !== courseId) || []
+                        courses: updatedCourses
                     };
                 });
 
