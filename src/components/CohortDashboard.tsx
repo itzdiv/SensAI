@@ -5,6 +5,7 @@ import Link from "next/link";
 import { HelpCircle, ChevronRight } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 import ClientLeaderboardView from "@/app/school/[id]/cohort/[cohortId]/leaderboard/ClientLeaderboardView";
+import TaskTypeMetricCard from "@/components/TaskTypeMetricCard";
 
 interface Course {
     id: number;
@@ -163,7 +164,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
                                         (courseMetrics.num_active_learners / totalLearners) : 0;
 
                                     return (
-                                        <span className="text-4xl font-light">
+                                        <span className="text-6xl font-light">
                                             <span className={`${activePercentage < 0.3 ? 'text-red-400' :
                                                 activePercentage < 0.7 ? 'text-amber-400' :
                                                     'text-green-400'
@@ -182,6 +183,79 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
                 ) : (
                     <div className="flex flex-col items-center justify-center h-64 bg-[#111] rounded-lg border border-gray-800">
                         <p className="text-gray-400">No metrics available for this course</p>
+                    </div>
+                )}
+
+                {/* Task Type Metrics - Ultra Simple Direct Cards */}
+                {courseMetrics && (
+                    <div className="mt-8">
+                        <h3 className="text-gray-400 text-sm mb-4 flex items-center pl-2">
+                            <span>Completion by Type</span>
+                            <Tooltip content="Average completion by a learner for each type of task" position="top">
+                                <span className="ml-2 inline-flex items-center justify-center text-gray-500 hover:text-gray-300 cursor-pointer">
+                                    <HelpCircle size={14} className="translate-y-0" />
+                                </span>
+                            </Tooltip>
+                        </h3>
+
+                        {/* Empty state */}
+                        {!courseMetrics.task_type_metrics.quiz &&
+                            !courseMetrics.task_type_metrics.learning_material &&
+                            !courseMetrics.task_type_metrics.exam && (
+                                <div className="text-center text-gray-400 py-16 bg-[#111] rounded-lg">
+                                    No task type metrics available
+                                </div>
+                            )}
+
+                        {/* Cards Layout */}
+                        {(courseMetrics.task_type_metrics.quiz ||
+                            courseMetrics.task_type_metrics.learning_material ||
+                            courseMetrics.task_type_metrics.exam) && (() => {
+                                // Calculate number of available task types
+                                const availableTypes = [
+                                    courseMetrics.task_type_metrics.quiz,
+                                    courseMetrics.task_type_metrics.learning_material,
+                                    courseMetrics.task_type_metrics.exam
+                                ].filter(Boolean).length;
+
+                                // Render with the appropriate grid class based on count
+                                return (
+                                    <div className={`grid grid-cols-1 ${availableTypes === 1 ? 'md:grid-cols-1' :
+                                        availableTypes === 2 ? 'md:grid-cols-2' :
+                                            'md:grid-cols-3'
+                                        } gap-4`}>
+                                        {/* Quiz Card */}
+                                        {courseMetrics.task_type_metrics.quiz && (
+                                            <TaskTypeMetricCard
+                                                title="Quiz"
+                                                count={courseMetrics.task_type_metrics.quiz.count}
+                                                completionRate={courseMetrics.task_type_metrics.quiz.completion_rate}
+                                                color="indigo"
+                                            />
+                                        )}
+
+                                        {/* Learning Material Card */}
+                                        {courseMetrics.task_type_metrics.learning_material && (
+                                            <TaskTypeMetricCard
+                                                title="Learning Material"
+                                                count={courseMetrics.task_type_metrics.learning_material.count}
+                                                completionRate={courseMetrics.task_type_metrics.learning_material.completion_rate}
+                                                color="purple"
+                                            />
+                                        )}
+
+                                        {/* Exam Card */}
+                                        {courseMetrics.task_type_metrics.exam && (
+                                            <TaskTypeMetricCard
+                                                title="Exam"
+                                                count={courseMetrics.task_type_metrics.exam.count}
+                                                completionRate={courseMetrics.task_type_metrics.exam.completion_rate}
+                                                color="teal"
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })()}
                     </div>
                 )}
             </div>
