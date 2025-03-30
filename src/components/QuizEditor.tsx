@@ -25,6 +25,8 @@ import { questionTypeOptions, answerTypeOptions, codingLanguageOptions } from ".
 import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
 // Add import for LearningMaterialLinker
 import LearningMaterialLinker from "./LearningMaterialLinker";
+// Import Toast component
+import Toast from "./Toast";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -148,14 +150,23 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // Add loading state for fetching scorecards
     const [isLoadingScorecards, setIsLoadingScorecards] = useState(false);
 
-    // Add these new state variables for learning material selection
-    const [availableLearningMaterials, setAvailableLearningMaterials] = useState<LearningMaterial[]>([]);
-    const [selectedLearningMaterials, setSelectedLearningMaterials] = useState<LearningMaterial[]>([]);
-    const [learningMaterialSearchQuery, setLearningMaterialSearchQuery] = useState('');
-    const [filteredLearningMaterials, setFilteredLearningMaterials] = useState<LearningMaterial[]>([]);
-    const [isLearningMaterialDropdownOpen, setIsLearningMaterialDropdownOpen] = useState(false);
-    const [isLoadingLearningMaterials, setIsLoadingLearningMaterials] = useState(false);
-    const learningMaterialDropdownRef = useRef<HTMLDivElement>(null);
+    // Add toast state
+    const [showToast, setShowToast] = useState(false);
+    const [toastTitle, setToastTitle] = useState("");
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastEmoji, setToastEmoji] = useState("ℹ️");
+
+    // Add useEffect to automatically hide toast after 5 seconds
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => {
+                setShowToast(false);
+            }, 5000);
+
+            // Cleanup the timer when component unmounts or showToast changes
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
 
     // Make sure we reset questions when component mounts for draft quizzes
     useEffect(() => {
@@ -1397,12 +1408,71 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const handleCodingLanguageChange = useCallback((option: DropdownOption | DropdownOption[]) => {
         // Cast to array since we know this is a multiselect dropdown
         const selectedOptions = Array.isArray(option) ? option : [option];
-        setSelectedCodingLanguages(selectedOptions);
 
-        // Update the question config with the selected coding languages
+        // Define exclusive languages
+        const exclusiveLanguages = ['react', 'sql', 'python', 'nodejs'];
+
+        // Validation logic for language combinations
+        let validatedOptions = [...selectedOptions];
+        let invalidMessage = "";
+
+        // Find all exclusive languages in the selection
+        const exclusiveSelectedLanguages = selectedOptions.filter(opt =>
+            exclusiveLanguages.includes(opt.value)
+        );
+
+        // Check if any exclusive language is selected
+        if (exclusiveSelectedLanguages.length > 0) {
+            // If there are multiple exclusive languages, get the last one selected
+            const lastExclusiveLanguage = exclusiveSelectedLanguages[exclusiveSelectedLanguages.length - 1];
+
+            // If we have more than one language selected and at least one is exclusive,
+            // we need to filter out all other languages
+            if (selectedOptions.length > 1) {
+                // Keep only the last exclusive language
+                validatedOptions = [lastExclusiveLanguage];
+
+                // Get a nice display name for the exclusive language
+                const displayName = lastExclusiveLanguage.label
+
+                invalidMessage = `${displayName} must be used alone. Other languages cannot be added along with it.`;
+            }
+        } else {
+            // No exclusive languages, check for HTML and CSS combination
+            const hasCSS = selectedOptions.some(opt => opt.value === 'css');
+            const hasHTML = selectedOptions.some(opt => opt.value === 'html');
+
+            if (hasCSS && !hasHTML) {
+                // Find the HTML option in the coding language options
+                const htmlOption = codingLanguageOptions.find(opt => opt.value === 'html');
+
+                if (htmlOption) {
+                    // Add HTML to the validated options
+                    validatedOptions.push(htmlOption);
+                    invalidMessage = "HTML has been automatically selected because CSS requires HTML";
+                }
+            }
+        }
+
+        // Set the validated options
+        setSelectedCodingLanguages(validatedOptions);
+
+        // Update the question config with the validated options
         handleConfigChange({
-            codingLanguages: selectedOptions.map(opt => opt.value)
+            codingLanguages: validatedOptions.map(opt => opt.value)
         });
+
+        // Show feedback to the user if there was an invalid combination
+        if (invalidMessage) {
+            // Use setTimeout to ensure state is updated before showing the feedback
+            setTimeout(() => {
+                // Show a toast notification
+                setToastTitle("Language Selection Updated");
+                setToastMessage(invalidMessage);
+                setToastEmoji("⚠️");
+                setShowToast(true);
+            }, 100);
+        }
     }, [handleConfigChange]);
 
     // State for type dropdown
@@ -1968,6 +2038,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 onSelectTemplate={handleSelectScorecardTemplate}
                 position={scorecardDialogPosition || undefined}
                 schoolScorecards={schoolScorecards}
+            />
+
+            {/* Toast for language combination validation */}
+            <Toast
+                show={showToast}
+                title={toastTitle}
+                description={toastMessage}
+                emoji={toastEmoji}
+                onClose={() => setShowToast(false)}
             />
         </div>
     );
