@@ -8,7 +8,6 @@ import CohortCard from "@/components/CohortCard";
 import { useAuth } from "@/lib/auth";
 import LearnerCohortView from "@/components/LearnerCohortView";
 import { Module, ModuleItem } from "@/types/course";
-import { Performer } from "@/components/TopPerformers";
 
 interface School {
     id: number;
@@ -58,8 +57,6 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     const [loadingCourses, setLoadingCourses] = useState(false);
     const [courseError, setCourseError] = useState<string | null>(null);
     const [courseModules, setCourseModules] = useState<Module[]>([]);
-    const [leaderboardData, setLeaderboardData] = useState<{ performers: Performer[], currentUser?: Performer }>({ performers: [] });
-    const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
 
     // Add state for completion data
     const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, boolean>>({});
@@ -205,59 +202,6 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         }
     };
 
-    // Function to fetch leaderboard data
-    const fetchLeaderboardData = async (cohortId: number) => {
-        if (!cohortId || !user?.id) return;
-
-        setLoadingLeaderboard(true);
-
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/leaderboard`);
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch leaderboard data: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            // Transform API response to match Performer interface
-            const performersData: Performer[] = data.stats.map((stat: any, index: number) => {
-                const userName = [stat.user.first_name, stat.user.last_name].filter(Boolean).join(' ');
-                return {
-                    name: userName,
-                    streakDays: stat.streak_count,
-                    tasksSolved: stat.tasks_completed,
-                    position: index + 1, // Position based on array order
-                    userId: stat.user.id // Keep track of user ID for identifying current user
-                };
-            });
-
-            // Get top performers but filter out those with 0 streak days
-            let topPerformers = performersData
-                .filter(performer => performer.streakDays > 0) // Only include performers with streak > 0
-                .slice(0, 3); // Take top 3 of those
-
-            // Find current user in the FULL performers list (which will always include them)
-            const currentUserData = performersData.find(performer => performer.userId === parseInt(user.id));
-
-            // Check if current user is in top 3 performers
-            const isCurrentUserInTop3 = currentUserData && topPerformers.some(performer => performer.userId === user.id);
-
-            setLeaderboardData({
-                performers: topPerformers,
-                // Only set currentUser if they're not already in top 3
-                currentUser: isCurrentUserInTop3 ? undefined : currentUserData
-            });
-
-            setLoadingLeaderboard(false);
-        } catch (error) {
-            console.error("Error fetching leaderboard data:", error);
-            setLoadingLeaderboard(false);
-            // Use empty data on error
-            setLeaderboardData({ performers: [], currentUser: undefined });
-        }
-    };
-
     // Fetch courses when active cohort changes
     useEffect(() => {
         if (activeCohort) {
@@ -266,7 +210,6 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
             // Also fetch completion data when cohort changes
             if (user?.id) {
                 fetchCompletionData(activeCohort.id, user.id.toString());
-                fetchLeaderboardData(activeCohort.id); // Fetch leaderboard data
             }
         }
     }, [activeCohort, user?.id]);
@@ -440,18 +383,11 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                                         cohortId={activeCohort?.id.toString()}
                                                         streakDays={2}
                                                         activeDays={["M", "T"]}
-                                                        performers={leaderboardData.performers}
-                                                        currentUser={leaderboardData.currentUser}
                                                         completedTaskIds={completedTaskIds}
                                                         completedQuestionIds={completedQuestionIds}
                                                         courses={courses}
                                                         onCourseSelect={handleCourseSelect}
                                                         activeCourseIndex={activeCourseIndex}
-                                                        onRefreshLeaderboard={() => {
-                                                            if (activeCohort) {
-                                                                return fetchLeaderboardData(activeCohort.id);
-                                                            }
-                                                        }}
                                                     />
                                                 </div>
                                             )}

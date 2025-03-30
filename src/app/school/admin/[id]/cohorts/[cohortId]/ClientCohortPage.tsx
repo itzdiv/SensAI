@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Toast from "@/components/Toast";
 import CoursePublishSuccessBanner from "@/components/CoursePublishSuccessBanner";
+import TopPerformers from "@/components/TopPerformers";
 
 interface Course {
     id: number;
@@ -37,7 +38,7 @@ interface EmailInput {
     error?: string;
 }
 
-type TabType = 'learners' | 'mentors';
+type TabType = 'dashboard' | 'learners' | 'mentors';
 
 interface ClientCohortPageProps {
     schoolId: string;
@@ -638,6 +639,11 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                             };
                         });
                         setSelectedCourseIds(cohortCoursesData.map((course: Course) => course.id));
+
+                        // Set default tab to dashboard if courses exist
+                        if (cohortCoursesData.length > 0) {
+                            setTab('dashboard');
+                        }
                     }
 
                     // Fetch available courses
@@ -868,6 +874,18 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                             <div className="w-full lg:w-4/5 pr-12">
                                 <div className="mb-8">
                                     <div className="flex border-b border-gray-800">
+                                        {/* Show Dashboard tab only when courses exist */}
+                                        {cohort?.courses && cohort.courses.length > 0 && (
+                                            <button
+                                                className={`px-4 py-2 font-light cursor-pointer ${tab === 'dashboard' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
+                                                onClick={() => setTab('dashboard')}
+                                            >
+                                                <div className="flex items-center">
+                                                    <FileText size={16} className="mr-2" />
+                                                    Dashboard
+                                                </div>
+                                            </button>
+                                        )}
                                         <button
                                             className={`px-4 py-2 font-light cursor-pointer ${tab === 'learners' ? 'text-white border-b-2 border-white' : 'text-gray-400 hover:text-white'}`}
                                             onClick={() => setTab('learners')}
@@ -888,6 +906,29 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                         </button>
                                     </div>
                                 </div>
+
+                                {tab === 'dashboard' && (
+                                    <div className="flex flex-col lg:flex-row gap-8">
+                                        {/* Left side - Empty for now */}
+                                        <div className="lg:w-2/3">
+                                            {/* Dashboard content will be added later */}
+                                            <div className="flex flex-col items-center justify-center py-20">
+                                                <h2 className="text-4xl font-light mb-4">Dashboard</h2>
+                                                <p className="text-gray-400 mb-8">Dashboard content will be added soon</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Right side - Top Performers */}
+                                        <div className="lg:w-1/3 space-y-6">
+                                            {/* Use the self-contained TopPerformers component */}
+                                            <TopPerformers
+                                                schoolId={schoolId}
+                                                cohortId={cohortId}
+                                                view='admin'
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {tab === 'learners' && (
                                     <div>

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { User, ChevronRight, ArrowRight, RefreshCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 
 export interface Performer {
     name: string;
@@ -13,25 +14,83 @@ export interface Performer {
 }
 
 interface TopPerformersProps {
-    performers: Performer[];
-    currentUser?: Performer; // Current logged-in user data
     schoolId?: string; // School ID for navigation
     cohortId?: string; // Cohort ID for navigation
-    onRefresh?: () => Promise<void> | void; // Function to refresh leaderboard data
+    view: 'learner' | 'admin';
 }
 
 export default function TopPerformers({
-    performers,
-    currentUser,
     schoolId,
     cohortId,
-    onRefresh
+    view
 }: TopPerformersProps) {
     const router = useRouter();
+    const { user } = useAuth();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [showTooltip, setShowTooltip] = useState(false);
     const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
     const refreshButtonRef = useRef<HTMLButtonElement>(null);
+
+    // State for data that will be fetched
+    const [loading, setLoading] = useState(false);
+    const [performers, setPerformers] = useState<Performer[]>([]);
+    const [currentUser, setCurrentUser] = useState<Performer | null>(null);
+
+    // Function to fetch performers data
+    const fetchPerformers = useCallback(async () => {
+        if (!cohortId || !user?.id) return;
+
+        setLoading(true);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/leaderboard`);
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch performers: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Set the performers data
+            const performersData: Performer[] = data.stats.map((stat: any, index: number) => {
+                const userName = [stat.user.first_name, stat.user.last_name].filter(Boolean).join(' ');
+                return {
+                    name: userName,
+                    streakDays: stat.streak_count,
+                    tasksSolved: stat.tasks_completed,
+                    position: index + 1, // Position based on array order
+                    userId: stat.user.id // Keep track of user ID for identifying current user
+                };
+            });
+
+            if (view === 'learner') {
+                // Find current user in the FULL performers list (which will always include them)
+                const currentUserData = performersData.find(performer => performer.userId === parseInt(user.id));
+                if (currentUserData) {
+                    setCurrentUser(currentUserData);
+                }
+            }
+
+            // Get top performers but filter out those with 0 streak days
+            let topPerformers = performersData
+                .filter(performer => performer.streakDays > 0) // Only include performers with streak > 0
+                .slice(0, 3); // Take top 3 of those
+
+            setPerformers(topPerformers);
+
+            setLoading(false);
+        } catch (error) {
+            console.error("Error fetching top performers:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [cohortId, user?.id]);
+
+    // Fetch data on mount and when cohortId changes
+    useEffect(() => {
+        if (cohortId && user?.id) {
+            fetchPerformers();
+        }
+    }, [cohortId, user?.id]);
 
     // Update tooltip position based on button position
     useEffect(() => {
@@ -74,22 +133,21 @@ export default function TopPerformers({
     const handleRefresh = async (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent click from bubbling to parent elements
 
-        if (onRefresh && !isRefreshing) {
-            setIsRefreshing(true);
-            try {
-                console.log("Refreshing leaderboard data...");
-                await Promise.resolve(onRefresh());
-                console.log("Leaderboard refresh complete!");
-            } catch (error) {
-                console.error("Error refreshing leaderboard:", error);
-            } finally {
-                // Reset refreshing state after a short delay to show animation
-                setTimeout(() => {
-                    setIsRefreshing(false);
-                }, 500);
-            }
-        } else if (!onRefresh) {
-            console.warn("No onRefresh function provided to TopPerformers component");
+        if (isRefreshing) return;
+
+        setIsRefreshing(true);
+
+        try {
+            console.log("Refreshing leaderboard data...");
+            await fetchPerformers();
+            console.log("Leaderboard refresh complete!");
+        } catch (error) {
+            console.error("Error refreshing leaderboard:", error);
+        } finally {
+            // Reset refreshing state after a short delay to show animation
+            setTimeout(() => {
+                setIsRefreshing(false);
+            }, 500);
         }
     };
 
@@ -225,15 +283,16 @@ export default function TopPerformers({
                                 </span>
                             </div>
                             <div className="text-sm text-gray-400">
-                                Streak: {currentUser.streakDays} Days
+                                Streak: {currentUser.streakDays} Day{currentUser.streakDays === 1 ? "" : "s"}
                             </div>
                             <div className="text-sm text-gray-400">
-                                Solved: {currentUser.tasksSolved} Tasks
+                                Solved: {currentUser.tasksSolved} Task{currentUser.tasksSolved === 1 ? "" : "s"}
                             </div>
                         </div>
                     </div>
                 ) : (
                     // No performers and no current user - show empty state
+
                     <div className="p-8 text-center text-gray-400">
                         No performers data available
                     </div>
@@ -258,10 +317,10 @@ export default function TopPerformers({
                                     </span>
                                 </div>
                                 <div className="text-sm text-gray-400">
-                                    Streak: {currentUser.streakDays} Days
+                                    Streak: {currentUser.streakDays} Day{currentUser.streakDays === 1 ? "" : "s"}
                                 </div>
                                 <div className="text-sm text-gray-400">
-                                    Solved: {currentUser.tasksSolved} Tasks
+                                    Solved: {currentUser.tasksSolved} Task{currentUser.tasksSolved === 1 ? "" : "s"}
                                 </div>
                             </div>
                         </div>

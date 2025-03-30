@@ -4,7 +4,6 @@ import LearningStreak from "./LearningStreak";
 import TopPerformers from "./TopPerformers";
 import { Module } from "@/types/course";
 import { useAuth } from "@/lib/auth";
-import { Performer } from "./TopPerformers";
 
 // Constants for localStorage keys
 const LAST_INCREMENT_DATE_KEY = 'streak_last_increment_date';
@@ -22,14 +21,11 @@ interface LearnerCohortViewProps {
     cohortId?: string;
     streakDays?: number;
     activeDays?: string[];
-    performers?: Performer[];
-    currentUser?: Performer;
     completedTaskIds?: Record<string, boolean>;
     completedQuestionIds?: Record<string, Record<string, boolean>>;
     courses?: Course[];
     onCourseSelect?: (index: number) => void;
     activeCourseIndex?: number;
-    onRefreshLeaderboard?: () => Promise<void> | void;
 }
 
 interface StreakData {
@@ -44,14 +40,11 @@ export default function LearnerCohortView({
     cohortId,
     streakDays = 0,
     activeDays = [],
-    performers = [],
-    currentUser,
     completedTaskIds = {},
     completedQuestionIds = {},
     courses = [],
     onCourseSelect,
     activeCourseIndex = 0,
-    onRefreshLeaderboard
 }: LearnerCohortViewProps) {
     // Add state to manage completed tasks and questions
     const [localCompletedTaskIds, setLocalCompletedTaskIds] = useState<Record<string, boolean>>(completedTaskIds);
@@ -243,7 +236,7 @@ export default function LearnerCohortView({
     }, [fetchStreakData, isStreakIncrementedToday]);
 
     // Determine if sidebar should be shown
-    const showSidebar = cohortId || performers.length > 0;
+    const showSidebar = cohortId ? true : false;
 
     // Handle course selection
     const handleCourseSelect = (index: number) => {
@@ -311,11 +304,9 @@ export default function LearnerCohortView({
                         )}
 
                         <TopPerformers
-                            performers={performers}
-                            currentUser={currentUser}
                             schoolId={schoolId}
                             cohortId={cohortId}
-                            onRefresh={onRefreshLeaderboard}
+                            view='learner'
                         />
                     </div>
                 )}
