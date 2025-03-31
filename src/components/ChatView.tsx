@@ -23,6 +23,7 @@ interface ChatViewProps {
     handleAudioSubmit: (audioBlob: Blob) => void;
     handleViewScorecard: (scorecard: ScorecardItem[]) => void;
     readOnly: boolean;
+    viewOnly?: boolean;
     completedQuestionIds: Record<string, boolean>;
     currentQuestionId?: string;
     handleRetry?: () => void;
@@ -56,6 +57,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     handleAudioSubmit,
     handleViewScorecard,
     readOnly,
+    viewOnly = false,
     completedQuestionIds,
     currentQuestionId = '',
     handleRetry,
@@ -91,13 +93,13 @@ const ChatView: React.FC<ChatViewProps> = ({
 
     // Update view state when question config changes
     useEffect(() => {
-        // Set isViewingCode to true when a coding question is loaded
-        if (isCodingQuestion) {
+        // Don't set viewing code in viewOnly mode
+        if (isCodingQuestion && !viewOnly) {
             setIsViewingCode(true);
         } else {
             setIsViewingCode(false);
         }
-    }, [currentQuestionConfig, isCodingQuestion]);
+    }, [currentQuestionConfig, isCodingQuestion, viewOnly]);
 
     // Extract code from chat history for coding questions
     useEffect(() => {
@@ -318,7 +320,8 @@ const ChatView: React.FC<ChatViewProps> = ({
 
     // Render the code editor or chat view based on state
     const renderMainContent = () => {
-        if (isViewingCode && isCodingQuestion) {
+        // If viewing code and not in viewOnly mode, show the code editor
+        if (isViewingCode && isCodingQuestion && !viewOnly) {
             return (
                 <CodeEditorView
                     initialCode={codeContent}
@@ -337,6 +340,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                             isChatHistoryLoaded={isChatHistoryLoaded}
                             isTestMode={isTestMode}
                             inputType={currentQuestionConfig?.inputType}
+                            viewOnly={viewOnly}
                         />
                     ) : (
                         <ChatHistoryView
@@ -350,60 +354,62 @@ const ChatView: React.FC<ChatViewProps> = ({
                     )}
 
                     {/* Input area with fixed position at bottom */}
-                    <div className="pt-2 bg-[#111111]">
-                        {!(taskType === 'exam' && isQuestionCompleted) && (
-                            /* Input area - conditional render based on input type */
-                            <>
-                                {currentQuestionConfig?.inputType === 'audio' ? (
-                                    <AudioInputComponent
-                                        onAudioSubmit={handleAudioSubmit}
-                                        isSubmitting={isSubmitting || isAiResponding}
-                                        maxDuration={currentQuestionConfig?.audioMaxDuration || 120}
-                                    />
-                                ) : (
-                                    /* Completely restructured textarea container */
-                                    <div className="relative flex items-center bg-[#111111] rounded-3xl py-1 overflow-hidden border border-[#222222]">
-                                        <div className="flex-1 flex items-center">
-                                            <textarea
-                                                id="no-border-textarea"
-                                                ref={textareaRef}
-                                                placeholder="Type your answer here"
-                                                className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
-                                                value={currentAnswer}
-                                                onChange={handleInputChange as any}
-                                                onKeyPress={handleTextareaKeyPress}
-                                                autoFocus={!readOnly}
-                                                disabled={false}
-                                                rows={1}
-                                                style={{
-                                                    border: "none",
-                                                    outline: "none",
-                                                    boxShadow: "none",
-                                                    padding: "12px 24px",
-                                                    resize: "none"
-                                                }}
-                                            />
+                    {!viewOnly && (
+                        <div className="pt-2 bg-[#111111]">
+                            {!(taskType === 'exam' && isQuestionCompleted) && (
+                                /* Input area - conditional render based on input type */
+                                <>
+                                    {currentQuestionConfig?.inputType === 'audio' ? (
+                                        <AudioInputComponent
+                                            onAudioSubmit={handleAudioSubmit}
+                                            isSubmitting={isSubmitting || isAiResponding}
+                                            maxDuration={currentQuestionConfig?.audioMaxDuration || 120}
+                                        />
+                                    ) : (
+                                        /* Completely restructured textarea container */
+                                        <div className="relative flex items-center bg-[#111111] rounded-3xl py-1 overflow-hidden border border-[#222222]">
+                                            <div className="flex-1 flex items-center">
+                                                <textarea
+                                                    id="no-border-textarea"
+                                                    ref={textareaRef}
+                                                    placeholder="Type your answer here"
+                                                    className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
+                                                    value={currentAnswer}
+                                                    onChange={handleInputChange as any}
+                                                    onKeyPress={handleTextareaKeyPress}
+                                                    autoFocus={!readOnly}
+                                                    disabled={false}
+                                                    rows={1}
+                                                    style={{
+                                                        border: "none",
+                                                        outline: "none",
+                                                        boxShadow: "none",
+                                                        padding: "12px 24px",
+                                                        resize: "none"
+                                                    }}
+                                                />
+                                            </div>
+                                            <button
+                                                className={`bg-white rounded-full w-10 h-10 mr-2 cursor-pointer flex items-center justify-center ${isSubmitting || isAiResponding ? 'opacity-50' : ''}`}
+                                                onClick={() => handleSubmitAnswer('text')}
+                                                disabled={!currentAnswer.trim() || isSubmitting || isAiResponding}
+                                                aria-label="Submit answer"
+                                                type="button"
+                                            >
+                                                {isSubmitting ? (
+                                                    <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                )}
+                                            </button>
                                         </div>
-                                        <button
-                                            className={`bg-white rounded-full w-10 h-10 mr-2 cursor-pointer flex items-center justify-center ${isSubmitting || isAiResponding ? 'opacity-50' : ''}`}
-                                            onClick={() => handleSubmitAnswer('text')}
-                                            disabled={!currentAnswer.trim() || isSubmitting || isAiResponding}
-                                            aria-label="Submit answer"
-                                            type="button"
-                                        >
-                                            {isSubmitting ? (
-                                                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                                            ) : (
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                </svg>
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
                 </>
             );
         }
@@ -487,7 +493,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             `}</style>
 
             {/* Toggle button for coding questions */}
-            {isCodingQuestion && (
+            {!viewOnly && isCodingQuestion && (
                 <div className="flex justify-end mb-4">
                     <div className="code-toggle-switch">
                         <div

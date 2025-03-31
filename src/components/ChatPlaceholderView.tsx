@@ -5,13 +5,15 @@ interface ChatPlaceholderViewProps {
     isChatHistoryLoaded: boolean;
     isTestMode: boolean;
     inputType?: string;
+    viewOnly?: boolean;
 }
 
 const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
     taskType,
     isChatHistoryLoaded,
     isTestMode,
-    inputType = 'text'
+    inputType = 'text',
+    viewOnly = false
 }) => {
     return (
         <div className="flex flex-col items-center justify-center h-full w-full">
@@ -24,12 +26,19 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                 // Show placeholder text only when history is loaded but empty
                 <>
                     <h2 className="text-4xl font-light text-white mb-6 text-center">
-                        {taskType === 'exam' ? 'Ready for a challenge?' : 'Ready to test your knowledge?'}
+                        {viewOnly
+                            ? 'No activity yet'
+                            : taskType === 'exam'
+                                ? 'Ready to test your knowledge?'
+                                : 'Ready for a challenge?'
+                        }
                     </h2>
                     <p className="text-gray-400 text-center max-w-md mx-auto mb-8">
-                        {taskType === 'exam'
-                            ? `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`
-                            : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`
+                        {viewOnly
+                            ? `There is no chat history for this ${taskType === 'exam' ? 'exam' : 'quiz'}`
+                            : taskType === 'exam'
+                                ? `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`
+                                : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`
                         }
                     </p>
                 </>

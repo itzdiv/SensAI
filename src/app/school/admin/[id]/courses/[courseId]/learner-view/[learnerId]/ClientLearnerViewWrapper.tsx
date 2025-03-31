@@ -69,6 +69,8 @@ export default function ClientLearnerViewWrapper({
             modules={modules}
             completedTaskIds={completedTaskIds}
             completedQuestionIds={completedQuestionIds}
+            viewOnly={true}
+            learnerId={learnerId}
         />
     );
 } 

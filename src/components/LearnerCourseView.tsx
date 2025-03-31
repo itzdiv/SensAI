@@ -29,6 +29,8 @@ interface LearnerCourseViewProps {
     onTaskComplete?: (taskId: string, isComplete: boolean) => void;
     onQuestionComplete?: (taskId: string, questionId: string, isComplete: boolean) => void;
     onDialogClose?: () => void;
+    viewOnly?: boolean;
+    learnerId?: string;
 }
 
 export default function LearnerCourseView({
@@ -37,11 +39,13 @@ export default function LearnerCourseView({
     completedQuestionIds = {},
     onTaskComplete,
     onQuestionComplete,
-    onDialogClose
+    onDialogClose,
+    viewOnly = false,
+    learnerId = '',
 }: LearnerCourseViewProps) {
     // Get user from auth context
     const { user } = useAuth();
-    const userId = user?.id || '';
+    const userId = viewOnly ? learnerId : user?.id || '';
 
     const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
     const [activeItem, setActiveItem] = useState<any>(null);
@@ -574,7 +578,7 @@ export default function LearnerCourseView({
 
     // Function to mark task as completed
     const markTaskComplete = async () => {
-        if (!activeItem || !activeModuleId || !userId) return;
+        if (viewOnly || !activeItem || !activeModuleId || !userId) return;
 
         // Set loading state to true to show spinner
         setIsMarkingComplete(true);
@@ -1084,7 +1088,7 @@ export default function LearnerCourseView({
                                                 <CheckCircle size={16} className="mr-2" />
                                                 Completed
                                             </button>
-                                        ) : (
+                                        ) : !viewOnly ? (
                                             <button
                                                 onClick={markTaskComplete}
                                                 className={`flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -1102,7 +1106,7 @@ export default function LearnerCourseView({
                                                     </>
                                                 )}
                                             </button>
-                                        )
+                                        ) : null
                                     )}
                                     <button
                                         onClick={closeDialog}
@@ -1137,6 +1141,7 @@ export default function LearnerCourseView({
                                                 <DynamicLearnerQuizView
                                                     questions={activeItem.questions || []}
                                                     readOnly={true}
+                                                    viewOnly={viewOnly}
                                                     taskType={activeItem.type as 'quiz' | 'exam'}
                                                     currentQuestionId={activeQuestionId || undefined}
                                                     onQuestionChange={activateQuestion}

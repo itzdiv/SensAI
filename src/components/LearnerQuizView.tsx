@@ -18,6 +18,7 @@ export interface LearnerQuizViewProps {
     isDarkMode?: boolean;
     className?: string;
     readOnly?: boolean;
+    viewOnly?: boolean;
     taskType?: 'quiz' | 'exam';
     currentQuestionId?: string;
     onQuestionChange?: (questionId: string) => void;
@@ -34,6 +35,7 @@ export default function LearnerQuizView({
     isDarkMode = true,
     className = "",
     readOnly = false,
+    viewOnly = false,
     taskType = 'quiz',
     currentQuestionId,
     onQuestionChange,
@@ -1557,6 +1559,7 @@ export default function LearnerQuizView({
                             handleAudioSubmit={handleAudioSubmit}
                             handleViewScorecard={handleViewScorecard}
                             readOnly={readOnly}
+                            viewOnly={viewOnly}
                             completedQuestionIds={completedQuestionIds}
                             currentQuestionId={validQuestions[currentQuestionIndex]?.id}
                             handleRetry={handleRetry}
