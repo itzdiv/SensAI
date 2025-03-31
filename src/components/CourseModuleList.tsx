@@ -151,6 +151,10 @@ export default function CourseModuleList({
     const [swappingModuleUpId, setSwappingModuleUpId] = useState<string | null>(null);
     const [swappingModuleDownId, setSwappingModuleDownId] = useState<string | null>(null);
 
+    // States to track task swapping in progress
+    const [swappingTaskUpId, setSwappingTaskUpId] = useState<string | null>(null);
+    const [swappingTaskDownId, setSwappingTaskDownId] = useState<string | null>(null);
+
     // Update completedItems when completedTaskIds changes
     useEffect(() => {
         // Only update the state if the values are actually different
@@ -228,6 +232,36 @@ export default function CourseModuleList({
         }
     };
 
+    // Function to handle swapping tasks via API
+    const swapTasks = async (taskId1: string, taskId2: string) => {
+        if (!courseId) {
+            console.error('Course ID is required for swapping modules');
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:8001/courses/${courseId}/tasks/swap`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    task_1_id: taskId1,
+                    task_2_id: taskId2,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to swap tasks: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error swapping tasks:', error);
+            throw error;
+        }
+    };
+
     // Function to handle moving a module up (with API call)
     const handleMoveModuleUp = async (moduleId: string) => {
         // Find the module and its index
@@ -285,6 +319,74 @@ export default function CourseModuleList({
         } finally {
             // Clear loading state
             setSwappingModuleDownId(null);
+        }
+    };
+
+    // Function to handle moving a task up (with API call)
+    const handleMoveTaskUp = async (moduleId: string, taskId: string) => {
+        // Find the module
+        const module = modules.find(m => m.id === moduleId);
+        if (!module) return;
+
+        // Find the task and its index
+        const index = module.items.findIndex(item => item.id === taskId);
+        if (index <= 0) return; // Can't move up if it's the first one
+
+        // Get the previous task
+        const previousTask = module.items[index - 1];
+        if (!previousTask) return;
+
+        try {
+            // Set loading state
+            setSwappingTaskUpId(taskId);
+
+            // Call the API to swap tasks
+            await swapTasks(taskId, previousTask.id);
+
+            // Update UI via the parent component's handler
+            if (onMoveItemUp) {
+                onMoveItemUp(moduleId, taskId);
+            }
+        } catch (error) {
+            console.error('Failed to move task up:', error);
+            // Could add a toast notification here
+        } finally {
+            // Clear loading state
+            setSwappingTaskUpId(null);
+        }
+    };
+
+    // Function to handle moving a task down (with API call)
+    const handleMoveTaskDown = async (moduleId: string, taskId: string) => {
+        // Find the module
+        const module = modules.find(m => m.id === moduleId);
+        if (!module) return;
+
+        // Find the task and its index
+        const index = module.items.findIndex(item => item.id === taskId);
+        if (index === -1 || index === module.items.length - 1) return; // Can't move down if it's the last one
+
+        // Get the next task
+        const nextTask = module.items[index + 1];
+        if (!nextTask) return;
+
+        try {
+            // Set loading state
+            setSwappingTaskDownId(taskId);
+
+            // Call the API to swap tasks
+            await swapTasks(taskId, nextTask.id);
+
+            // Update UI via the parent component's handler
+            if (onMoveItemDown) {
+                onMoveItemDown(moduleId, taskId);
+            }
+        } catch (error) {
+            console.error('Failed to move task down:', error);
+            // Could add a toast notification here
+        } finally {
+            // Clear loading state
+            setSwappingTaskDownId(null);
         }
     };
 
@@ -698,28 +800,32 @@ export default function CourseModuleList({
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            if (onMoveItemUp) {
-                                                                onMoveItemUp(module.id, item.id);
-                                                            }
+                                                            handleMoveTaskUp(module.id, item.id);
                                                         }}
-                                                        disabled={itemIndex === 0}
+                                                        disabled={itemIndex === 0 || swappingTaskUpId === item.id}
                                                         className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                                         aria-label="Move item up"
                                                     >
-                                                        <ChevronUp size={16} />
+                                                        {swappingTaskUpId === item.id ? (
+                                                            <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+                                                        ) : (
+                                                            <ChevronUp size={16} />
+                                                        )}
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            if (onMoveItemDown) {
-                                                                onMoveItemDown(module.id, item.id);
-                                                            }
+                                                            handleMoveTaskDown(module.id, item.id);
                                                         }}
-                                                        disabled={itemIndex === module.items.length - 1}
+                                                        disabled={itemIndex === module.items.length - 1 || swappingTaskDownId === item.id}
                                                         className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                                         aria-label="Move item down"
                                                     >
-                                                        <ChevronDown size={16} />
+                                                        {swappingTaskDownId === item.id ? (
+                                                            <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+                                                        ) : (
+                                                            <ChevronDown size={16} />
+                                                        )}
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
