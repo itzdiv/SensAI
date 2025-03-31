@@ -8,6 +8,7 @@ import CohortCard from "@/components/CohortCard";
 import { useAuth } from "@/lib/auth";
 import LearnerCohortView from "@/components/LearnerCohortView";
 import { Module, ModuleItem } from "@/types/course";
+import { getCompletionData } from "@/lib/api";
 
 interface School {
     id: number;
@@ -161,40 +162,11 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         if (!cohortId || !userId) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/completion?user_id=${userId}`);
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch completion data: ${response.status}`);
-            }
-
-            const completionData = await response.json();
-
-            // Process completion data for tasks
-            const taskCompletions: Record<string, boolean> = {};
-            // Process completion data for questions
-            const questionCompletions: Record<string, Record<string, boolean>> = {};
-
-            // Iterate through each task in the completion data
-            Object.entries(completionData).forEach(([taskId, taskData]: [string, any]) => {
-                // Store task completion status
-                taskCompletions[taskId] = taskData.is_complete;
-
-                // Store question completion status if questions exist
-                if (taskData.questions && taskData.questions.length > 0) {
-                    const questionsMap: Record<string, boolean> = {};
-
-                    taskData.questions.forEach((question: any) => {
-                        questionsMap[question.question_id.toString()] = question.is_complete;
-                    });
-
-                    questionCompletions[taskId] = questionsMap;
-                }
-            });
+            const { taskCompletions, questionCompletions } = await getCompletionData(cohortId, userId);
 
             // Update state with processed completion data
             setCompletedTaskIds(taskCompletions);
             setCompletedQuestionIds(questionCompletions);
-
         } catch (error) {
             console.error("Error fetching completion data:", error);
             // We don't set an error state as this is not critical functionality

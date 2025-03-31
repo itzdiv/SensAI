@@ -23,7 +23,6 @@ const DynamicLearnerQuizView = dynamic(
 );
 
 interface LearnerCourseViewProps {
-    courseTitle: string;
     modules: Module[];
     completedTaskIds?: Record<string, boolean>;
     completedQuestionIds?: Record<string, Record<string, boolean>>;
@@ -33,7 +32,6 @@ interface LearnerCourseViewProps {
 }
 
 export default function LearnerCourseView({
-    courseTitle,
     modules,
     completedTaskIds = {},
     completedQuestionIds = {},

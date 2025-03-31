@@ -571,6 +571,15 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                                 : '-'}
                                                         </td>
                                                     )}
+                                                    <td className="p-4 text-right">
+                                                        <Link
+                                                            href={`/school/admin/${schoolId}/courses/${cohort.courses?.[0]?.id}/learner-view/${studentId}?cohortId=${cohort.id}`}
+                                                            target="_blank"
+                                                            className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm text-white rounded-md transition-colors cursor-pointer"
+                                                        >
+                                                            View as Learner
+                                                        </Link>
+                                                    </td>
                                                 </tr>
                                             );
                                         })}

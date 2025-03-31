@@ -281,7 +281,6 @@ export default function LearnerCohortView({
                         )}
 
                         <LearnerCourseView
-                            courseTitle=""
                             modules={modules}
                             completedTaskIds={localCompletedTaskIds}
                             completedQuestionIds={localCompletedQuestionIds}

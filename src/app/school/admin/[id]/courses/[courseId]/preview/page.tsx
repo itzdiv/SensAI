@@ -1,10 +1,8 @@
 import { Metadata } from 'next';
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { Header } from "@/components/layout/header";
-import LearnerCourseView from "@/components/LearnerCourseView";
-import { Module, ModuleItem } from "@/types/course";
 import ClientPreviewWrapper from './ClientPreviewWrapper';
+import { getCourseModules } from '@/lib/server-api';
 
 // Define Milestone interface for the API response
 interface Milestone {
@@ -59,77 +57,8 @@ export default async function PreviewPage({ params }: { params: { id: string, co
     const courseId = params.courseId;
 
     try {
-        // Make a single API call to get all course data
-        const response = await fetch(`${process.env.BACKEND_URL}/courses/${courseId}`, {
-            cache: 'no-store'
-        });
-
-        if (!response.ok) {
-            notFound();
-        }
-
-        const data = await response.json();
-        const courseTitle = data.name;
-
-        // Initialize modules array
-        let modules: Module[] = [];
-
-        // Check if milestones are available in the response
-        if (data.milestones && Array.isArray(data.milestones)) {
-            // Transform milestones to match our Module interface
-            modules = data.milestones.map((milestone: Milestone) => {
-                // Map tasks to module items if they exist
-                const moduleItems: ModuleItem[] = [];
-
-                if (milestone.tasks && Array.isArray(milestone.tasks)) {
-                    milestone.tasks.forEach((task: Task) => {
-                        if (task.type === 'learning_material') {
-                            moduleItems.push({
-                                id: task.id.toString(),
-                                title: task.title,
-                                position: task.ordering,
-                                type: 'material',
-                                content: task.content || [],
-                                status: task.status
-                            });
-                        } else if (task.type === 'quiz') {
-                            moduleItems.push({
-                                id: task.id.toString(),
-                                title: task.title,
-                                position: task.ordering,
-                                type: 'quiz',
-                                questions: task.questions || [],
-                                status: task.status
-                            });
-                        } else if (task.type === 'exam') {
-                            moduleItems.push({
-                                id: task.id.toString(),
-                                title: task.title,
-                                position: task.ordering,
-                                type: 'exam',
-                                questions: task.questions || [],
-                                status: task.status
-                            });
-                        }
-                    });
-
-                    // Sort items by position/ordering
-                    moduleItems.sort((a, b) => a.position - b.position);
-                }
-
-                return {
-                    id: milestone.id.toString(),
-                    title: milestone.name,
-                    position: milestone.ordering,
-                    items: moduleItems,
-                    isExpanded: false,
-                    backgroundColor: `${milestone.color}80`, // Add 50% opacity for UI display
-                };
-            });
-
-            // Sort modules by position/ordering
-            modules.sort((a, b) => a.position - b.position);
-        }
+        // Use the new getCourseModules function to fetch and transform course data
+        const { courseData, modules } = await getCourseModules(courseId);
 
         return (
             <div className="min-h-screen bg-black">
@@ -143,12 +72,9 @@ export default async function PreviewPage({ params }: { params: { id: string, co
                         <Suspense fallback={<div>Loading...</div>}>
                             {modules.length > 0 ? (
                                 <>
-                                    <h1 className="text-4xl font-light text-white mb-16">{data.name}</h1>
+                                    <h1 className="text-4xl font-light text-white mb-16">{courseData.name}</h1>
                                     <ClientPreviewWrapper
-                                        courseTitle=""
                                         modules={modules}
-                                        isPreview={true}
-                                        schoolId={orgId}
                                     />
                                 </>
                             ) : (

@@ -41,7 +41,7 @@ export interface School {
 export function useCourses() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
   // Fetch courses immediately when user ID is available
@@ -99,7 +99,7 @@ export function useCourses() {
 export function useSchools() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [schools, setSchools] = useState<School[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
   // Fetch schools immediately when user ID is available
@@ -147,3 +147,153 @@ export function useSchools() {
     error
   };
 } 
+
+/**
+ * Fetches and processes completion data for a user in a cohort
+ * @param cohortId - The ID of the cohort
+ * @param userId - The ID of the user
+ * @returns Object containing task and question completion data
+ */
+export const getCompletionData = async (cohortId: number, userId: string): Promise<{
+  taskCompletions: Record<string, boolean>,
+  questionCompletions: Record<string, Record<string, boolean>>
+}> => {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/completion?user_id=${userId}`);
+
+  if (!response.ok) {
+      throw new Error(`Failed to fetch completion data: ${response.status}`);
+  }
+
+  const completionData = await response.json();
+
+  // Process completion data for tasks
+  const taskCompletions: Record<string, boolean> = {};
+  // Process completion data for questions
+  const questionCompletions: Record<string, Record<string, boolean>> = {};
+
+  // Iterate through each task in the completion data
+  Object.entries(completionData).forEach(([taskId, taskData]: [string, any]) => {
+      // Store task completion status
+      taskCompletions[taskId] = taskData.is_complete;
+
+      // Store question completion status if questions exist
+      if (taskData.questions && taskData.questions.length > 0) {
+          const questionsMap: Record<string, boolean> = {};
+
+          taskData.questions.forEach((question: any) => {
+              questionsMap[question.question_id.toString()] = question.is_complete;
+          });
+
+          questionCompletions[taskId] = questionsMap;
+      }
+  });
+
+  return { taskCompletions, questionCompletions };
+}; 
+
+// Define Milestone interface for the API response
+interface Milestone {
+  id: number;
+  name: string;
+  color: string;
+  ordering: number;
+  tasks?: Task[];
+}
+
+interface Task {
+  id: number;
+  title: string;
+  type: string;
+  status: string;
+  ordering: number;
+  content?: any[]; // Content for learning materials
+  questions?: any[]; // Questions for quizzes and exams
+}
+
+/**
+ * Fetches course data and transforms it into modules
+ * @param courseId - The ID of the course
+ * @param baseUrl - The base URL for the API request (defaults to NEXT_PUBLIC_BACKEND_URL)
+ * @returns Object containing the course data and transformed modules
+ * 
+ * NOTE: This is a client-side function. For server components, use the version in server-api.ts
+ */
+export const getCourseModules = async (courseId: string, baseUrl?: string): Promise<{
+  courseData: any,
+  modules: any[]
+}> => {
+  // Determine which URL to use (server-side vs client-side)
+  const apiUrl = baseUrl || process.env.NEXT_PUBLIC_BACKEND_URL;
+  
+  const response = await fetch(`${apiUrl}/courses/${courseId}`, {
+    cache: 'no-store'
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch course data: ${response.status}`);
+  }
+
+  const courseData = await response.json();
+  
+  // Initialize modules array
+  let modules: any[] = [];
+
+  // Check if milestones are available in the response
+  if (courseData.milestones && Array.isArray(courseData.milestones)) {
+    // Transform milestones to match our Module interface
+    modules = courseData.milestones.map((milestone: Milestone) => {
+      // Map tasks to module items if they exist
+      const moduleItems: any[] = [];
+
+      if (milestone.tasks && Array.isArray(milestone.tasks)) {
+        milestone.tasks.forEach((task: Task) => {
+          if (task.type === 'learning_material') {
+            moduleItems.push({
+              id: task.id.toString(),
+              title: task.title,
+              position: task.ordering,
+              type: 'material',
+              content: task.content || [],
+              status: task.status
+            });
+          } else if (task.type === 'quiz') {
+            moduleItems.push({
+              id: task.id.toString(),
+              title: task.title,
+              position: task.ordering,
+              type: 'quiz',
+              questions: task.questions || [],
+              status: task.status
+            });
+          } else if (task.type === 'exam') {
+            moduleItems.push({
+              id: task.id.toString(),
+              title: task.title,
+              position: task.ordering,
+              type: 'exam',
+              questions: task.questions || [],
+              status: task.status
+            });
+          }
+        });
+
+        // Sort items by position/ordering
+        moduleItems.sort((a: any, b: any) => a.position - b.position);
+      }
+
+      return {
+        id: milestone.id.toString(),
+        title: milestone.name,
+        position: milestone.ordering,
+        items: moduleItems,
+        isExpanded: false,
+        backgroundColor: `${milestone.color}80`, // Add 50% opacity for UI display
+      };
+    });
+
+    // Sort modules by position/ordering
+    modules.sort((a: any, b: any) => a.position - b.position);
+  }
+
+  return { courseData, modules };
+}; 
