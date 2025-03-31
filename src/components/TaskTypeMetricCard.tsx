@@ -66,12 +66,12 @@ export default function TaskTypeMetricCard({
 
             <div className="relative p-6 flex flex-col">
                 <div className="flex justify-between items-start mb-3">
-                    {/* Title and task count container with fixed height */}
+                    {/* task count container with fixed height */}
                     <div className="h-14 flex flex-col justify-center">
-                        <div className={`text-xl font-light ${colorMap[color].text} mb-1`}>{title}</div>
+                        <div className={`text-lg xl:text-xl font-light ${colorMap[color].text} mb-1`}>{title}</div>
 
                     </div>
-                    <div className="text-4xl font-light text-white">
+                    <div className="text-3xl xl:text-4xl font-light text-white">
                         {completionPercentage}%
                     </div>
                 </div>

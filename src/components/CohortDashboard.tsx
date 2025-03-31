@@ -115,327 +115,336 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
     }
 
     return (
-        <div className="flex flex-col lg:flex-row gap-8">
-            <div className="lg:w-2/3">
-                {isLoadingMetrics ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="w-12 h-12 border-t-2 border-white rounded-full animate-spin"></div>
-                    </div>
-                ) : metricsError ? (
-                    <div className="flex flex-col items-center justify-center p-8 border border-red-800 rounded-lg bg-red-900/20">
-                        <p className="text-red-400 mb-2">{metricsError}</p>
-                        <button
-                            className="text-white bg-red-800 hover:bg-red-700 px-4 py-2 rounded-md mt-2 cursor-pointer"
-                            onClick={fetchCourseMetrics}
-                        >
-                            Try again
-                        </button>
-                    </div>
-                ) : courseMetrics ? (
-                    <div className="flex gap-6">
-                        {/* Task Completion Rate - 75% width */}
-                        <div className="bg-[#111] p-8 rounded-lg w-2/3">
-                            <h3 className="text-gray-400 text-sm mb-2 flex items-center">
-                                <span className="inline-block">Task Completion</span>
-                                <Tooltip content="Average percentage of tasks completed by a learner" position="top">
-                                    <span className="ml-2 inline-flex items-center">
-                                        <HelpCircle size={14} className="relative top-[0.1em]" />
-                                    </span>
-                                </Tooltip>
-                            </h3>
-                            <div className="flex items-end gap-4">
-                                <span className={`text-4xl font-light ${courseMetrics.average_completion < 0.3 ? 'text-red-400' :
-                                    courseMetrics.average_completion < 0.7 ? 'text-amber-400' :
-                                        'text-green-400'
-                                    }`}>
-                                    {Math.round(courseMetrics.average_completion * 100)}%
-                                </span>
-                                <div className="flex-1 bg-gray-800 h-4 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full rounded-full ${courseMetrics.average_completion < 0.3 ? 'bg-red-400' :
-                                            courseMetrics.average_completion < 0.7 ? 'bg-amber-400' :
-                                                'bg-green-400'
-                                            }`}
-                                        style={{ width: `${courseMetrics.average_completion * 100}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            {/* Add total tasks count below the progress bar */}
-                            <div className="text-xs text-gray-400 mt-2 text-right">
-                                {Math.round(courseMetrics.average_completion * courseMetrics.num_tasks)} / {courseMetrics.num_tasks} tasks
-                            </div>
+        <div>
+            <div className="flex flex-col lg:flex-row gap-8">
+                <div className="lg:w-2/3">
+                    {isLoadingMetrics ? (
+                        <div className="flex justify-center items-center h-64">
+                            <div className="w-12 h-12 border-t-2 border-white rounded-full animate-spin"></div>
                         </div>
-
-                        {/* Active Learners - 25% width */}
-                        <div className="bg-[#111] p-8 rounded-lg w-1/3">
-                            <h3 className="text-gray-400 text-sm mb-2 flex items-center">
-                                <span className="inline-block">Active Learners</span>
-                                <Tooltip content="Number of learners who have attempted at least one task" position="top">
-                                    <span className="ml-2 inline-flex items-center">
-                                        <HelpCircle size={14} className="relative top-[0.1em]" />
-                                    </span>
-                                </Tooltip>
-                            </h3>
-                            <div className="flex items-end gap-4">
-                                {/* Calculate the percentage of active learners */}
-                                {(() => {
-                                    const totalLearners = cohort?.members?.filter(m => m.role === 'learner').length || 0;
-                                    const activePercentage = totalLearners > 0 ?
-                                        (courseMetrics.num_active_learners / totalLearners) : 0;
-
-                                    return (
-                                        <span className="text-6xl font-light">
-                                            <span className={`${activePercentage < 0.3 ? 'text-red-400' :
-                                                activePercentage < 0.7 ? 'text-amber-400' :
-                                                    'text-green-400'
-                                                }`}>
-                                                {courseMetrics.num_active_learners}
-                                            </span>
-                                            <span className="text-sm text-gray-400 ml-2">
-                                                out of {totalLearners}
-                                            </span>
+                    ) : metricsError ? (
+                        <div className="flex flex-col items-center justify-center p-8 border border-red-800 rounded-lg bg-red-900/20">
+                            <p className="text-red-400 mb-2">{metricsError}</p>
+                            <button
+                                className="text-white bg-red-800 hover:bg-red-700 px-4 py-2 rounded-md mt-2 cursor-pointer"
+                                onClick={fetchCourseMetrics}
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    ) : courseMetrics ? (
+                        <div className="flex gap-6">
+                            {/* Task Completion Rate - 75% width */}
+                            <div className="bg-[#111] p-8 rounded-lg w-2/3">
+                                <h3 className="text-gray-400 text-sm mb-6 flex items-center">
+                                    <span className="inline-block">Task Completion</span>
+                                    <Tooltip content="Average percentage of tasks completed by a learner" position="top">
+                                        <span className="ml-2 inline-flex items-center">
+                                            <HelpCircle size={14} className="relative top-[0.1em]" />
                                         </span>
-                                    );
-                                })()}
+                                    </Tooltip>
+                                </h3>
+                                <div className="flex gap-4">
+                                    {/* Left column: Percentage number, vertically centered */}
+                                    <div className="flex items-center">
+                                        <span className={`text-4xl font-light ${courseMetrics.average_completion < 0.3 ? 'text-red-400' :
+                                            courseMetrics.average_completion < 0.7 ? 'text-amber-400' :
+                                                'text-green-400'
+                                            }`}>
+                                            {Math.round(courseMetrics.average_completion * 100)}%
+                                        </span>
+                                    </div>
+
+                                    {/* Right column: Progress bar and task count */}
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="flex-1 bg-gray-800 h-4 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full ${courseMetrics.average_completion < 0.3 ? 'bg-red-400' :
+                                                    courseMetrics.average_completion < 0.7 ? 'bg-amber-400' :
+                                                        'bg-green-400'
+                                                    }`}
+                                                style={{ width: `${courseMetrics.average_completion * 100}%` }}
+                                            ></div>
+                                        </div>
+                                        {/* Task count below the progress bar */}
+                                        <div className="text-xs text-gray-400 mt-2 text-right">
+                                            {Math.round(courseMetrics.average_completion * courseMetrics.num_tasks)} / {courseMetrics.num_tasks} tasks
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Active Learners - 25% width */}
+                            <div className="bg-[#111] p-8 rounded-lg w-1/3">
+                                <h3 className="text-gray-400 mb-2 flex items-center">
+                                    <span className="inline-block">Active Learners</span>
+                                    <Tooltip content="Number of learners who have attempted at least one task" position="top">
+                                        <span className="ml-2 inline-flex items-center">
+                                            <HelpCircle size={14} className="relative top-[0.1em]" />
+                                        </span>
+                                    </Tooltip>
+                                </h3>
+                                <div className="flex items-end gap-4">
+                                    {/* Calculate the percentage of active learners */}
+                                    {(() => {
+                                        const totalLearners = cohort?.members?.filter(m => m.role === 'learner').length || 0;
+                                        const activePercentage = totalLearners > 0 ?
+                                            (courseMetrics.num_active_learners / totalLearners) : 0;
+
+                                        return (
+                                            <span className="text-6xl font-light">
+                                                <span className={`${activePercentage < 0.3 ? 'text-red-400' :
+                                                    activePercentage < 0.7 ? 'text-amber-400' :
+                                                        'text-green-400'
+                                                    }`}>
+                                                    {courseMetrics.num_active_learners}
+                                                </span>
+                                                <span className="text-sm text-gray-400 ml-2">
+                                                    out of {totalLearners}
+                                                </span>
+                                            </span>
+                                        );
+                                    })()}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-64 bg-[#111] rounded-lg border border-gray-800">
-                        <p className="text-gray-400">No metrics available for this course</p>
-                    </div>
-                )}
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-64 bg-[#111] rounded-lg border border-gray-800">
+                            <p className="text-gray-400">No metrics available for this course</p>
+                        </div>
+                    )}
 
-                {/* Task Type Metrics - Ultra Simple Direct Cards */}
-                {courseMetrics && (
-                    <div className="mt-8">
-                        <h3 className="text-gray-400 text-sm mb-4 flex items-center pl-2">
-                            <span className="inline-block">Completion by Type</span>
-                            <Tooltip content="Average completion by a learner for each type of task" position="top">
-                                <span className="ml-2 inline-flex items-center">
-                                    <HelpCircle size={14} className="relative top-[0.1em]" />
-                                </span>
-                            </Tooltip>
-                        </h3>
+                    {/* Task Type Metrics - Ultra Simple Direct Cards */}
+                    {courseMetrics && (
+                        <div className="mt-8">
+                            <h3 className="text-gray-400 mb-4 flex items-center pl-2">
+                                <span className="inline-block">Completion by Type</span>
+                                <Tooltip content="Average completion by a learner for each type of task" position="top">
+                                    <span className="ml-2 inline-flex items-center">
+                                        <HelpCircle size={14} className="relative top-[0.1em]" />
+                                    </span>
+                                </Tooltip>
+                            </h3>
 
-                        {/* Empty state */}
-                        {!courseMetrics.task_type_metrics.quiz &&
-                            !courseMetrics.task_type_metrics.learning_material &&
-                            !courseMetrics.task_type_metrics.exam && (
-                                <div className="text-center text-gray-400 py-16 bg-[#111] rounded-lg">
-                                    No task type metrics available
-                                </div>
-                            )}
-
-                        {/* Cards Layout */}
-                        {(courseMetrics.task_type_metrics.quiz ||
-                            courseMetrics.task_type_metrics.learning_material ||
-                            courseMetrics.task_type_metrics.exam) && (() => {
-                                // Calculate number of available task types
-                                const availableTypes = [
-                                    courseMetrics.task_type_metrics.quiz,
-                                    courseMetrics.task_type_metrics.learning_material,
-                                    courseMetrics.task_type_metrics.exam
-                                ].filter(Boolean).length;
-
-                                // Render with the appropriate grid class based on count
-                                return (
-                                    <div className={`grid grid-cols-1 ${availableTypes === 1 ? 'md:grid-cols-1' :
-                                        availableTypes === 2 ? 'md:grid-cols-2' :
-                                            'md:grid-cols-3'
-                                        } gap-4`}>
-
-                                        {/* Learning Material Card */}
-                                        {courseMetrics.task_type_metrics.learning_material && (
-                                            <TaskTypeMetricCard
-                                                title="Learning Material"
-                                                count={courseMetrics.task_type_metrics.learning_material.count}
-                                                completionRate={courseMetrics.task_type_metrics.learning_material.completion_rate}
-                                                color="purple"
-                                            />
-                                        )}
-
-                                        {/* Quiz Card */}
-                                        {courseMetrics.task_type_metrics.quiz && (
-                                            <TaskTypeMetricCard
-                                                title="Quiz"
-                                                count={courseMetrics.task_type_metrics.quiz.count}
-                                                completionRate={courseMetrics.task_type_metrics.quiz.completion_rate}
-                                                color="indigo"
-                                            />
-                                        )}
-
-                                        {/* Exam Card */}
-                                        {courseMetrics.task_type_metrics.exam && (
-                                            <TaskTypeMetricCard
-                                                title="Exam"
-                                                count={courseMetrics.task_type_metrics.exam.count}
-                                                completionRate={courseMetrics.task_type_metrics.exam.completion_rate}
-                                                color="teal"
-                                            />
-                                        )}
+                            {/* Empty state */}
+                            {!courseMetrics.task_type_metrics.quiz &&
+                                !courseMetrics.task_type_metrics.learning_material &&
+                                !courseMetrics.task_type_metrics.exam && (
+                                    <div className="text-center text-gray-400 py-16 bg-[#111] rounded-lg">
+                                        No task type metrics available
                                     </div>
-                                );
-                            })()}
-                    </div>
-                )}
+                                )}
 
-                {/* Student Level Metrics Table */}
-                {courseMetrics && (
-                    <div className="mt-8">
-                        <h3 className="text-gray-400 text-sm mb-4 flex items-center pl-2">
-                            <span className="inline-block">Individual Learner Progress</span>
-                            <Tooltip content="Detailed completion metrics for each learner in this cohort" position="top">
-                                <span className="ml-2 inline-flex items-center">
-                                    <HelpCircle size={14} className="relative top-[0.1em]" />
-                                </span>
-                            </Tooltip>
-                        </h3>
+                            {/* Cards Layout */}
+                            {(courseMetrics.task_type_metrics.quiz ||
+                                courseMetrics.task_type_metrics.learning_material ||
+                                courseMetrics.task_type_metrics.exam) && (() => {
+                                    // Calculate number of available task types
+                                    const availableTypes = [
+                                        courseMetrics.task_type_metrics.quiz,
+                                        courseMetrics.task_type_metrics.learning_material,
+                                        courseMetrics.task_type_metrics.exam
+                                    ].filter(Boolean).length;
 
-                        {/* Student metrics table */}
-                        <div className="bg-[#111] rounded-lg overflow-hidden">
-                            {(() => {
-                                // Get all unique student IDs across all task types
-                                const studentIds = new Set<string>();
-
-                                if (courseMetrics.task_type_metrics.learning_material?.completions) {
-                                    Object.keys(courseMetrics.task_type_metrics.learning_material.completions).forEach(id =>
-                                        studentIds.add(id));
-                                }
-                                if (courseMetrics.task_type_metrics.quiz?.completions) {
-                                    Object.keys(courseMetrics.task_type_metrics.quiz.completions).forEach(id =>
-                                        studentIds.add(id));
-                                }
-                                if (courseMetrics.task_type_metrics.exam?.completions) {
-                                    Object.keys(courseMetrics.task_type_metrics.exam.completions).forEach(id =>
-                                        studentIds.add(id));
-                                }
-
-                                // Map student IDs to member info
-                                const studentIdToMember = new Map<string, Member>();
-                                cohort?.members?.filter(m => m.role === 'learner').forEach(member => {
-                                    studentIdToMember.set(member.id.toString(), member);
-                                });
-
-                                if (studentIds.size === 0) {
+                                    // Render with the appropriate grid class based on count
                                     return (
-                                        <div className="text-center text-gray-400 py-16">
-                                            No learner progress data available
+                                        <div className={`grid grid-cols-1 ${availableTypes === 1 ? 'md:grid-cols-1' :
+                                            availableTypes === 2 ? 'md:grid-cols-2' :
+                                                'md:grid-cols-3'
+                                            } gap-4`}>
+
+                                            {/* Learning Material Card */}
+                                            {courseMetrics.task_type_metrics.learning_material && (
+                                                <TaskTypeMetricCard
+                                                    title="Learning Material"
+                                                    count={courseMetrics.task_type_metrics.learning_material.count}
+                                                    completionRate={courseMetrics.task_type_metrics.learning_material.completion_rate}
+                                                    color="purple"
+                                                />
+                                            )}
+
+                                            {/* Quiz Card */}
+                                            {courseMetrics.task_type_metrics.quiz && (
+                                                <TaskTypeMetricCard
+                                                    title="Quiz"
+                                                    count={courseMetrics.task_type_metrics.quiz.count}
+                                                    completionRate={courseMetrics.task_type_metrics.quiz.completion_rate}
+                                                    color="indigo"
+                                                />
+                                            )}
+
+                                            {/* Exam Card */}
+                                            {courseMetrics.task_type_metrics.exam && (
+                                                <TaskTypeMetricCard
+                                                    title="Exam"
+                                                    count={courseMetrics.task_type_metrics.exam.count}
+                                                    completionRate={courseMetrics.task_type_metrics.exam.completion_rate}
+                                                    color="teal"
+                                                />
+                                            )}
                                         </div>
                                     );
-                                }
-
-                                return (
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-gray-800">
-                                                <th className="text-left text-gray-400 p-4 font-normal">Learner</th>
-                                                {courseMetrics.task_type_metrics.learning_material && (
-                                                    <th className="text-left text-gray-400 p-4 font-normal">
-                                                        <span className="text-purple-400">●</span> Learning Material
-                                                    </th>
-                                                )}
-                                                {courseMetrics.task_type_metrics.quiz && (
-                                                    <th className="text-left text-gray-400 p-4 font-normal">
-                                                        <span className="text-indigo-400">●</span> Quiz
-                                                    </th>
-                                                )}
-                                                {courseMetrics.task_type_metrics.exam && (
-                                                    <th className="text-left text-gray-400 p-4 font-normal">
-                                                        <span className="text-teal-400">●</span> Exam
-                                                    </th>
-                                                )}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {Array.from(studentIds).map(studentId => {
-                                                const member = studentIdToMember.get(studentId);
-
-                                                // Calculate completion percentages for each task type
-                                                const learningMaterialCompletion = courseMetrics.task_type_metrics.learning_material
-                                                    ? (courseMetrics.task_type_metrics.learning_material.completions[studentId] || 0) /
-                                                    courseMetrics.task_type_metrics.learning_material.count
-                                                    : null;
-
-                                                const quizCompletion = courseMetrics.task_type_metrics.quiz
-                                                    ? (courseMetrics.task_type_metrics.quiz.completions[studentId] || 0) /
-                                                    courseMetrics.task_type_metrics.quiz.count
-                                                    : null;
-
-                                                const examCompletion = courseMetrics.task_type_metrics.exam
-                                                    ? (courseMetrics.task_type_metrics.exam.completions[studentId] || 0) /
-                                                    courseMetrics.task_type_metrics.exam.count
-                                                    : null;
-
-                                                // Helper function to get text color class based on completion percentage
-                                                const getColorClass = (completion: number | null) => {
-                                                    if (completion === null) return 'text-gray-400';
-                                                    if (completion < 0.3) return 'text-red-400';
-                                                    if (completion < 0.7) return 'text-amber-400';
-                                                    return 'text-green-400';
-                                                };
-
-                                                return (
-                                                    <tr key={studentId} className="border-b border-gray-800 hover:bg-black/30">
-                                                        <td className="p-4">
-                                                            {member ? member.email : `Learner ${studentId}`}
-                                                        </td>
-                                                        {courseMetrics.task_type_metrics.learning_material && (
-                                                            <td className={`p-4 ${getColorClass(learningMaterialCompletion)}`}>
-                                                                {learningMaterialCompletion !== null
-                                                                    ? `${Math.round(learningMaterialCompletion * 100)}%`
-                                                                    : '-'}
-                                                            </td>
-                                                        )}
-                                                        {courseMetrics.task_type_metrics.quiz && (
-                                                            <td className={`p-4 ${getColorClass(quizCompletion)}`}>
-                                                                {quizCompletion !== null
-                                                                    ? `${Math.round(quizCompletion * 100)}%`
-                                                                    : '-'}
-                                                            </td>
-                                                        )}
-                                                        {courseMetrics.task_type_metrics.exam && (
-                                                            <td className={`p-4 ${getColorClass(examCompletion)}`}>
-                                                                {examCompletion !== null
-                                                                    ? `${Math.round(examCompletion * 100)}%`
-                                                                    : '-'}
-                                                            </td>
-                                                        )}
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                );
-                            })()}
+                                })()}
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
+
+                {/* Right side - Leaderboard */}
+                <div className="lg:w-1/2 space-y-6 h-full">
+                    {/* Use ClientLeaderboardView */}
+                    <ClientLeaderboardView
+                        cohortId={cohortId}
+                        cohortName={cohort?.name}
+                        view='admin'
+                        topN={5}
+                    />
+                    {/* View All Leaderboard Button */}
+                    {cohort?.members?.filter(m => m.role === 'learner').length > 5 &&
+                        <div className="flex justify-center mt-2">
+                            <Link
+                                href={`/school/${schoolId}/cohort/${cohortId}/leaderboard`}
+                                className="group px-4 py-2 font-light rounded-md transition-all duration-200 flex items-center 
+                            bg-white/10 hover:bg-white/15 text-gray-200 cursor-pointer"
+                            >
+                                <span>View Full Leaderboard</span>
+                                <ChevronRight size={16} className="ml-1 transition-transform duration-200 group-hover:translate-x-0.5" />
+                            </Link>
+                        </div>
+                    }
+                </div>
             </div>
 
-            {/* Right side - Leaderboard */}
-            <div className="lg:w-1/2 space-y-6">
-                {/* Use ClientLeaderboardView */}
-                <ClientLeaderboardView
-                    cohortId={cohortId}
-                    cohortName={cohort?.name}
-                    view='admin'
-                    topN={5}
-                />
-                {/* View All Leaderboard Button */}
-                {cohort?.members?.filter(m => m.role === 'learner').length > 5 &&
-                    <div className="flex justify-center mt-4">
-                        <Link
-                            href={`/school/${schoolId}/cohort/${cohortId}/leaderboard`}
-                            className="group px-4 py-2 font-light rounded-md transition-all duration-200 flex items-center 
-                            bg-white/10 hover:bg-white/15 text-gray-200 cursor-pointer"
-                        >
-                            <span>View Full Leaderboard</span>
-                            <ChevronRight size={16} className="ml-1 transition-transform duration-200 group-hover:translate-x-0.5" />
-                        </Link>
+            {/* Student Level Metrics Table */}
+            {courseMetrics && (
+                <div className="mt-8">
+                    <h3 className="text-gray-400 mb-4 flex items-center pl-2">
+                        <span className="inline-block">Progress by Learner</span>
+                        <Tooltip content="Completion rate for each learner by task type" position="top">
+                            <span className="ml-2 inline-flex items-center">
+                                <HelpCircle size={14} className="relative top-[0.1em]" />
+                            </span>
+                        </Tooltip>
+                    </h3>
+
+                    {/* Student metrics table */}
+                    <div className="bg-[#111] rounded-lg overflow-hidden">
+                        {(() => {
+                            // Get all unique student IDs across all task types
+                            const studentIds = new Set<string>();
+
+                            if (courseMetrics.task_type_metrics.learning_material?.completions) {
+                                Object.keys(courseMetrics.task_type_metrics.learning_material.completions).forEach(id =>
+                                    studentIds.add(id));
+                            }
+                            if (courseMetrics.task_type_metrics.quiz?.completions) {
+                                Object.keys(courseMetrics.task_type_metrics.quiz.completions).forEach(id =>
+                                    studentIds.add(id));
+                            }
+                            if (courseMetrics.task_type_metrics.exam?.completions) {
+                                Object.keys(courseMetrics.task_type_metrics.exam.completions).forEach(id =>
+                                    studentIds.add(id));
+                            }
+
+                            // Map student IDs to member info
+                            const studentIdToMember = new Map<string, Member>();
+                            cohort?.members?.filter(m => m.role === 'learner').forEach(member => {
+                                studentIdToMember.set(member.id.toString(), member);
+                            });
+
+                            if (studentIds.size === 0) {
+                                return (
+                                    <div className="text-center text-gray-400 py-16">
+                                        No learner progress data available
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="border-b border-gray-800">
+                                            <th className="text-left text-gray-400 p-4 font-normal">Learner</th>
+                                            {courseMetrics.task_type_metrics.learning_material && (
+                                                <th className="text-left text-gray-400 p-4 font-normal">
+                                                    <span className="text-purple-400">●</span> Learning Material
+                                                </th>
+                                            )}
+                                            {courseMetrics.task_type_metrics.quiz && (
+                                                <th className="text-left text-gray-400 p-4 font-normal">
+                                                    <span className="text-indigo-400">●</span> Quiz
+                                                </th>
+                                            )}
+                                            {courseMetrics.task_type_metrics.exam && (
+                                                <th className="text-left text-gray-400 p-4 font-normal">
+                                                    <span className="text-teal-400">●</span> Exam
+                                                </th>
+                                            )}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {Array.from(studentIds).map(studentId => {
+                                            const member = studentIdToMember.get(studentId);
+
+                                            // Calculate completion percentages for each task type
+                                            const learningMaterialCompletion = courseMetrics.task_type_metrics.learning_material
+                                                ? (courseMetrics.task_type_metrics.learning_material.completions[studentId] || 0) /
+                                                courseMetrics.task_type_metrics.learning_material.count
+                                                : null;
+
+                                            const quizCompletion = courseMetrics.task_type_metrics.quiz
+                                                ? (courseMetrics.task_type_metrics.quiz.completions[studentId] || 0) /
+                                                courseMetrics.task_type_metrics.quiz.count
+                                                : null;
+
+                                            const examCompletion = courseMetrics.task_type_metrics.exam
+                                                ? (courseMetrics.task_type_metrics.exam.completions[studentId] || 0) /
+                                                courseMetrics.task_type_metrics.exam.count
+                                                : null;
+
+                                            // Helper function to get text color class based on completion percentage
+                                            const getColorClass = (completion: number | null) => {
+                                                if (completion === null) return 'text-gray-400';
+                                                if (completion < 0.3) return 'text-red-400';
+                                                if (completion < 0.7) return 'text-amber-400';
+                                                return 'text-green-400';
+                                            };
+
+                                            return (
+                                                <tr key={studentId} className="border-b border-gray-800 hover:bg-black/30">
+                                                    <td className="p-4">
+                                                        {member ? member.email : `Learner ${studentId}`}
+                                                    </td>
+                                                    {courseMetrics.task_type_metrics.learning_material && (
+                                                        <td className={`p-4 ${getColorClass(learningMaterialCompletion)}`}>
+                                                            {learningMaterialCompletion !== null
+                                                                ? `${Math.round(learningMaterialCompletion * 100)}%`
+                                                                : '-'}
+                                                        </td>
+                                                    )}
+                                                    {courseMetrics.task_type_metrics.quiz && (
+                                                        <td className={`p-4 ${getColorClass(quizCompletion)}`}>
+                                                            {quizCompletion !== null
+                                                                ? `${Math.round(quizCompletion * 100)}%`
+                                                                : '-'}
+                                                        </td>
+                                                    )}
+                                                    {courseMetrics.task_type_metrics.exam && (
+                                                        <td className={`p-4 ${getColorClass(examCompletion)}`}>
+                                                            {examCompletion !== null
+                                                                ? `${Math.round(examCompletion * 100)}%`
+                                                                : '-'}
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            );
+                        })()}
                     </div>
-                }
-            </div>
+                </div>
+            )}
         </div>
     );
 } 

@@ -146,11 +146,14 @@ export default function ClientLeaderboardView({
                 ) : (
                     <div className="bg-[#121212] rounded-lg border border-gray-800 overflow-hidden">
                         {/* Column Headers */}
-                        <div className={`grid ${view === 'admin' ? 'grid-cols-8' : 'grid-cols-12'} gap-2 px-4 py-4 border-b border-gray-800 bg-[#2A2000] text-sm font-light`}>
+                        <div className={`grid ${view === 'admin' ? 'grid-cols-8 py-3 text-sm' : 'grid-cols-12 py-4'} gap-2 px-4 border-b border-gray-800 bg-[#2A2000] font-light`}>
                             <div className="col-span-1 text-center">Rank</div>
-                            <div className={`${view === 'admin' ? 'col-span-4' : 'col-span-5 lg:col-span-6'}`}>Learner</div>
-                            <div className={`${view === 'admin' ? 'col-span-1' : 'col-span-3 lg:col-span-2'} text-center`}>Streak</div>
-                            <div className={`${view === 'admin' ? 'col-span-2' : 'col-span-3 lg:col-span-3'} text-right pr-2`}>Tasks Completed</div>
+                            <div className={`${view === 'admin' ? 'col-span-3 xl:col-span-4' : 'col-span-5 lg:col-span-6'}`}>Learner</div>
+                            <div className={`${view === 'admin' ? 'col-span-2 xl:col-span-1' : 'col-span-3 lg:col-span-2'} text-center`}>Streak</div>
+                            <div className={`${view === 'admin' ? 'col-span-2' : 'col-span-3 lg:col-span-3'} text-right pr-2`}>
+                                <span className={`${view === 'admin' ? 'xl:hidden' : 'hidden'}`}>Completed</span>
+                                <span className={`${view === 'admin' ? 'hidden xl:inline' : ''}`}>Tasks Completed</span>
+                            </div>
                         </div>
 
                         {/* Performers List */}
@@ -158,7 +161,7 @@ export default function ClientLeaderboardView({
                             {performers.slice(0, topN !== undefined ? topN : performers.length).map((performer, index) => (
                                 <div
                                     key={index}
-                                    className={`grid ${view === 'admin' ? 'grid-cols-8' : 'grid-cols-12'} gap-2 px-4 py-4 items-center ${isCurrentUser(performer) ? 'bg-blue-900/20' : ''}`}
+                                    className={`grid ${view === 'admin' ? 'grid-cols-8 py-2' : 'grid-cols-12 py-4'} gap-2 px-4 items-center ${isCurrentUser(performer) ? 'bg-blue-900/20' : ''}`}
                                 >
                                     {/* Position Column */}
                                     <div className="col-span-1 flex justify-center">
@@ -167,13 +170,13 @@ export default function ClientLeaderboardView({
                                                 <Image
                                                     src={getPositionBadge(performer.position)!}
                                                     alt={`Position ${performer.position}`}
-                                                    width={view === 'admin' ? 32 : 36}
-                                                    height={view === 'admin' ? 32 : 36}
+                                                    width={view === 'admin' ? 24 : 36}
+                                                    height={view === 'admin' ? 24 : 36}
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gray-800/30">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-light text-base border-2 
+                                            <div className={`${view === 'admin' ? 'w-7 h-7' : 'w-9 h-9'}  rounded-full flex items-center justify-center bg-gray-800/30`}>
+                                                <div className={`${view === 'admin' ? 'w-6 h-6' : 'w-8 h-8'} rounded-full flex items-center justify-center font-light text-base border-2 
                                                     ${isCurrentUser(performer)
                                                         ? 'text-blue-500 border-blue-500'
                                                         : 'text-gray-400 border-gray-700'}`}>
@@ -184,24 +187,24 @@ export default function ClientLeaderboardView({
                                     </div>
 
                                     {/* Name Column */}
-                                    <div className={`${view === 'admin' ? 'col-span-4' : 'col-span-5 lg:col-span-6'} flex items-center`}>
-                                        <div className="font-medium text-white flex items-center">
-                                            {performer.name}
+                                    <div className={`${view === 'admin' ? 'col-span-3 xl:col-span-4 text-sm' : 'col-span-5 lg:col-span-6'} flex items-center`}>
+                                        <div className="font-medium text-white flex items-center overflow-hidden">
+                                            <span className="truncate">{performer.name}</span>
                                             {isCurrentUser(performer) && (
-                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400">
+                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400 flex-shrink-0">
                                                     You
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Completion Column */}
-                                    <div className={`${view === 'admin' ? 'col-span-1' : 'col-span-3 lg:col-span-2'} text-center text-gray-400`}>
+                                    {/* Streak Column */}
+                                    <div className={`${view === 'admin' ? 'col-span-2 xl:col-span-1 text-sm' : 'col-span-3 lg:col-span-2'} text-center text-gray-400`}>
                                         {performer.streakDays} Day{performer.streakDays === 1 ? "" : "s"}
                                     </div>
 
                                     {/* Tasks Solved Column */}
-                                    <div className={`${view === 'admin' ? 'col-span-2' : 'col-span-3 lg:col-span-3'} text-right pr-2 text-gray-400`}>
+                                    <div className={`${view === 'admin' ? 'col-span-2 text-sm' : 'col-span-3 lg:col-span-3'} text-right pr-2 text-gray-400`}>
                                         {performer.tasksSolved}
                                     </div>
                                 </div>
