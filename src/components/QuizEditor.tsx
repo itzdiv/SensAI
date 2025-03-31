@@ -3,7 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from "react";
-import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Zap, Sparkles, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck, Search, BookOpen } from "lucide-react";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -1770,7 +1770,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 }`}
                                             onClick={() => setActiveEditorTab('knowledge')}
                                         >
-                                            <Zap size={16} className="mr-2" />
+                                            <BookOpen size={16} className="mr-2" />
                                             Knowledge Base
                                         </button>
                                     </div>
@@ -1826,7 +1826,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             {/* Left column with callout (20-30% width) */}
                                             <div className="w-[20%]">
                                                 <div className="bg-[#222222] p-3 rounded-md">
-                                                    <Zap size={16} className="text-amber-400 mb-2" />
+                                                    <BookOpen size={16} className="text-amber-400 mb-2" />
                                                     <div>
                                                         <p className="text-gray-400 text-xs leading-tight mb-2">
                                                             This knowledge base is <span className="font-bold text-white">optional</span> and will not be shown to learners but can be used by AI to provide more accurate and helpful feedback

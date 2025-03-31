@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Sparkles, Check, X, Pencil, Eye, Edit2 } from "lucide-react";
+import { Sparkles, Check, X, Pencil, Eye, Edit2, Zap } from "lucide-react";
 import dynamic from "next/dynamic";
 import { QuizQuestion } from "../types";
 import type { LearningMaterialEditorHandle } from "./LearningMaterialEditor";
@@ -627,7 +627,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
                                         aria-label={`Publish ${activeItem?.type}`}
                                     >
-                                        <Sparkles size={16} className="mr-2" />
+                                        <Zap size={16} className="mr-2" />
                                         Publish
                                     </button>
                                 )}

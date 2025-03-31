@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Plus, Check, Sparkles, FileText } from 'lucide-react';
+import { X, Plus, Check, FileText, Mic } from 'lucide-react';
 
 export interface CriterionData {
     name: string;
@@ -168,7 +168,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         {
             id: 'interview-prep',
             name: 'Interview Preparation',
-            icon: <Sparkles size={16} className="text-white" />,
+            icon: <Mic size={16} className="text-white" />,
             description: "Assess the quality of interviewing skills",
             is_template: true, // This is a hard-coded template
             criteria: [
@@ -182,7 +182,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         {
             id: 'product-pitch',
             name: 'Product Pitch',
-            icon: <Sparkles size={16} className="text-white" />,
+            icon: <FileText size={16} className="text-white" />,
             description: "Assess a product pitch",
             is_template: true, // This is a hard-coded template
             criteria: [

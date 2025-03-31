@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Sparkles, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound } from "lucide-react";
+import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Block } from "@blocknote/core";
 import Link from "next/link";
