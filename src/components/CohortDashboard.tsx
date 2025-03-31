@@ -60,6 +60,9 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
     const [metricsError, setMetricsError] = useState<string | null>(null);
 
+    // State for active course
+    const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
+
     // State for sorting the student metrics table
     const [sortColumn, setSortColumn] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
@@ -90,12 +93,13 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
             return;
         }
 
-        const firstCourse = cohort.courses[0];
+        // Use the active course or default to the first course if none is selected
+        const courseId = activeCourseId || cohort.courses[0].id;
         setIsLoadingMetrics(true);
         setMetricsError(null);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${firstCourse.id}/metrics`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses/${courseId}/metrics`);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch metrics: ${response.status}`);
@@ -111,10 +115,36 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
         }
     };
 
-    // Fetch metrics when the component mounts or when cohort courses change
+    // Set initial active course when courses change
+    useEffect(() => {
+        if (cohort?.courses && cohort.courses.length > 0) {
+            setActiveCourseId(cohort.courses[0].id);
+        }
+    }, [cohort?.courses]);
+
+    // Add click outside handler for dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const dropdown = document.getElementById('course-dropdown');
+            const button = document.getElementById('course-dropdown-button');
+
+            if (dropdown && !dropdown.classList.contains('hidden') &&
+                button && !button.contains(event.target as Node) &&
+                !dropdown.contains(event.target as Node)) {
+                dropdown.classList.add('hidden');
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Fetch metrics when the component mounts, when cohort courses change, or when active course changes
     useEffect(() => {
         fetchCourseMetrics();
-    }, [cohort?.courses, cohortId]);
+    }, [cohort?.courses, cohortId, activeCourseId]);
 
     // Check if there are any learners in the cohort
     const learnerCount = cohort?.members?.filter(m => m.role === 'learner').length || 0;
@@ -138,10 +168,62 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
         );
     }
 
+    // Get the active course object
+    const activeCourse = cohort?.courses?.find(course => course.id === activeCourseId) || cohort?.courses?.[0];
+
     return (
         <div>
+            {/* Course selector dropdown */}
+            {cohort?.courses && cohort.courses.length > 1 && (
+                <div className="mb-6">
+                    <label className="block text-sm text-gray-400 mb-2">
+                        Select Course
+                    </label>
+                    <div className="relative inline-block">
+                        <button
+                            id="course-dropdown-button"
+                            className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
+                            onClick={() => {
+                                const dropdown = document.getElementById('course-dropdown');
+                                if (dropdown) {
+                                    dropdown.classList.toggle('hidden');
+                                }
+                            }}
+                        >
+                            <span>{activeCourse?.name || 'Select course'}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                        <div
+                            id="course-dropdown"
+                            className="absolute z-10 hidden mt-1 bg-[#111] border border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
+                        >
+                            {cohort.courses.map(course => (
+                                <button
+                                    key={course.id}
+                                    className={`block w-full text-left px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-[#222]' : ''
+                                        }`}
+                                    onClick={() => {
+                                        setActiveCourseId(course.id);
+                                        document.getElementById('course-dropdown')?.classList.add('hidden');
+                                    }}
+                                >
+                                    {course.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="lg:w-2/3">
+                    {/* Course title - only show if there's just one course */}
+                    {activeCourse && cohort?.courses?.length === 1 && (
+                        <h2 className="text-2xl font-light mb-4">{activeCourse.name}</h2>
+                    )}
+
                     {isLoadingMetrics ? (
                         <div className="flex justify-center items-center h-64">
                             <div className="w-12 h-12 border-t-2 border-white rounded-full animate-spin"></div>
@@ -573,7 +655,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                     )}
                                                     <td className="p-4 text-right">
                                                         <Link
-                                                            href={`/school/admin/${schoolId}/courses/${cohort.courses?.[0]?.id}/learner-view/${studentId}?cohortId=${cohort.id}`}
+                                                            href={`/school/admin/${schoolId}/courses/${activeCourseId || cohort.courses?.[0]?.id}/learner-view/${studentId}?cohortId=${cohort.id}`}
                                                             target="_blank"
                                                             className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-sm text-white rounded-md transition-colors cursor-pointer"
                                                         >
