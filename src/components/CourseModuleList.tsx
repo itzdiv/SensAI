@@ -147,6 +147,10 @@ export default function CourseModuleList({
     // State to track task deletion confirmation
     const [taskToDelete, setTaskToDelete] = useState<{ moduleId: string, itemId: string, itemType?: string } | null>(null);
 
+    // States to track module swapping in progress
+    const [swappingModuleUpId, setSwappingModuleUpId] = useState<string | null>(null);
+    const [swappingModuleDownId, setSwappingModuleDownId] = useState<string | null>(null);
+
     // Update completedItems when completedTaskIds changes
     useEffect(() => {
         // Only update the state if the values are actually different
@@ -192,6 +196,96 @@ export default function CourseModuleList({
                 console.error('Error focusing editor:', err);
             }
         }, 200);
+    };
+
+    // Function to handle swapping modules via API
+    const swapModules = async (moduleId1: string, moduleId2: string) => {
+        if (!courseId) {
+            console.error('Course ID is required for swapping modules');
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:8001/courses/${courseId}/milestones/swap`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    milestone_1_id: moduleId1,
+                    milestone_2_id: moduleId2,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to swap modules: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error swapping modules:', error);
+            throw error;
+        }
+    };
+
+    // Function to handle moving a module up (with API call)
+    const handleMoveModuleUp = async (moduleId: string) => {
+        // Find the module and its index
+        const index = modules.findIndex(m => m.id === moduleId);
+        if (index <= 0) return; // Can't move up if it's the first one
+
+        // Get the previous module
+        const previousModule = modules[index - 1];
+        if (!previousModule) return;
+
+        try {
+            // Set loading state
+            setSwappingModuleUpId(moduleId);
+
+            // Call the API to swap modules
+            await swapModules(moduleId, previousModule.id);
+
+            // Update UI via the parent component's handler
+            if (onMoveModuleUp) {
+                onMoveModuleUp(moduleId);
+            }
+        } catch (error) {
+            console.error('Failed to move module up:', error);
+            // Could add a toast notification here
+        } finally {
+            // Clear loading state
+            setSwappingModuleUpId(null);
+        }
+    };
+
+    // Function to handle moving a module down (with API call)
+    const handleMoveModuleDown = async (moduleId: string) => {
+        // Find the module and its index
+        const index = modules.findIndex(m => m.id === moduleId);
+        if (index === -1 || index === modules.length - 1) return; // Can't move down if it's the last one
+
+        // Get the next module
+        const nextModule = modules[index + 1];
+        if (!nextModule) return;
+
+        try {
+            // Set loading state
+            setSwappingModuleDownId(moduleId);
+
+            // Call the API to swap modules
+            await swapModules(moduleId, nextModule.id);
+
+            // Update UI via the parent component's handler
+            if (onMoveModuleDown) {
+                onMoveModuleDown(moduleId);
+            }
+        } catch (error) {
+            console.error('Failed to move module down:', error);
+            // Could add a toast notification here
+        } finally {
+            // Clear loading state
+            setSwappingModuleDownId(null);
+        }
     };
 
     // Get the appropriate expanded state based on mode
@@ -431,28 +525,32 @@ export default function CourseModuleList({
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (onMoveModuleUp) {
-                                                            onMoveModuleUp(module.id);
-                                                        }
+                                                        handleMoveModuleUp(module.id);
                                                     }}
-                                                    disabled={index === 0}
+                                                    disabled={index === 0 || swappingModuleUpId === module.id}
                                                     className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                                     aria-label="Move module up"
                                                 >
-                                                    <ChevronUp size={18} />
+                                                    {swappingModuleUpId === module.id ? (
+                                                        <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+                                                    ) : (
+                                                        <ChevronUp size={18} />
+                                                    )}
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (onMoveModuleDown) {
-                                                            onMoveModuleDown(module.id);
-                                                        }
+                                                        handleMoveModuleDown(module.id);
                                                     }}
-                                                    disabled={index === modules.length - 1}
+                                                    disabled={index === modules.length - 1 || swappingModuleDownId === module.id}
                                                     className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                                     aria-label="Move module down"
                                                 >
-                                                    <ChevronDown size={18} />
+                                                    {swappingModuleDownId === module.id ? (
+                                                        <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+                                                    ) : (
+                                                        <ChevronDown size={18} />
+                                                    )}
                                                 </button>
                                                 <button
                                                     onClick={(e) => {
