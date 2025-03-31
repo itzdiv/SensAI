@@ -38,6 +38,8 @@ interface CohortMemberManagementProps {
     cohortId: string;
     onShowToast: (title: string, description: string, emoji: string) => void;
     updateCohort: (updatedMembers: Member[]) => void;
+    openInviteDialog?: boolean;
+    onInviteDialogClose?: () => void;
 }
 
 function InviteModal({
@@ -249,9 +251,24 @@ function InviteModal({
 }
 
 
-export default function CohortMemberManagement({ cohort, role, cohortId, onShowToast, updateCohort }: CohortMemberManagementProps) {
+export default function CohortMemberManagement({
+    cohort,
+    role,
+    cohortId,
+    onShowToast,
+    updateCohort,
+    openInviteDialog,
+    onInviteDialogClose
+}: CohortMemberManagementProps) {
 
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+
+    // Effect to sync the internal state with the external control prop
+    useEffect(() => {
+        if (openInviteDialog !== undefined) {
+            setIsAddMemberOpen(openInviteDialog);
+        }
+    }, [openInviteDialog]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -397,6 +414,13 @@ export default function CohortMemberManagement({ cohort, role, cohortId, onShowT
         }
     };
 
+    const handleCloseInviteDialog = () => {
+        setIsAddMemberOpen(false);
+        if (onInviteDialogClose) {
+            onInviteDialogClose();
+        }
+    };
+
     return (
         <div>
             {members.length > 0 && (
@@ -451,7 +475,7 @@ export default function CohortMemberManagement({ cohort, role, cohortId, onShowT
             {/* Invite Modal */}
             <InviteModal
                 isOpen={isAddMemberOpen}
-                onClose={() => setIsAddMemberOpen(false)}
+                onClose={handleCloseInviteDialog}
                 onSubmit={handleAddMembers}
                 submitButtonText={roleText.modalTitle}
                 isSubmitting={isSubmitting}

@@ -29,24 +29,21 @@ interface Cohort {
     courses?: Course[];
 }
 
+interface TaskTypeMetrics {
+    completion_rate: number;
+    count: number;
+    completions: Record<string, number>;
+}
+
 // Course metrics interface
 interface CourseMetrics {
     average_completion: number;
     num_tasks: number;
     num_active_learners: number;
     task_type_metrics: {
-        quiz?: {
-            completion_rate: number;
-            count: number;
-        };
-        learning_material?: {
-            completion_rate: number;
-            count: number;
-        };
-        exam?: {
-            completion_rate: number;
-            count: number;
-        };
+        quiz?: TaskTypeMetrics;
+        learning_material?: TaskTypeMetrics;
+        exam?: TaskTypeMetrics;
     };
 }
 
@@ -54,9 +51,10 @@ interface CohortDashboardProps {
     cohort: Cohort;
     cohortId: string;
     schoolId: string;
+    onAddLearners?: () => void;
 }
 
-export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDashboardProps) {
+export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearners }: CohortDashboardProps) {
     // State for course metrics
     const [courseMetrics, setCourseMetrics] = useState<CourseMetrics | null>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
@@ -93,6 +91,28 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
     useEffect(() => {
         fetchCourseMetrics();
     }, [cohort?.courses, cohortId]);
+
+    // Check if there are any learners in the cohort
+    const learnerCount = cohort?.members?.filter(m => m.role === 'learner').length || 0;
+
+    // If no learners, display placeholder
+    if (learnerCount === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 rounded-lg">
+                <h2 className="text-4xl font-light mb-4">No learners in this cohort yet</h2>
+                <p className="text-gray-400 mb-8">Add learners to this cohort to view usage data and metrics</p>
+                <button
+                    onClick={() => {
+                        // Switch to learners tab and open invite dialog if callbacks are provided
+                        if (onAddLearners) onAddLearners();
+                    }}
+                    className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                    Add Learners
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col lg:flex-row gap-8">
@@ -257,6 +277,138 @@ export default function CohortDashboard({ cohort, cohortId, schoolId }: CohortDa
                                     </div>
                                 );
                             })()}
+                    </div>
+                )}
+
+                {/* Student Level Metrics Table */}
+                {courseMetrics && (
+                    <div className="mt-8">
+                        <h3 className="text-gray-400 text-sm mb-4 flex items-center pl-2">
+                            <span className="inline-block">Individual Learner Progress</span>
+                            <Tooltip content="Detailed completion metrics for each learner in this cohort" position="top">
+                                <span className="ml-2 inline-flex items-center">
+                                    <HelpCircle size={14} className="relative top-[0.1em]" />
+                                </span>
+                            </Tooltip>
+                        </h3>
+
+                        {/* Student metrics table */}
+                        <div className="bg-[#111] rounded-lg overflow-hidden">
+                            {(() => {
+                                // Get all unique student IDs across all task types
+                                const studentIds = new Set<string>();
+
+                                if (courseMetrics.task_type_metrics.learning_material?.completions) {
+                                    Object.keys(courseMetrics.task_type_metrics.learning_material.completions).forEach(id =>
+                                        studentIds.add(id));
+                                }
+                                if (courseMetrics.task_type_metrics.quiz?.completions) {
+                                    Object.keys(courseMetrics.task_type_metrics.quiz.completions).forEach(id =>
+                                        studentIds.add(id));
+                                }
+                                if (courseMetrics.task_type_metrics.exam?.completions) {
+                                    Object.keys(courseMetrics.task_type_metrics.exam.completions).forEach(id =>
+                                        studentIds.add(id));
+                                }
+
+                                // Map student IDs to member info
+                                const studentIdToMember = new Map<string, Member>();
+                                cohort?.members?.filter(m => m.role === 'learner').forEach(member => {
+                                    studentIdToMember.set(member.id.toString(), member);
+                                });
+
+                                if (studentIds.size === 0) {
+                                    return (
+                                        <div className="text-center text-gray-400 py-16">
+                                            No learner progress data available
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-gray-800">
+                                                <th className="text-left text-gray-400 p-4 font-normal">Learner</th>
+                                                {courseMetrics.task_type_metrics.learning_material && (
+                                                    <th className="text-left text-gray-400 p-4 font-normal">
+                                                        <span className="text-purple-400">●</span> Learning Material
+                                                    </th>
+                                                )}
+                                                {courseMetrics.task_type_metrics.quiz && (
+                                                    <th className="text-left text-gray-400 p-4 font-normal">
+                                                        <span className="text-indigo-400">●</span> Quiz
+                                                    </th>
+                                                )}
+                                                {courseMetrics.task_type_metrics.exam && (
+                                                    <th className="text-left text-gray-400 p-4 font-normal">
+                                                        <span className="text-teal-400">●</span> Exam
+                                                    </th>
+                                                )}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Array.from(studentIds).map(studentId => {
+                                                const member = studentIdToMember.get(studentId);
+
+                                                // Calculate completion percentages for each task type
+                                                const learningMaterialCompletion = courseMetrics.task_type_metrics.learning_material
+                                                    ? (courseMetrics.task_type_metrics.learning_material.completions[studentId] || 0) /
+                                                    courseMetrics.task_type_metrics.learning_material.count
+                                                    : null;
+
+                                                const quizCompletion = courseMetrics.task_type_metrics.quiz
+                                                    ? (courseMetrics.task_type_metrics.quiz.completions[studentId] || 0) /
+                                                    courseMetrics.task_type_metrics.quiz.count
+                                                    : null;
+
+                                                const examCompletion = courseMetrics.task_type_metrics.exam
+                                                    ? (courseMetrics.task_type_metrics.exam.completions[studentId] || 0) /
+                                                    courseMetrics.task_type_metrics.exam.count
+                                                    : null;
+
+                                                // Helper function to get text color class based on completion percentage
+                                                const getColorClass = (completion: number | null) => {
+                                                    if (completion === null) return 'text-gray-400';
+                                                    if (completion < 0.3) return 'text-red-400';
+                                                    if (completion < 0.7) return 'text-amber-400';
+                                                    return 'text-green-400';
+                                                };
+
+                                                return (
+                                                    <tr key={studentId} className="border-b border-gray-800 hover:bg-black/30">
+                                                        <td className="p-4">
+                                                            {member ? member.email : `Learner ${studentId}`}
+                                                        </td>
+                                                        {courseMetrics.task_type_metrics.learning_material && (
+                                                            <td className={`p-4 ${getColorClass(learningMaterialCompletion)}`}>
+                                                                {learningMaterialCompletion !== null
+                                                                    ? `${Math.round(learningMaterialCompletion * 100)}%`
+                                                                    : '-'}
+                                                            </td>
+                                                        )}
+                                                        {courseMetrics.task_type_metrics.quiz && (
+                                                            <td className={`p-4 ${getColorClass(quizCompletion)}`}>
+                                                                {quizCompletion !== null
+                                                                    ? `${Math.round(quizCompletion * 100)}%`
+                                                                    : '-'}
+                                                            </td>
+                                                        )}
+                                                        {courseMetrics.task_type_metrics.exam && (
+                                                            <td className={`p-4 ${getColorClass(examCompletion)}`}>
+                                                                {examCompletion !== null
+                                                                    ? `${Math.round(examCompletion * 100)}%`
+                                                                    : '-'}
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                );
+                            })()}
+                        </div>
                     </div>
                 )}
             </div>

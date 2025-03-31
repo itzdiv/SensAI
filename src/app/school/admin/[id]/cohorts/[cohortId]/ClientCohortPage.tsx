@@ -99,6 +99,9 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     const [toastDescription, setToastDescription] = useState('');
     const [toastEmoji, setToastEmoji] = useState('');
 
+    // Add state for controlling the invite dialog
+    const [openLearnerInviteDialog, setOpenLearnerInviteDialog] = useState(false);
+
     // Add two new state variables, below existing state variables like isDeleteConfirmOpen
     const [isCourseUnlinkConfirmOpen, setIsCourseUnlinkConfirmOpen] = useState(false);
     const [courseToUnlink, setCourseToUnlink] = useState<Course | null>(null);
@@ -109,6 +112,17 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         courseCount: 0,
         courseNames: [] as string[]
     });
+
+    // Function to switch to learners tab and open invite dialog
+    const handleOpenLearnerInviteDialog = () => {
+        setTab('learners');
+        setOpenLearnerInviteDialog(true);
+    };
+
+    // Function to close the learner invite dialog
+    const handleCloseLearnerInviteDialog = () => {
+        setOpenLearnerInviteDialog(false);
+    };
 
     // Add useEffect to automatically hide toast after 5 seconds
     useEffect(() => {
@@ -541,6 +555,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                 cohort={cohort}
                                 cohortId={cohortId}
                                 schoolId={schoolId}
+                                onAddLearners={handleOpenLearnerInviteDialog}
                             />
                         )}
 
@@ -549,6 +564,8 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                 cohort={cohort}
                                 role="learner"
                                 cohortId={cohortId}
+                                openInviteDialog={openLearnerInviteDialog}
+                                onInviteDialogClose={handleCloseLearnerInviteDialog}
                                 onShowToast={(title, description, emoji) => {
                                     setToastTitle(title);
                                     setToastDescription(description);
