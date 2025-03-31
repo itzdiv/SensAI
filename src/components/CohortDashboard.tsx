@@ -173,55 +173,56 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
 
     return (
         <div>
-            {/* Course selector dropdown */}
-            {cohort?.courses && cohort.courses.length > 1 && (
-                <div className="mb-6">
-                    <label className="block text-sm text-gray-400 mb-2">
-                        Select Course
-                    </label>
-                    <div className="relative inline-block">
-                        <button
-                            id="course-dropdown-button"
-                            className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
-                            onClick={() => {
-                                const dropdown = document.getElementById('course-dropdown');
-                                if (dropdown) {
-                                    dropdown.classList.toggle('hidden');
-                                }
-                            }}
-                        >
-                            <span>{activeCourse?.name || 'Select course'}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                        </button>
-                        <div
-                            id="course-dropdown"
-                            className="absolute z-10 hidden mt-1 bg-[#111] border border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
-                        >
-                            {cohort.courses.map(course => (
-                                <button
-                                    key={course.id}
-                                    className={`block w-full text-left px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-[#222]' : ''
-                                        }`}
-                                    onClick={() => {
-                                        setActiveCourseId(course.id);
-                                        document.getElementById('course-dropdown')?.classList.add('hidden');
-                                    }}
-                                >
-                                    {course.name}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="lg:w-2/3">
                     {/* Course title - only show if there's just one course */}
                     {activeCourse && cohort?.courses?.length === 1 && (
                         <h2 className="text-2xl font-light mb-4">{activeCourse.name}</h2>
+                    )}
+
+                    {/* Course selector dropdown */}
+                    {cohort?.courses && cohort.courses.length > 1 && (
+                        <div className="mb-6">
+                            <label className="block text-sm text-gray-400 mb-2">
+                                Select Course
+                            </label>
+                            <div className="relative inline-block">
+                                <button
+                                    id="course-dropdown-button"
+                                    className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
+                                    onClick={() => {
+                                        const dropdown = document.getElementById('course-dropdown');
+                                        if (dropdown) {
+                                            dropdown.classList.toggle('hidden');
+                                        }
+                                    }}
+                                >
+                                    <span>{activeCourse?.name || 'Select course'}</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                                <div
+                                    id="course-dropdown"
+                                    className="absolute z-10 hidden mt-1 bg-[#111] border border-[#333] shadow-lg rounded-md w-full max-h-60 overflow-y-auto"
+                                >
+                                    {cohort.courses.map(course => (
+                                        <button
+                                            key={course.id}
+                                            className={`block w-full text-left px-4 py-2 hover:bg-[#222] transition-colors cursor-pointer ${activeCourseId === course.id ? 'bg-[#222]' : ''
+                                                }`}
+                                            onClick={() => {
+                                                setActiveCourseId(course.id);
+                                                document.getElementById('course-dropdown')?.classList.add('hidden');
+                                            }}
+                                        >
+                                            {course.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     )}
 
                     {isLoadingMetrics ? (
