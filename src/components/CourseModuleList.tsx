@@ -157,15 +157,6 @@ export default function CourseModuleList({
         }
     }, [completedTaskIds, completedItems]);
 
-    // Function to toggle item completion
-    const toggleItemCompletion = (itemId: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setCompletedItems(prev => ({
-            ...prev,
-            [itemId]: !prev[itemId]
-        }));
-    };
-
     // Refs for the dialog
     const dialogTitleRef = useRef<HTMLHeadingElement | null>(null);
     const dialogContentRef = useRef<HTMLDivElement | null>(null);
@@ -660,7 +651,6 @@ export default function CourseModuleList({
                                             {mode === 'view' && (
                                                 <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
                                                     <button
-                                                        onClick={(e) => toggleItemCompletion(item.id, e)}
                                                         className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors cursor-pointer ${completedItems[item.id]
                                                             ? "bg-green-500 border-0"
                                                             : "border border-gray-500 hover:border-white"

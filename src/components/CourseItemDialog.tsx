@@ -453,7 +453,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 // Show error message
                 displayToast(
                     "Empty Learning Material",
-                    "Please add content to your learning material before saving",
+                    "Please add content before saving",
                     "🚫"
                 );
                 return; // Don't show confirmation if validation fails
@@ -614,7 +614,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                     // Show error message
                                                     displayToast(
                                                         "Empty Learning Material",
-                                                        "Please add content to your learning material before publishing",
+                                                        "Please add content before publishing",
                                                         "🚫"
                                                     );
                                                     return; // Don't show confirmation if validation fails

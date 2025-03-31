@@ -154,7 +154,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [showToast, setShowToast] = useState(false);
     const [toastTitle, setToastTitle] = useState("");
     const [toastMessage, setToastMessage] = useState("");
-    const [toastEmoji, setToastEmoji] = useState("ℹ️");
+    const [toastEmoji, setToastEmoji] = useState("🚀");
 
     // Add useEffect to automatically hide toast after 5 seconds
     useEffect(() => {

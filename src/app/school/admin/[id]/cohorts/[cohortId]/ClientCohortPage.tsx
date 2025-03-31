@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "@/components/layout/header";
-import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight, GraduationCap, School, HelpCircle } from "lucide-react";
+import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight, GraduationCap, School, HelpCircle, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
@@ -112,6 +112,11 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         courseCount: 0,
         courseNames: [] as string[]
     });
+
+    // Add state for cohort name editing
+    const [isEditingCohortName, setIsEditingCohortName] = useState(false);
+    const [editedCohortName, setEditedCohortName] = useState('');
+    const cohortNameRef = useRef<HTMLHeadingElement>(null);
 
     // Function to switch to learners tab and open invite dialog
     const handleOpenLearnerInviteDialog = () => {
@@ -223,8 +228,8 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
                 // Show success toast
                 setToastTitle('Course unlinked');
-                setToastDescription(`"${removedCourse?.name}" has been removed from this cohort`);
-                setToastEmoji('📚');
+                setToastDescription(`${removedCourse?.name} has been removed from this cohort`);
+                setToastEmoji('⛓️‍💥');
                 setShowToast(true);
             }
         } catch (error) {
@@ -311,6 +316,9 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             // Show success banner
             setShowCoursePublishBanner(true);
 
+            // Set tab to dashboard after successfully linking courses
+            setTab('dashboard');
+
         } catch (error) {
             console.error("Error linking courses to cohort:", error);
             setCourseError("Failed to link courses. Please try again.");
@@ -322,6 +330,90 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     // Add a function to close the course publish banner
     const closeCoursePublishBanner = () => {
         setShowCoursePublishBanner(false);
+    };
+
+    // Function to enable cohort name editing
+    const enableCohortNameEditing = () => {
+        if (cohort) {
+            setEditedCohortName(cohort.name);
+            setIsEditingCohortName(true);
+            setTimeout(() => {
+                if (cohortNameRef.current) {
+                    cohortNameRef.current.focus();
+                    // Place cursor at the end of the text
+                    const range = document.createRange();
+                    const selection = window.getSelection();
+                    range.selectNodeContents(cohortNameRef.current);
+                    range.collapse(false);
+                    selection?.removeAllRanges();
+                    selection?.addRange(range);
+                }
+            }, 0);
+        }
+    };
+
+    // Function to save edited cohort name
+    const saveCohortName = async () => {
+        if (!editedCohortName.trim() || !cohort) return;
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: editedCohortName
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to update cohort name: ${response.status}`);
+            }
+
+            // Update local state with new name
+            setCohort(prev => prev ? {
+                ...prev,
+                name: editedCohortName
+            } : null);
+
+            // Show success toast
+            setToastTitle('Success');
+            setToastDescription(`Cohort name has been updated`);
+            setToastEmoji('✅');
+            setShowToast(true);
+        } catch (error) {
+            console.error("Error updating cohort name:", error);
+
+            // Show error toast
+            setToastTitle('Error');
+            setToastDescription('Failed to update cohort name. Please try again.');
+            setToastEmoji('❌');
+            setShowToast(true);
+        } finally {
+            setIsEditingCohortName(false);
+        }
+    };
+
+    // Function to cancel cohort name editing
+    const cancelCohortNameEditing = () => {
+        setIsEditingCohortName(false);
+        setEditedCohortName('');
+    };
+
+    // Function to handle cohort name input
+    const handleCohortNameInput = (e: React.FormEvent<HTMLHeadingElement>) => {
+        setEditedCohortName(e.currentTarget.textContent || '');
+    };
+
+    // Function to handle keydown events on cohort name input
+    const handleCohortNameKeyDown = (e: React.KeyboardEvent<HTMLHeadingElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveCohortName();
+        } else if (e.key === 'Escape') {
+            cancelCohortNameEditing();
+        }
     };
 
     useEffect(() => {
@@ -449,41 +541,81 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                             <Layers size={24} className="text-white" />
                                         </div>
                                         <div>
-                                            <h1 className="text-3xl font-light outline-none">
+                                            <h1
+                                                className="text-3xl font-light outline-none"
+                                                ref={cohortNameRef}
+                                                contentEditable={isEditingCohortName}
+                                                onInput={handleCohortNameInput}
+                                                onKeyDown={handleCohortNameKeyDown}
+                                                suppressContentEditableWarning={true}
+                                            >
                                                 {cohort.name}
                                             </h1>
                                         </div>
                                     </div>
 
-                                    {/* Link Course button and dropdown */}
-                                    <div className="relative">
-                                        <button
-                                            data-dropdown-toggle="true"
-                                            className="flex items-center justify-center space-x-2 px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
-                                            onClick={() => {
-                                                setIsDropdownOpen(!isDropdownOpen);
-                                                if (!isDropdownOpen) {
-                                                    fetchAvailableCourses();
-                                                }
-                                            }}
-                                        >
-                                            <Plus size={16} />
-                                            <span>Link Course</span>
-                                        </button>
+                                    {/* Buttons container */}
+                                    <div className="flex items-center space-x-3">
+                                        {/* Edit/Save/Cancel buttons */}
+                                        {isEditingCohortName ? (
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    onClick={saveCohortName}
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors cursor-pointer"
+                                                >
+                                                    <Check size={16} />
+                                                    <span>Save</span>
+                                                </button>
+                                                <button
+                                                    onClick={cancelCohortNameEditing}
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#333] text-white text-sm font-medium rounded-full hover:bg-[#444] transition-colors cursor-pointer"
+                                                >
+                                                    <X size={16} />
+                                                    <span>Cancel</span>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={enableCohortNameEditing}
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#333] text-white text-sm font-medium rounded-full hover:bg-[#444] transition-colors cursor-pointer"
+                                                >
+                                                    <Pencil size={16} />
+                                                    <span>Edit</span>
+                                                </button>
 
-                                        {/* Use the new dropdown component */}
-                                        <CohortCoursesLinkerDropdown
-                                            isOpen={isDropdownOpen}
-                                            onClose={() => setIsDropdownOpen(false)}
-                                            availableCourses={availableCourses}
-                                            totalSchoolCourses={totalSchoolCourses}
-                                            isLoadingCourses={isLoadingCourses}
-                                            courseError={courseError}
-                                            schoolId={schoolId}
-                                            cohortId={cohortId}
-                                            onCoursesLinked={handleCoursesLinked}
-                                            onFetchAvailableCourses={fetchAvailableCourses}
-                                        />
+                                                {/* Link Course button and dropdown */}
+                                                <div className="relative">
+                                                    <button
+                                                        data-dropdown-toggle="true"
+                                                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                                                        onClick={() => {
+                                                            setIsDropdownOpen(!isDropdownOpen);
+                                                            if (!isDropdownOpen) {
+                                                                fetchAvailableCourses();
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Plus size={16} />
+                                                        <span>Link Course</span>
+                                                    </button>
+
+                                                    {/* Use the new dropdown component */}
+                                                    <CohortCoursesLinkerDropdown
+                                                        isOpen={isDropdownOpen}
+                                                        onClose={() => setIsDropdownOpen(false)}
+                                                        availableCourses={availableCourses}
+                                                        totalSchoolCourses={totalSchoolCourses}
+                                                        isLoadingCourses={isLoadingCourses}
+                                                        courseError={courseError}
+                                                        schoolId={schoolId}
+                                                        cohortId={cohortId}
+                                                        onCoursesLinked={handleCoursesLinked}
+                                                        onFetchAvailableCourses={fetchAvailableCourses}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
 
