@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { HelpCircle, ChevronRight } from "lucide-react";
+import { HelpCircle, ChevronRight, ArrowUp, ArrowDown, Search } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 import ClientLeaderboardView from "@/app/school/[id]/cohort/[cohortId]/leaderboard/ClientLeaderboardView";
 import TaskTypeMetricCard from "@/components/TaskTypeMetricCard";
@@ -59,6 +59,30 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
     const [courseMetrics, setCourseMetrics] = useState<CourseMetrics | null>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
     const [metricsError, setMetricsError] = useState<string | null>(null);
+
+    // State for sorting the student metrics table
+    const [sortColumn, setSortColumn] = useState<string | null>(null);
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
+
+    // State for search functionality
+    const [searchQuery, setSearchQuery] = useState<string>('');
+
+    // Handle column header click for sorting
+    const handleSort = (column: string) => {
+        if (sortColumn === column) {
+            // Cycle through: asc -> desc -> null
+            if (sortDirection === 'asc') {
+                setSortDirection('desc');
+            } else if (sortDirection === 'desc') {
+                setSortColumn(null);
+                setSortDirection(null);
+            }
+        } else {
+            // New column selected, start with ascending
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
 
     const fetchCourseMetrics = async () => {
         if (!cohort?.courses || cohort.courses.length === 0) {
@@ -317,14 +341,30 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
             {/* Student Level Metrics Table */}
             {courseMetrics && (
                 <div className="mt-8">
-                    <h3 className="text-gray-400 mb-4 flex items-center pl-2">
-                        <span className="inline-block">Progress by Learner</span>
-                        <Tooltip content="Completion rate for each learner by task type" position="top">
-                            <span className="ml-2 inline-flex items-center">
-                                <HelpCircle size={14} className="relative top-[0.1em]" />
-                            </span>
-                        </Tooltip>
-                    </h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-gray-400 flex items-center pl-2">
+                            <span className="inline-block">Progress by Learner</span>
+                            <Tooltip content="Completion rate for each learner by task type" position="top">
+                                <span className="ml-2 inline-flex items-center">
+                                    <HelpCircle size={14} className="relative top-[0.1em]" />
+                                </span>
+                            </Tooltip>
+                        </h3>
+
+                        {/* Search input */}
+                        <div className="relative w-64">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search size={16} className="text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search learners"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-black/30 border border-gray-800 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/20"
+                            />
+                        </div>
+                    </div>
 
                     {/* Student metrics table */}
                     <div className="bg-[#111] rounded-lg overflow-hidden">
@@ -359,30 +399,126 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                 );
                             }
 
+                            // Function to get completion percentage for a student and task type
+                            const getCompletionPercentage = (studentId: string, taskType: 'learning_material' | 'quiz' | 'exam') => {
+                                if (!courseMetrics.task_type_metrics[taskType]) return null;
+
+                                const completions = courseMetrics.task_type_metrics[taskType]?.completions || {};
+                                const count = courseMetrics.task_type_metrics[taskType]?.count || 0;
+
+                                if (count === 0) return null;
+                                return (completions[studentId] || 0) / count;
+                            };
+
+                            // First filter by search query
+                            let filteredStudentIds = Array.from(studentIds).filter(studentId => {
+                                const member = studentIdToMember.get(studentId);
+                                if (!member) return false;
+
+                                const query = searchQuery.toLowerCase().trim();
+                                if (!query) return true; // If no search query, include all
+
+                                // Search by email (could be extended to other fields if needed)
+                                return member.email.toLowerCase().includes(query);
+                            });
+
+                            // Then sort if sorting is active
+                            if (sortColumn && sortDirection) {
+                                filteredStudentIds.sort((a, b) => {
+                                    let valueA: number | null = null;
+                                    let valueB: number | null = null;
+
+                                    if (sortColumn === 'learning_material') {
+                                        valueA = getCompletionPercentage(a, 'learning_material');
+                                        valueB = getCompletionPercentage(b, 'learning_material');
+                                    } else if (sortColumn === 'quiz') {
+                                        valueA = getCompletionPercentage(a, 'quiz');
+                                        valueB = getCompletionPercentage(b, 'quiz');
+                                    } else if (sortColumn === 'exam') {
+                                        valueA = getCompletionPercentage(a, 'exam');
+                                        valueB = getCompletionPercentage(b, 'exam');
+                                    }
+
+                                    // Handle null values (put them at the end)
+                                    if (valueA === null && valueB === null) return 0;
+                                    if (valueA === null) return 1;
+                                    if (valueB === null) return -1;
+
+                                    return sortDirection === 'asc'
+                                        ? valueA - valueB
+                                        : valueB - valueA;
+                                });
+                            }
+
+                            // Show empty state when no results match search
+                            if (filteredStudentIds.length === 0 && searchQuery) {
+                                return (
+                                    <div className="text-center text-gray-400 py-16">
+                                        No learners match your search query
+                                    </div>
+                                );
+                            }
+
                             return (
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-800">
                                             <th className="text-left text-gray-400 p-4 font-normal">Learner</th>
                                             {courseMetrics.task_type_metrics.learning_material && (
-                                                <th className="text-left text-gray-400 p-4 font-normal">
-                                                    <span className="text-purple-400">●</span> Learning Material
+                                                <th
+                                                    className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
+                                                    onClick={() => handleSort('learning_material')}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <span className="text-purple-400 mr-1">●</span>
+                                                        <span>Learning Material</span>
+                                                        {sortColumn === 'learning_material' && sortDirection === 'asc' && (
+                                                            <ArrowUp size={14} className="ml-1" />
+                                                        )}
+                                                        {sortColumn === 'learning_material' && sortDirection === 'desc' && (
+                                                            <ArrowDown size={14} className="ml-1" />
+                                                        )}
+                                                    </div>
                                                 </th>
                                             )}
                                             {courseMetrics.task_type_metrics.quiz && (
-                                                <th className="text-left text-gray-400 p-4 font-normal">
-                                                    <span className="text-indigo-400">●</span> Quiz
+                                                <th
+                                                    className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
+                                                    onClick={() => handleSort('quiz')}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <span className="text-indigo-400 mr-1">●</span>
+                                                        <span>Quiz</span>
+                                                        {sortColumn === 'quiz' && sortDirection === 'asc' && (
+                                                            <ArrowUp size={14} className="ml-1" />
+                                                        )}
+                                                        {sortColumn === 'quiz' && sortDirection === 'desc' && (
+                                                            <ArrowDown size={14} className="ml-1" />
+                                                        )}
+                                                    </div>
                                                 </th>
                                             )}
                                             {courseMetrics.task_type_metrics.exam && (
-                                                <th className="text-left text-gray-400 p-4 font-normal">
-                                                    <span className="text-teal-400">●</span> Exam
+                                                <th
+                                                    className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
+                                                    onClick={() => handleSort('exam')}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <span className="text-teal-400 mr-1">●</span>
+                                                        <span>Exam</span>
+                                                        {sortColumn === 'exam' && sortDirection === 'asc' && (
+                                                            <ArrowUp size={14} className="ml-1" />
+                                                        )}
+                                                        {sortColumn === 'exam' && sortDirection === 'desc' && (
+                                                            <ArrowDown size={14} className="ml-1" />
+                                                        )}
+                                                    </div>
                                                 </th>
                                             )}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {Array.from(studentIds).map(studentId => {
+                                        {filteredStudentIds.map(studentId => {
                                             const member = studentIdToMember.get(studentId);
 
                                             // Calculate completion percentages for each task type
