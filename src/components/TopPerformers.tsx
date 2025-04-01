@@ -17,12 +17,14 @@ interface TopPerformersProps {
     schoolId?: string; // School ID for navigation
     cohortId?: string; // Cohort ID for navigation
     view: 'learner' | 'admin';
+    onEmptyData?: (isEmpty: boolean) => void; // Callback when data availability changes
 }
 
 export default function TopPerformers({
     schoolId,
     cohortId,
-    view
+    view,
+    onEmptyData
 }: TopPerformersProps) {
     const router = useRouter();
     const { user } = useAuth();
@@ -62,20 +64,28 @@ export default function TopPerformers({
                 };
             });
 
+            const validPerformers = performersData.filter(performer => performer.streakDays > 0 || performer.tasksSolved > 0);
+
+            // Get top performers but filter out those with 0 streak days
+            let topPerformers = validPerformers.slice(0, 3); // Take top 3 of those
+
+            let currentUser = undefined;
+
             if (view === 'learner') {
                 // Find current user in the FULL performers list (which will always include them)
-                const currentUserData = performersData.find(performer => performer.userId === parseInt(user.id));
-                if (currentUserData) {
-                    setCurrentUser(currentUserData);
+                currentUser = validPerformers.find(performer => performer.userId === parseInt(user.id));
+                if (currentUser) {
+                    setCurrentUser(currentUser);
                 }
             }
 
-            // Get top performers but filter out those with 0 streak days
-            let topPerformers = performersData
-                .filter(performer => performer.streakDays > 0) // Only include performers with streak > 0
-                .slice(0, 3); // Take top 3 of those
-
             setPerformers(topPerformers);
+
+            if (topPerformers.length === 0 && currentUser === undefined && onEmptyData) {
+                onEmptyData(true);
+            } else if ((topPerformers.length > 0 || currentUser !== undefined) && onEmptyData) {
+                onEmptyData(false);
+            }
 
             setLoading(false);
         } catch (error) {
@@ -292,7 +302,6 @@ export default function TopPerformers({
                     </div>
                 ) : (
                     // No performers and no current user - show empty state
-
                     <div className="p-8 text-center text-gray-400">
                         No performers data available
                     </div>

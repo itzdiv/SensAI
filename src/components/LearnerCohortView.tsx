@@ -50,6 +50,14 @@ export default function LearnerCohortView({
     const [localCompletedTaskIds, setLocalCompletedTaskIds] = useState<Record<string, boolean>>(completedTaskIds);
     const [localCompletedQuestionIds, setLocalCompletedQuestionIds] = useState<Record<string, Record<string, boolean>>>(completedQuestionIds);
 
+    // State to track whether to show the TopPerformers component
+    const [showTopPerformers, setShowTopPerformers] = useState<boolean>(true);
+
+    // Add useEffect to monitor showTopPerformers changes
+    useEffect(() => {
+        console.log("showTopPerformers changed to:", showTopPerformers);
+    }, [showTopPerformers]);
+
     // Add useEffect to update local state when props change
     useEffect(() => {
         setLocalCompletedTaskIds(completedTaskIds);
@@ -144,6 +152,7 @@ export default function LearnerCohortView({
 
             // If streak has increased, save today as the last increment date
             if (hasStreakIncremented) {
+
                 const today = getTodayDateString();
                 lastIncrementDateRef.current = today;
 
@@ -154,6 +163,12 @@ export default function LearnerCohortView({
                 );
 
                 console.log("Streak incremented! New streak:", data.streak_count);
+                console.log("showTopPerformers", showTopPerformers);
+
+                if (!showTopPerformers) {
+                    // If streak has been incremented today, show the TopPerformers component
+                    setShowTopPerformers(true);
+                }
             }
 
             // Update last streak count
@@ -174,7 +189,7 @@ export default function LearnerCohortView({
         } finally {
             setIsLoadingStreak(false);
         }
-    }, [userId, cohortId, convertDateToDayOfWeek, getTodayDateString, isStreakIncrementedToday]);
+    }, [userId, cohortId, convertDateToDayOfWeek, getTodayDateString, isStreakIncrementedToday, showTopPerformers]);
 
     // Fetch streak data when component mounts or when dependencies change
     useEffect(() => {
@@ -245,6 +260,13 @@ export default function LearnerCohortView({
         }
     };
 
+    // Callback for when TopPerformers has no data
+    const handleEmptyPerformersData = useCallback((isEmpty: boolean) => {
+        console.log("handleEmptyPerformersData called with isEmpty:", isEmpty);
+        setShowTopPerformers(!isEmpty);
+        console.log("setShowTopPerformers called with:", !isEmpty);
+    }, []);
+
     return (
         <div className="bg-black">
             <div className="lg:flex lg:flex-row lg:justify-between">
@@ -302,11 +324,16 @@ export default function LearnerCohortView({
                             />
                         )}
 
-                        <TopPerformers
-                            schoolId={schoolId}
-                            cohortId={cohortId}
-                            view='learner'
-                        />
+                        {/* Only show TopPerformers if showTopPerformers is true */}
+                        {showTopPerformers && (
+                            <TopPerformers
+                                schoolId={schoolId}
+                                cohortId={cohortId}
+                                view='learner'
+                                onEmptyData={handleEmptyPerformersData}
+                            />
+                        )}
+
                     </div>
                 )}
             </div>
