@@ -3,21 +3,22 @@ import { DropdownOption } from "./Dropdown";
 // Options for question types in the quiz editor
 export const questionTypeOptions: DropdownOption[] = [
     {
-        "label": "Default",
+        "label": "Objective",
         "value": "objective",
         "color": "#3A506B",
+        "tooltip": "Questions with a fixed correct answer"
     },
     {
-        "label": "Open-Ended",
+        "label": "Subjective",
         "value": "subjective",
         "color": "#3C6E47",
-        "tooltip": "Questions without any fixed correct answer"
+        "tooltip": "Questions without any single correct answer"
     },
     {
         "label": "Coding",
         "value": "coding",
         "color": "#614A82",
-        "tooltip": "Questions where learners need to submit code"
+        "tooltip": "Questions that require writing code" 
     }
 ];
 

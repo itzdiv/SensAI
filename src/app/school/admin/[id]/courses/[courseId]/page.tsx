@@ -1776,10 +1776,18 @@ export default function CreateCourse() {
 
     // Update to handle dialog opening from either button
     const openCohortDialog = (origin: 'publish' | 'add') => {
-        setDialogOrigin(origin);
-        setShowPublishDialog(true);
-        setTempSelectedCohorts([]); // Reset selected cohorts
-        fetchCohorts();
+        // Toggle dialog if clicking the same button that opened it
+        if (showPublishDialog && dialogOrigin === origin) {
+            // Close the dialog if it's already open with the same origin
+            setShowPublishDialog(false);
+            setDialogOrigin(null);
+        } else {
+            // Open the dialog with the new origin
+            setDialogOrigin(origin);
+            setShowPublishDialog(true);
+            setTempSelectedCohorts([]); // Reset selected cohorts
+            fetchCohorts();
+        }
     };
 
     // Update to handle dialog closing

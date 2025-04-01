@@ -462,6 +462,9 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                         // Set default tab to dashboard if courses exist
                         if (cohortCoursesData.length > 0) {
                             setTab('dashboard');
+                        } else {
+                            // Set default tab to learners if no courses exist
+                            setTab('learners');
                         }
                     }
 
