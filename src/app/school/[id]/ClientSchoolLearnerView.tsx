@@ -192,7 +192,8 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                             position: task.ordering,
                             type: 'quiz',
                             questions: [], // Empty questions initially
-                            status: task.status
+                            status: task.status,
+                            numQuestions: task.num_questions
                         });
                     } else if (task.type === 'exam') {
                         moduleItems.push({
@@ -201,7 +202,8 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                             position: task.ordering,
                             type: 'exam',
                             questions: [], // Empty questions initially
-                            status: task.status
+                            status: task.status,
+                            numQuestions: task.num_questions
                         });
                     }
                 });
