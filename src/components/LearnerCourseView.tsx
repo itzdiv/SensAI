@@ -31,6 +31,7 @@ interface LearnerCourseViewProps {
     onDialogClose?: () => void;
     viewOnly?: boolean;
     learnerId?: string;
+    isTestMode?: boolean;
 }
 
 export default function LearnerCourseView({
@@ -40,6 +41,7 @@ export default function LearnerCourseView({
     onTaskComplete,
     onQuestionComplete,
     onDialogClose,
+    isTestMode = false,
     viewOnly = false,
     learnerId = '',
 }: LearnerCourseViewProps) {
@@ -1147,7 +1149,7 @@ export default function LearnerCourseView({
                                                     onQuestionChange={activateQuestion}
                                                     onSubmitAnswer={handleQuizAnswerSubmit}
                                                     userId={userId}
-                                                    isTestMode={false}
+                                                    isTestMode={isTestMode}
                                                     taskId={activeItem.id}
                                                     completedQuestionIds={completedQuestions}
                                                     isDarkMode={true}

@@ -18,6 +18,7 @@ export default function ClientPreviewWrapper({
             modules={modules}
             completedTaskIds={{}}
             completedQuestionIds={{}}
+            isTestMode={true}
         />
     );
 } 
