@@ -12,28 +12,7 @@ import CreateCohortDialog from "@/components/CreateCohortDialog";
 import CreateCourseDialog from '@/components/CreateCourseDialog';
 import Toast from "@/components/Toast";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-
-// Define interfaces
-interface Course {
-    id: number;
-    name: string;
-    moduleCount?: number;
-    description?: string;
-}
-
-interface Cohort {
-    id: number;
-    name: string;
-    courseCount: number;
-    memberCount: number;
-    description?: string;
-}
-
-interface Member {
-    id: number;
-    email: string;
-    role: 'owner' | 'admin';  // Updated roles as per requirement
-}
+import { Cohort, TeamMember, Course } from "@/types";
 
 interface School {
     id: number;
@@ -41,7 +20,7 @@ interface School {
     url: string;
     courses: Course[];
     cohorts: Cohort[];
-    members: Member[];
+    members: TeamMember[];
 }
 
 type TabType = 'courses' | 'cohorts' | 'members';
@@ -56,7 +35,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [isCreateCohortDialogOpen, setIsCreateCohortDialogOpen] = useState(false);
     const [isCreateCourseDialogOpen, setIsCreateCourseDialogOpen] = useState(false);
-    const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
+    const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
     const schoolNameRef = useRef<HTMLHeadingElement>(null);
     // Add state for toast notifications
     const [showToast, setShowToast] = useState(false);
@@ -134,9 +113,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                     cohorts: cohortsData.map((cohort: any) => ({
                         id: cohort.id,
                         name: cohort.name,
-                        courseCount: cohort.courseCount || 0,
-                        memberCount: cohort.memberCount || 0,
-                        description: cohort.description || ''
                     })),
                     members: membersData || []  // Use the members from the separate endpoint
                 };
@@ -248,7 +224,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         }
     };
 
-    const handleDeleteMember = (member: Member) => {
+    const handleDeleteMember = (member: TeamMember) => {
         setMemberToDelete(member);
         setIsDeleteConfirmOpen(true);
     };
@@ -513,8 +489,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                     <CourseCard key={course.id} course={{
                                                         id: course.id,
                                                         title: course.name,
-                                                        moduleCount: course.moduleCount || 0,
-                                                        description: course.description
                                                     }} />
                                                 ))}
                                             </div>

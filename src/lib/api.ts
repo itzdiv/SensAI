@@ -2,6 +2,7 @@
 
 import { useAuth } from "./auth";
 import { useCallback, useEffect, useState } from 'react';
+import { Task, Milestone } from "@/types";
 
 // Define course interface based on your backend response
 export interface Course {
@@ -191,25 +192,6 @@ export const getCompletionData = async (cohortId: number, userId: string): Promi
   return { taskCompletions, questionCompletions };
 }; 
 
-// Define Milestone interface for the API response
-interface Milestone {
-  id: number;
-  name: string;
-  color: string;
-  ordering: number;
-  tasks?: Task[];
-}
-
-interface Task {
-  id: number;
-  title: string;
-  type: string;
-  status: string;
-  ordering: number;
-  content?: any[]; // Content for learning materials
-  questions?: any[]; // Questions for quizzes and exams
-}
-
 /**
  * Fetches course data and transforms it into modules
  * @param courseId - The ID of the course
@@ -254,7 +236,8 @@ export const getCourseModules = async (courseId: string, baseUrl?: string): Prom
               position: task.ordering,
               type: 'material',
               content: task.content || [],
-              status: task.status
+              status: task.status,
+              
             });
           } else if (task.type === 'quiz') {
             moduleItems.push({
@@ -263,7 +246,8 @@ export const getCourseModules = async (courseId: string, baseUrl?: string): Prom
               position: task.ordering,
               type: 'quiz',
               questions: task.questions || [],
-              status: task.status
+              status: task.status,
+              numQuestions: task.num_questions
             });
           } else if (task.type === 'exam') {
             moduleItems.push({
@@ -272,7 +256,8 @@ export const getCourseModules = async (courseId: string, baseUrl?: string): Prom
               position: task.ordering,
               type: 'exam',
               questions: task.questions || [],
-              status: task.status
+              status: task.status,
+              numQuestions: task.num_questions
             });
           }
         });

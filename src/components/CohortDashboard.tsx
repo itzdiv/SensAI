@@ -6,28 +6,7 @@ import { HelpCircle, ChevronRight, ArrowUp, ArrowDown, Search } from "lucide-rea
 import Tooltip from "@/components/Tooltip";
 import ClientLeaderboardView from "@/app/school/[id]/cohort/[cohortId]/leaderboard/ClientLeaderboardView";
 import TaskTypeMetricCard from "@/components/TaskTypeMetricCard";
-
-interface Course {
-    id: number;
-    name: string;
-    description?: string;
-    moduleCount?: number;
-}
-
-interface Member {
-    id: number;
-    email: string;
-    role: 'learner' | 'mentor';
-}
-
-interface Cohort {
-    id: number;
-    org_id: number;
-    name: string;
-    members: Member[];
-    groups: any[];
-    courses?: Course[];
-}
+import { CohortWithDetails as Cohort, CohortMember } from "@/types";
 
 interface TaskTypeMetrics {
     completion_rate: number;
@@ -469,7 +448,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                             }
 
                             // Map student IDs to member info
-                            const studentIdToMember = new Map<string, Member>();
+                            const studentIdToMember = new Map<string, CohortMember>();
                             cohort?.members?.filter(m => m.role === 'learner').forEach(member => {
                                 studentIdToMember.set(member.id.toString(), member);
                             });

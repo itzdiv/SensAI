@@ -13,6 +13,7 @@ import "./editor-styles.css";
 // Import the BlockNoteEditor component
 import BlockNoteEditor from "./BlockNoteEditor";
 import ConfirmationDialog from "./ConfirmationDialog";
+import { TaskData } from "@/types";
 
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
@@ -33,13 +34,6 @@ interface LearningMaterialEditorProps {
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
     isEditMode?: boolean;
-}
-
-interface TaskData {
-    id: string;
-    title: string;
-    blocks: any[];
-    status: string;
 }
 
 // Uploads a file and returns the URL to the uploaded file

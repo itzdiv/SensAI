@@ -4,15 +4,11 @@ import LearningStreak from "./LearningStreak";
 import TopPerformers from "./TopPerformers";
 import { Module } from "@/types/course";
 import { useAuth } from "@/lib/auth";
+import { Course } from "@/types";
 
 // Constants for localStorage keys
 const LAST_INCREMENT_DATE_KEY = 'streak_last_increment_date';
 const LAST_STREAK_COUNT_KEY = 'streak_last_count';
-
-interface Course {
-    id: number;
-    name: string;
-}
 
 interface LearnerCohortViewProps {
     courseTitle: string;

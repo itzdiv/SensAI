@@ -4,25 +4,6 @@ import { notFound } from 'next/navigation';
 import ClientPreviewWrapper from './ClientPreviewWrapper';
 import { getCourseModules } from '@/lib/server-api';
 
-// Define Milestone interface for the API response
-interface Milestone {
-    id: number;
-    name: string;
-    color: string;
-    ordering: number;
-    tasks?: Task[];
-}
-
-interface Task {
-    id: number;
-    title: string;
-    type: string;
-    status: string;
-    ordering: number;
-    content?: any[]; // Content for learning materials
-    questions?: any[]; // Questions for quizzes and exams
-}
-
 export async function generateMetadata(
     { params }: { params: { id: string, courseId: string } }
 ): Promise<Metadata> {

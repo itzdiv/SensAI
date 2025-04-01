@@ -2,41 +2,19 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound } from "lucide-react";
-import dynamic from "next/dynamic";
-import { Block } from "@blocknote/core";
 import Link from "next/link";
-import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { useRouter, useParams } from "next/navigation";
-import CourseModuleList, { LocalModule } from "@/components/CourseModuleList";
-import CourseItemDialog from "@/components/CourseItemDialog";
+import CourseModuleList from "@/components/CourseModuleList";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Toast from "@/components/Toast";
 import CoursePublishSuccessBanner from "@/components/CoursePublishSuccessBanner";
-
-// Dynamically import the editor components
-const DynamicLearningMaterialEditor = dynamic(
-    () => import("../../../../../../components/LearningMaterialEditor"),
-    { ssr: false }
-);
-
-// Dynamically import the QuizEditor component
-const DynamicQuizEditor = dynamic(
-    () => import("../../../../../../components/QuizEditor"),
-    { ssr: false }
-);
+import { Module, ModuleItem, LearningMaterial, Quiz, Exam } from "@/types/course";
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
+import { Milestone } from "@/types";
 
-// Define interfaces
-interface Milestone {
-    id: number;
-    name: string;
-    color: string;
-    ordering: number;
-    tasks?: Task[];
-}
 
 interface Task {
     id: number;
@@ -44,51 +22,13 @@ interface Task {
     type: string;
     status: string;
     ordering: number;
+    num_questions?: number;
 }
 
 interface CourseDetails {
     id: number;
     name: string;
     milestones?: Milestone[];
-}
-
-interface LearningMaterial {
-    id: string;
-    title: string;
-    position: number;
-    type: 'material';
-    content?: any[]; // Using any[] instead of Block[] to avoid type issues
-    status?: string; // Add status field to track draft/published state
-}
-
-interface Quiz {
-    id: string;
-    title: string;
-    position: number;
-    type: 'quiz';
-    questions: QuizQuestion[];
-    status?: string; // Add status field to track draft/published state
-}
-
-interface Exam {
-    id: string;
-    title: string;
-    position: number;
-    type: 'exam';
-    questions: QuizQuestion[];
-    status?: string; // Add status field to track draft/published state
-}
-
-type ModuleItem = LearningMaterial | Quiz | Exam;
-
-interface Module {
-    id: string;
-    title: string;
-    position: number;
-    items: ModuleItem[];
-    isExpanded: boolean;
-    backgroundColor: string;
-    isEditing: boolean;
 }
 
 // Default configuration for new questions
@@ -99,14 +39,6 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     knowledgeBaseBlocks: [],
     linkedMaterialIds: [],
 };
-
-// Add TaskData interface at the top of the file with the other interfaces
-interface TaskData {
-    id: string;
-    title: string;
-    blocks: any[];
-    status: string;
-}
 
 // Define interface for CohortSelectionDialog props
 interface CohortSelectionDialogProps {
@@ -448,7 +380,8 @@ export default function CreateCourse() {
                                         position: task.ordering,
                                         type: 'quiz',
                                         questions: [], // Empty questions initially
-                                        status: task.status // Add status from API response
+                                        status: task.status, // Add status from API response
+                                        numQuestions: task.num_questions // Add numQuestions from API response
                                     });
                                 } else if (task.type === 'exam') {
                                     moduleItems.push({
@@ -457,7 +390,8 @@ export default function CreateCourse() {
                                         position: task.ordering,
                                         type: 'exam',
                                         questions: [], // Empty questions initially
-                                        status: task.status // Add status from API response
+                                        status: task.status, // Add status from API response
+                                        numQuestions: task.num_questions // Add numQuestions from API response
                                     });
                                 }
                             });

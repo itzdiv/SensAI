@@ -14,6 +14,7 @@ export interface Quiz {
   title: string;
   position: number;
   type: 'quiz';
+  numQuestions?: number;
   questions: QuizQuestion[];
   status?: string; // Add status field to track draft/published state
 }
@@ -23,6 +24,7 @@ export interface Exam {
   title: string;
   position: number;
   type: 'exam';
+  numQuestions?: number;
   questions: QuizQuestion[];
   status?: string; // Add status field to track draft/published state
 }
@@ -37,6 +39,7 @@ export interface Module {
   isExpanded?: boolean;
   backgroundColor?: string;
   isEditing?: boolean;
+  progress?: number;
 }
 
 export interface CourseDetails {

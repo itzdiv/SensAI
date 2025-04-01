@@ -13,27 +13,13 @@ import Tooltip from "@/components/Tooltip";
 import CohortMemberManagement from "@/components/CohortMemberManagement";
 import CohortDashboard from "@/components/CohortDashboard";
 import CohortCoursesLinkerDropdown from "@/components/CohortCoursesLinkerDropdown";
+import { CohortWithDetails as Cohort } from "@/types";
 
 interface Course {
     id: number;
     name: string;
     description?: string;
     moduleCount?: number;
-}
-
-interface Member {
-    id: number;
-    email: string;
-    role: 'learner' | 'mentor';
-}
-
-interface Cohort {
-    id: number;
-    org_id: number;
-    name: string;
-    members: Member[];
-    groups: any[];
-    courses?: Course[];
 }
 
 interface EmailInput {

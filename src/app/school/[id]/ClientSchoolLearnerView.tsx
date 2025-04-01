@@ -9,35 +9,12 @@ import { useAuth } from "@/lib/auth";
 import LearnerCohortView from "@/components/LearnerCohortView";
 import { Module, ModuleItem } from "@/types/course";
 import { getCompletionData } from "@/lib/api";
+import { Cohort, Task, Milestone } from "@/types";
 
 interface School {
     id: number;
     name: string;
     slug: string;
-}
-
-interface Cohort {
-    id: number;
-    name: string;
-    courseCount: number;
-    memberCount: number;
-    description?: string;
-}
-
-interface Task {
-    id: number;
-    title: string;
-    type: string;
-    status: string;
-    ordering: number;
-}
-
-interface Milestone {
-    id: number;
-    name: string;
-    color: string;
-    ordering: number;
-    tasks?: Task[];
 }
 
 interface Course {

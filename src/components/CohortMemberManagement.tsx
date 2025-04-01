@@ -3,19 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Trash2, Plus, Mail, Upload, X } from "lucide-react";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import Toast from "@/components/Toast";
-
-interface Member {
-    id: number;
-    email: string;
-    role: 'learner' | 'mentor';
-}
-
-interface Cohort {
-    id: number;
-    name: string;
-    members: Member[];
-}
+import { CohortMember, CohortWithDetails as Cohort } from "@/types";
 
 interface EmailInput {
     id: string;
@@ -37,7 +25,7 @@ interface CohortMemberManagementProps {
     role: 'learner' | 'mentor';
     cohortId: string;
     onShowToast: (title: string, description: string, emoji: string) => void;
-    updateCohort: (updatedMembers: Member[]) => void;
+    updateCohort: (updatedMembers: CohortMember[]) => void;
     openInviteDialog?: boolean;
     onInviteDialogClose?: () => void;
 }
@@ -274,7 +262,7 @@ export default function CohortMemberManagement({
 
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
-    const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
+    const [memberToDelete, setMemberToDelete] = useState<CohortMember | null>(null);
 
     // Get filtered members based on role
     const members = cohort?.members?.filter(member => member.role === role) || [];
@@ -289,7 +277,7 @@ export default function CohortMemberManagement({
         successToastEmoji: role === 'learner' ? '📧' : '👩‍🏫',
     };
 
-    const handleDeleteMember = (member: Member) => {
+    const handleDeleteMember = (member: CohortMember) => {
         setMemberToDelete(member);
         setIsDeleteConfirmOpen(true);
     };

@@ -1,55 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Clipboard, Check } from "lucide-react";
-import { Module, ModuleItem } from "@/types/course";
+import { Module, ModuleItem, Quiz, Exam } from "@/types/course";
 import { QuizQuestion } from "@/types/quiz"; // Import from types instead
 import CourseItemDialog from "@/components/CourseItemDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Tooltip from "@/components/Tooltip"; // Import the Tooltip component
-import { TaskData } from "@/types";
 
-// Use the local Module and ModuleItem types to match the page component exactly
-export interface Quiz {
-    id: string;
-    title: string;
-    position: number;
-    type: 'quiz';
-    questions: QuizQuestion[];
-    status?: string;
-}
-
-export interface Exam {
-    id: string;
-    title: string;
-    position: number;
-    type: 'exam';
-    questions: QuizQuestion[];
-    status?: string;
-}
-
-export interface LearningMaterial {
-    id: string;
-    title: string;
-    position: number;
-    type: 'material';
-    content?: any[];
-    status?: string;
-}
-
-export type LocalModuleItem = LearningMaterial | Quiz | Exam;
-
-export interface LocalModule {
-    id: string;
-    title: string;
-    position: number;
-    items: LocalModuleItem[];
-    isExpanded?: boolean;
-    backgroundColor?: string;
-    isEditing?: boolean;
-    progress?: number;
-}
 
 interface CourseModuleListProps {
-    modules: LocalModule[];
+    modules: Module[];
     mode: 'edit' | 'view'; // 'edit' for teacher editing, 'view' for learner viewing
     onToggleModule?: (moduleId: string) => void;
     onOpenItem?: (moduleId: string, itemId: string) => void;
@@ -73,7 +32,7 @@ interface CourseModuleListProps {
 
     // Dialog-related props
     isDialogOpen?: boolean;
-    activeItem?: LocalModuleItem | null;
+    activeItem?: ModuleItem | null;
     activeModuleId?: string | null;
     isEditMode?: boolean;
     isPreviewMode?: boolean;
@@ -773,19 +732,23 @@ export default function CourseModuleList({
                                                         ? "text-yellow-500"
                                                         : ""
                                                     }`}>
-                                                    {item.title || (item.type === 'material' ? "New Learning Material" : item.type === 'quiz' ? "New Quiz" : "New Exam")}
+                                                    {item.title}
 
-                                                    {/* Display completion count for incomplete quizzes/exams */}
-                                                    {mode === 'view' &&
-                                                        (item.type === 'quiz' || item.type === 'exam') &&
-                                                        !completedItems[item.id] && // Not fully completed
-                                                        completedQuestionIds[item.id] &&
-                                                        Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true) &&
-                                                        (
-                                                            <span className="ml-2 text-sm font-normal text-yellow-500">
-                                                                ({Object.values(completedQuestionIds[item.id]).filter(Boolean).length} / {Object.keys(completedQuestionIds[item.id]).length})
-                                                            </span>
-                                                        )}
+                                                    {/* Always display question count for quizzes/exams (except drafts) */}
+                                                    {(item.type === 'quiz' || item.type === 'exam') && item.status !== 'draft' && (
+                                                        <span className={`ml-2 text-sm font-normal ${!completedItems[item.id] &&
+                                                            completedQuestionIds[item.id] &&
+                                                            Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
+                                                            ? "text-yellow-500"
+                                                            : "text-gray-400"
+                                                            }`}>
+                                                            ({completedQuestionIds[item.id]
+                                                                ? mode === 'view' && !completedItems[item.id] && Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
+                                                                    ? `${Object.values(completedQuestionIds[item.id]).filter(Boolean).length} / ${(item as Quiz | Exam).numQuestions}`
+                                                                    : `${Object.keys(completedQuestionIds[item.id]).length} questions`
+                                                                : `${(item as Quiz | Exam).numQuestions} question${(item as Quiz | Exam).numQuestions === 1 ? "" : "s"}`})
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 

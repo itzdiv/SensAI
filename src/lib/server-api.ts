@@ -1,21 +1,4 @@
-// Define Milestone interface for the API response
-interface Milestone {
-  id: number;
-  name: string;
-  color: string;
-  ordering: number;
-  tasks?: Task[];
-}
-
-interface Task {
-  id: number;
-  title: string;
-  type: string;
-  status: string;
-  ordering: number;
-  content?: any[]; // Content for learning materials
-  questions?: any[]; // Questions for quizzes and exams
-}
+import { Task, Milestone } from "@/types";
 
 /**
  * Fetches course data and transforms it into modules (server-side version)
@@ -56,7 +39,8 @@ export const getCourseModules = async (courseId: string): Promise<{
               position: task.ordering,
               type: 'material',
               content: task.content || [],
-              status: task.status
+              status: task.status,
+              
             });
           } else if (task.type === 'quiz') {
             moduleItems.push({
@@ -65,7 +49,8 @@ export const getCourseModules = async (courseId: string): Promise<{
               position: task.ordering,
               type: 'quiz',
               questions: task.questions || [],
-              status: task.status
+              status: task.status,
+              numQuestions: task.num_questions
             });
           } else if (task.type === 'exam') {
             moduleItems.push({
@@ -74,7 +59,8 @@ export const getCourseModules = async (courseId: string): Promise<{
               position: task.ordering,
               type: 'exam',
               questions: task.questions || [],
-              status: task.status
+              status: task.status,
+              numQuestions: task.num_questions
             });
           }
         });

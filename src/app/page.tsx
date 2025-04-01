@@ -6,23 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCourses, useSchools, Course as ApiCourse } from "@/lib/api";
 import CourseCard from "@/components/CourseCard";
-import Link from "next/link";
-import { PlusCircle, BookOpen } from "lucide-react";
 import CreateCourseDialog from "@/components/CreateCourseDialog";
-
-interface Course {
-  id: string;
-  title: string;
-  moduleCount: number;
-  description?: string;
-  role?: string;
-  org?: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-  org_id?: number;
-}
 
 export default function Home() {
   const router = useRouter();
@@ -229,7 +213,6 @@ export default function Home() {
                       course={{
                         ...course,
                         title: course.org?.slug ? `@${course.org.slug}/${course.title}` : course.title,
-                        moduleCount: course.moduleCount || 0
                       }}
                     />
                   ))}

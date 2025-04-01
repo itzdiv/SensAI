@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { ModuleItem, Module } from "@/types/course";
-import CourseModuleList, { LocalModule } from "./CourseModuleList";
+import CourseModuleList from "./CourseModuleList";
 import dynamic from "next/dynamic";
 import { X, CheckCircle, BookOpen, HelpCircle, Clipboard, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -126,7 +126,7 @@ export default function LearnerCourseView({
     const modulesWithFilteredItems = modules.map(module => ({
         ...module,
         items: module.items.filter(item => item.status !== 'draft')
-    })) as LocalModule[];
+    })) as Module[];
 
     // Filter out empty modules (those with no items after filtering)
     const filteredModules = modulesWithFilteredItems.filter(module => module.items.length > 0);

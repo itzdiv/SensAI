@@ -1,13 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { BookOpen, X, Plus } from "lucide-react";
 import Link from "next/link";
-
-interface Course {
-    id: number;
-    name: string;
-    description?: string;
-    moduleCount?: number;
-}
+import { Course } from "@/types";
 
 interface CohortCoursesLinkerDropdownProps {
     isOpen: boolean;

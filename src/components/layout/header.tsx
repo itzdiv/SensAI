@@ -9,14 +9,7 @@ import { useSchools } from "@/lib/api";
 import CreateCourseDialog from "@/components/CreateCourseDialog";
 import SchoolPickerDialog from "@/components/SchoolPickerDialog";
 import { ChevronDown } from "lucide-react";
-
-interface Cohort {
-    id: number;
-    name: string;
-    courseCount: number;
-    memberCount: number;
-    description?: string;
-}
+import { Cohort } from "@/types";
 
 interface HeaderProps {
     showCreateCourseButton?: boolean;

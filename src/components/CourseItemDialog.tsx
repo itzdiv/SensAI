@@ -8,14 +8,7 @@ import type { LearningMaterialEditorHandle } from "./LearningMaterialEditor";
 import type { QuizEditorHandle } from "../types";
 import Toast from "./Toast";
 import ConfirmationDialog from "./ConfirmationDialog";
-
-// Import TaskData from types
-interface TaskData {
-    id: string;
-    title: string;
-    blocks: any[];
-    status: string;
-}
+import { TaskData } from "@/types";
 
 // Dynamically import the editor components
 const DynamicLearningMaterialEditor = dynamic(
