@@ -4,7 +4,7 @@ import "@blocknote/core/fonts/inter.css";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react";
 import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
 
 // Add custom styles for dark mode
@@ -85,9 +85,13 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
+    const [containerHeight, setContainerHeight] = useState<string>("auto");
 
     // Reference to the editor instance
     const editorRef = useRef<any>(null);
+
+    // Reference for the ResizeObserver
+    const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
     // Add a ref to store the original data for reverting on cancel
     const originalDataRef = useRef<TaskData | null>(null);
@@ -96,6 +100,82 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const setEditorInstance = (editor: any) => {
         editorRef.current = editor;
     };
+
+    // Function to adjust the height of the editor container
+    const adjustEditorHeight = useCallback(() => {
+        if (!editorContainerRef.current) return;
+
+        // Find the content element within the editor
+        const editorElement = editorContainerRef.current.querySelector('.bn-container');
+        if (!editorElement) return;
+
+        // Get the current viewport height
+        const viewportHeight = window.innerHeight;
+
+        // Get the current content height
+        const contentHeight = editorElement.scrollHeight;
+
+        // Get the current visible height of the container
+        const containerVisibleHeight = editorContainerRef.current.clientHeight;
+
+        // If content height is more than half of the visible container height,
+        // add extra space equal to half of the viewport height
+        if (contentHeight > containerVisibleHeight / 2) {
+            const newHeight = contentHeight + (viewportHeight / 2);
+            setContainerHeight(`${newHeight}px`);
+        } else {
+            // Ensure minimum height is at least the viewport height
+            setContainerHeight(`${Math.max(viewportHeight, contentHeight + (viewportHeight / 2))}px`);
+        }
+    }, []);
+
+    // Set up the resize observer to monitor content changes
+    useEffect(() => {
+        // Clean up previous observer if it exists
+        if (resizeObserverRef.current) {
+            resizeObserverRef.current.disconnect();
+        }
+
+        if (editorContainerRef.current) {
+            // Initial height adjustment
+            adjustEditorHeight();
+
+            // Create new ResizeObserver
+            resizeObserverRef.current = new ResizeObserver(() => {
+                adjustEditorHeight();
+            });
+
+            // Observe the editor container
+            resizeObserverRef.current.observe(editorContainerRef.current);
+
+            // Also observe editor content if we can find it
+            const editorElement = editorContainerRef.current.querySelector('.bn-container');
+            if (editorElement) {
+                resizeObserverRef.current.observe(editorElement);
+            }
+        }
+
+        // Handle window resize events
+        window.addEventListener('resize', adjustEditorHeight);
+
+        return () => {
+            // Clean up the observer when component unmounts
+            if (resizeObserverRef.current) {
+                resizeObserverRef.current.disconnect();
+            }
+            window.removeEventListener('resize', adjustEditorHeight);
+        };
+    }, [adjustEditorHeight]);
+
+    // Re-adjust height when content changes
+    useEffect(() => {
+        // Add a small delay to ensure the content has been rendered
+        const timer = setTimeout(() => {
+            adjustEditorHeight();
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [editorContent, adjustEditorHeight]);
 
     // Function to open the slash menu
     const openSlashMenu = () => {
@@ -111,14 +191,16 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         blockSpecs: basicBlockSpecs,
     });
 
+    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks : undefined;
+
     // Creates a new editor instance with the custom schema
     const editor = useCreateBlockNote({
-        initialContent: taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks : undefined,
+        initialContent,
         uploadFile,
         schema, // Use our custom schema with limited blocks
     });
 
-    // Handle content changes from the editor
+    // Handle editor changes and trigger height adjustment
     const handleEditorChange = (content: any[]) => {
         // Avoid unnecessary state updates if content hasn't changed
         if (JSON.stringify(content) !== JSON.stringify(editorContent)) {
@@ -126,6 +208,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             if (onChange && !isPublishing) {
                 onChange(content);
             }
+            // Trigger height adjustment after content change
+            setTimeout(adjustEditorHeight, 0);
         }
     };
 
@@ -150,6 +234,196 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 .then(data => {
                     // We only use the data fetched from our own API call
                     // Title updates only happen after publishing, not during editing
+                    if (!data.blocks || data.blocks.length === 0) {
+                        data.blocks = [
+                            {
+                                type: "heading",
+                                props: { level: 2 },
+                                content: [{ "text": "Welcome to the Learning Material Editor!", "type": "text", styles: {} }],
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "This is where you'll create your learning material. You can either modify this template or remove it entirely to start from scratch.", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "heading",
+                                props: { level: 3 },
+                                content: [{ "text": "Key Features", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Add new blocks by clicking the + icon that appears between blocks", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Reorder blocks using the side menu (hover near the left edge of any block and drag the button with 6 dots to reorder)", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Format text using the toolbar that appears when you select text", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "heading",
+                                props: { level: 3 },
+                                content: [{ "text": "Available Block Types", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "Here are some examples of the different types of blocks you can use:", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "heading",
+                                props: { level: 2 },
+                                content: [{ "text": "Headings (like this one)", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Bullet lists (like this)", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "numberedListItem",
+                                content: [{ "text": "Numbered lists (like this)", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "Regular paragraphs for your main content", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "heading",
+                                props: { level: 3 },
+                                content: [{ "text": "Creating Nested Content", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "You can create nested content in two ways:", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Using the Tab key: Simply press Tab while your cursor is on a block to indent it", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Using the side menu: Hover near the left edge of a block, click the menu icon (the button with 6 dots), and drag the block to the desired nested position inside another block", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "Here are examples of nested content:", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "Nested Lists Example", "type": "text", styles: { "bold": true } }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Main topic 1", "type": "text", styles: {} }],
+                                children: [
+                                    {
+                                        type: "bulletListItem",
+                                        props: { indent: 1 },
+                                        content: [{ "text": "Subtopic 1.1 (indented using Tab or side menu)", "type": "text", styles: {} }]
+                                    },
+                                    {
+                                        type: "bulletListItem",
+                                        props: { indent: 1 },
+                                        content: [{ "text": "Subtopic 1.2", "type": "text", styles: {} }],
+                                        children: [{
+                                            type: "bulletListItem",
+                                            props: { indent: 2 },
+                                            content: [{ "text": "Further nested item (press Tab again to create deeper nesting)", "type": "text", styles: {} }]
+                                        }]
+                                    }
+                                ]
+                            },
+
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Main topic 2", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "Nested Numbered Lists", "type": "text", styles: { "bold": true } }],
+                            },
+
+                            {
+                                type: "numberedListItem",
+                                content: [{ "text": "First step", "type": "text", styles: {} }],
+                                children: [
+                                    {
+                                        type: "numberedListItem",
+                                        props: { indent: 1 },
+                                        content: [{ "text": "Substep 1.1 (indented with Tab)", "type": "text", styles: {} }]
+                                    },
+                                    {
+                                        type: "numberedListItem",
+                                        props: { indent: 1 },
+                                        content: [{ "text": "Substep 1.2", "type": "text", styles: {} }]
+                                    },
+                                ]
+                            },
+                            {
+                                type: "numberedListItem",
+                                content: [{ "text": "Second step", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "Tips for working with nested content:", "type": "text", styles: { "bold": true } }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "To unnest/outdent an item, press Shift+Tab", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "You can mix bullet and numbered lists in your nesting hierarchy", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "bulletListItem",
+                                content: [{ "text": "Nesting helps create a clear organizational structure for complex topics", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "heading",
+                                props: { level: 3 },
+                                content: [{ "text": "Publishing Your Content", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "When you're ready to make your content available to learners, click the Publish button. You can always edit and republish your content later.", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
+                                content: [{ "text": "Feel free to delete or modify this template to create your own learning material!", "type": "text", styles: {} }]
+                            }
+                        ];
+                    }
+
                     setTaskData(data);
 
                     // Store the original data for reverting on cancel
@@ -184,7 +458,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             setTimeout(() => {
                 try {
                     editor.replaceBlocks(editor.document, taskData.blocks);
-
                     // Also update the editorContent state to ensure hasContent works correctly
                     setEditorContent(taskData.blocks);
                 } catch (error) {
@@ -227,6 +500,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
             // Use the current editor content
             const currentContent = editorContent.length > 0 ? editorContent : (taskData?.blocks || []);
+
+            console.log("currentContent", currentContent);
 
             // Make POST request to publish the learning material content
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
@@ -414,10 +689,15 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     return (
         <div
             ref={editorContainerRef}
-            className={`h-full mt-4 dark-editor-container dark-dialog no-bottom-border ${className}`}
+            className={`mt-4 dark-editor-container dark-dialog no-bottom-border ${className}`}
+            style={{
+                height: containerHeight,
+                minHeight: '100%',
+                overflowY: 'auto'
+            }}
         >
             <BlockNoteEditor
-                initialContent={taskData?.blocks || []}
+                initialContent={initialContent}
                 onChange={handleEditorChange}
                 isDarkMode={isDarkMode}
                 readOnly={readOnly}
