@@ -10,6 +10,7 @@ import LearnerCohortView from "@/components/LearnerCohortView";
 import { Module, ModuleItem } from "@/types/course";
 import { getCompletionData } from "@/lib/api";
 import { Cohort, Task, Milestone } from "@/types";
+import { transformCourseToModules } from "@/lib/course";
 
 interface School {
     id: number;
@@ -32,7 +33,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     const [loading, setLoading] = useState(true);
     const [courses, setCourses] = useState<Course[]>([]);
     const [activeCourseIndex, setActiveCourseIndex] = useState(0);
-    const [loadingCourses, setLoadingCourses] = useState(false);
+    const [loadingCourses, setLoadingCourses] = useState(true);
     const [courseError, setCourseError] = useState<string | null>(null);
     const [courseModules, setCourseModules] = useState<Module[]>([]);
 
@@ -121,7 +122,8 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
 
             // Transform the first course's milestones to modules if available
             if (coursesData.length > 0) {
-                transformCourseToModules(coursesData[0]);
+                const modules = transformCourseToModules(coursesData[0]);
+                setCourseModules(modules);
             } else {
                 setCourseModules([]);
             }
@@ -163,74 +165,11 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         }
     }, [activeCohort, user?.id]);
 
-    // Transform course data to modules format for LearnerCohortView
-    const transformCourseToModules = (course: Course) => {
-        if (!course.milestones || !Array.isArray(course.milestones)) {
-            setCourseModules([]);
-            return;
-        }
-
-        const transformedModules = course.milestones.map((milestone: Milestone) => {
-            // Map tasks to module items if they exist
-            const moduleItems: ModuleItem[] = [];
-
-            if (milestone.tasks && Array.isArray(milestone.tasks)) {
-                milestone.tasks.forEach((task: Task) => {
-                    if (task.type === 'learning_material') {
-                        moduleItems.push({
-                            id: task.id.toString(),
-                            title: task.title,
-                            position: task.ordering,
-                            type: 'material',
-                            content: [], // Empty content initially
-                            status: task.status
-                        });
-                    } else if (task.type === 'quiz') {
-                        moduleItems.push({
-                            id: task.id.toString(),
-                            title: task.title,
-                            position: task.ordering,
-                            type: 'quiz',
-                            questions: [], // Empty questions initially
-                            status: task.status,
-                            numQuestions: task.num_questions
-                        });
-                    } else if (task.type === 'exam') {
-                        moduleItems.push({
-                            id: task.id.toString(),
-                            title: task.title,
-                            position: task.ordering,
-                            type: 'exam',
-                            questions: [], // Empty questions initially
-                            status: task.status,
-                            numQuestions: task.num_questions
-                        });
-                    }
-                });
-
-                // Sort items by position/ordering
-                moduleItems.sort((a, b) => a.position - b.position);
-            }
-
-            return {
-                id: milestone.id.toString(),
-                title: milestone.name,
-                position: milestone.ordering,
-                items: moduleItems,
-                isExpanded: false,
-                backgroundColor: `${milestone.color}80`, // Add 50% opacity for UI display
-            };
-        });
-
-        // Sort modules by position/ordering
-        transformedModules.sort((a, b) => a.position - b.position);
-        setCourseModules(transformedModules);
-    };
-
     // Handle course tab selection
     const handleCourseSelect = (index: number) => {
         setActiveCourseIndex(index);
-        transformCourseToModules(courses[index]);
+        const modules = transformCourseToModules(courses[index]);
+        setCourseModules(modules);
     };
 
     // Handle cohort selection

@@ -10,20 +10,12 @@ import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Toast from "@/components/Toast";
 import CoursePublishSuccessBanner from "@/components/CoursePublishSuccessBanner";
 import { Module, ModuleItem, LearningMaterial, Quiz, Exam } from "@/types/course";
+import { Milestone } from "@/types";
+import { transformMilestonesToModules } from "@/lib/course";
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
-import { Milestone } from "@/types";
 
-
-interface Task {
-    id: number;
-    title: string;
-    type: string;
-    status: string;
-    ordering: number;
-    num_questions?: number;
-}
 
 interface CourseDetails {
     id: number;
@@ -357,65 +349,17 @@ export default function CreateCourse() {
 
                 // Check if milestones are available in the response
                 if (data.milestones && Array.isArray(data.milestones)) {
-                    // Transform milestones to match our Module interface
-                    const transformedModules = data.milestones.map((milestone: Milestone) => {
-                        // Map tasks to module items if they exist
-                        const moduleItems: ModuleItem[] = [];
+                    // Use the shared utility function to transform the milestones to modules
+                    const transformedModules = transformMilestonesToModules(data.milestones);
 
-                        if (milestone.tasks && Array.isArray(milestone.tasks)) {
-                            milestone.tasks.forEach((task: Task) => {
-                                if (task.type === 'learning_material') {
-                                    moduleItems.push({
-                                        id: task.id.toString(),
-                                        title: task.title,
-                                        position: task.ordering,
-                                        type: 'material',
-                                        content: [], // Empty content initially
-                                        status: task.status // Add status from API response
-                                    });
-                                } else if (task.type === 'quiz') {
-                                    moduleItems.push({
-                                        id: task.id.toString(),
-                                        title: task.title,
-                                        position: task.ordering,
-                                        type: 'quiz',
-                                        questions: [], // Empty questions initially
-                                        status: task.status, // Add status from API response
-                                        numQuestions: task.num_questions // Add numQuestions from API response
-                                    });
-                                } else if (task.type === 'exam') {
-                                    moduleItems.push({
-                                        id: task.id.toString(),
-                                        title: task.title,
-                                        position: task.ordering,
-                                        type: 'exam',
-                                        questions: [], // Empty questions initially
-                                        status: task.status, // Add status from API response
-                                        numQuestions: task.num_questions // Add numQuestions from API response
-                                    });
-                                }
-                            });
-
-                            // Sort items by position/ordering
-                            moduleItems.sort((a: ModuleItem, b: ModuleItem) => a.position - b.position);
-                        }
-
-                        return {
-                            id: milestone.id.toString(),
-                            title: milestone.name,
-                            position: milestone.ordering,
-                            items: moduleItems,
-                            isExpanded: false,
-                            backgroundColor: `${milestone.color}80`, // Add 50% opacity for UI display
-                            isEditing: false
-                        };
-                    });
-
-                    // Sort modules by position/ordering if needed
-                    transformedModules.sort((a: Module, b: Module) => a.position - b.position);
+                    // Add isEditing property required by the admin view
+                    const modulesWithEditing = transformedModules.map(module => ({
+                        ...module,
+                        isEditing: false
+                    }));
 
                     // Set the modules state
-                    setModules(transformedModules);
+                    setModules(modulesWithEditing);
                 }
 
                 setIsLoading(false);
