@@ -7,6 +7,7 @@ export interface QuizEditorHandle {
     hasQuestionContent: () => boolean;
     getCurrentQuestionType: () => 'objective' | 'subjective' | 'coding';
     hasCorrectAnswer: () => boolean;
+    hasCodingLanguages: () => boolean;
     hasScorecard: () => boolean;
     setActiveTab: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
     validateBeforePublish: () => boolean;

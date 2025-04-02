@@ -361,6 +361,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             // Get the current question type and check for empty correct answer or missing scorecard
             const currentQuestionType = quizEditorRef.current.getCurrentQuestionType();
 
+            if (currentQuestionType === 'coding') {
+                const hasCodingLanguages = quizEditorRef.current.hasCodingLanguages();
+                if (!hasCodingLanguages) {
+                    // Show toast notification for missing coding languages
+                    displayToast("Missing Coding Languages", "Please select at least one programming language", "🚫");
+                    return; // Prevent entering preview mode
+                }
+            }
+
             if (currentQuestionType === 'objective' || currentQuestionType === 'coding') {
                 // For objective questions, check if correct answer is empty
                 const hasCorrectAnswer = quizEditorRef.current.hasCorrectAnswer();

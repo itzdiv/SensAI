@@ -435,7 +435,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [activeEditorTab, setActiveEditorTab] = useState<'question' | 'answer' | 'scorecard' | 'knowledge'>('question');
 
     // State to track which field is being highlighted for validation errors
-    const [highlightedField, setHighlightedField] = useState<'question' | 'answer' | null>(null);
+    const [highlightedField, setHighlightedField] = useState<'question' | 'answer' | 'codingLanguage' | null>(null);
 
     // Add validation utility functions to reduce duplication
     // These functions can validate both the current question and any question by index
@@ -444,7 +444,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
      * Highlights a field (question or answer) to draw attention to a validation error
      * @param field The field to highlight
      */
-    const highlightField = useCallback((field: 'question' | 'answer') => {
+    const highlightField = useCallback((field: 'question' | 'answer' | 'codingLanguage') => {
         // Set the highlighted field
         setHighlightedField(field);
 
@@ -501,7 +501,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const validateScorecardCriteria = (
         scorecard: ScorecardTemplate | undefined,
         callbacks: {
-            setActiveTab: (tab: 'question' | 'answer' | 'scorecard') => void;
+            setActiveTab: (tab: 'question' | 'answer' | 'scorecard' | 'knowledge') => void;
             showErrorMessage?: (title: string, message: string, emoji?: string) => void;
             questionIndex?: number; // Optional for showing question number in error message
         }
@@ -596,7 +596,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             if (onValidationError) {
                 onValidationError(
                     "No Questions",
-                    "Please add at least one question to continue"
+                    "Please add at least one question before publishing"
                 );
             }
             return false;
@@ -623,6 +623,29 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     );
                 }
                 return false;
+            }
+
+
+            // For coding questions, check if coding languages are set
+            if (question.config.questionType === 'coding') {
+                if (!question.config.codingLanguages || !Array.isArray(question.config.codingLanguages) || question.config.codingLanguages.length === 0) {
+                    // Navigate to the question with missing coding languages
+                    setCurrentQuestionIndex(i);
+
+                    // Highlight the coding language field
+                    highlightField('codingLanguage');
+
+                    // Notify parent about validation error
+                    if (onValidationError) {
+                        onValidationError(
+                            "Missing Coding Languages",
+                            `Question ${i + 1} does not have any programming language selected`
+                        );
+                    }
+                    return false;
+                } else {
+                    console.log("question.config.codingLanguages is not empty");
+                }
             }
 
             // For objective questions, check if correct answer is set
@@ -657,7 +680,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     if (onValidationError) {
                         onValidationError(
                             "Missing Scorecard",
-                            `Question ${i + 1} has no scorecard. Please add a scorecard`
+                            `Question ${i + 1} has no scorecard. Please add a scorecard for evaluating the answer`
                         );
                     }
                     return false;
@@ -1634,7 +1657,24 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     };
 
-    // Expose methods via the forwarded ref
+    // Check if the current question has coding languages set
+    const hasCodingLanguages = useCallback(() => {
+        if (questions.length === 0 || currentQuestionIndex < 0 || currentQuestionIndex >= questions.length) {
+            return false;
+        }
+
+        const question = questions[currentQuestionIndex];
+        if (question.config.questionType !== 'coding') {
+            return true; // Not relevant for non-coding questions
+        }
+
+        // Check if coding languages array exists and has at least one value
+        return !!(question.config.codingLanguages &&
+            Array.isArray(question.config.codingLanguages) &&
+            question.config.codingLanguages.length > 0);
+    }, [questions, currentQuestionIndex]);
+
+    // Expose methods to parent component via the ref
     useImperativeHandle(ref, () => ({
         save: handleSave,
         cancel: handleCancel,
@@ -1664,6 +1704,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             return isValid;
         },
         hasScorecard: () => validateScorecard(currentQuestionConfig),
+        hasCodingLanguages: () => {
+            const isValid = hasCodingLanguages();
+            if (!isValid) {
+                // Highlight the coding language field to draw attention to the error
+                highlightField('codingLanguage');
+            }
+            return isValid;
+        },
         setActiveTab: (tab) => {
             // Set the active editor tab
             setActiveEditorTab(tab);
@@ -2075,16 +2123,18 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                         </div>
                                     ) : (
                                         <div className="mb-4 flex items-center">
-                                            <Dropdown
-                                                icon={<Pen size={16} />}
-                                                title="Languages"
-                                                options={codingLanguageOptions}
-                                                selectedOptions={selectedCodingLanguages}
-                                                onChange={handleCodingLanguageChange}
-                                                disabled={readOnly}
-                                                multiselect={true}
-                                                placeholder="Select one or more languages"
-                                            />
+                                            <div className={`w-full ${highlightedField === 'codingLanguage' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-md' : ''}`}>
+                                                <Dropdown
+                                                    icon={<Pen size={16} />}
+                                                    title="Languages"
+                                                    options={codingLanguageOptions}
+                                                    selectedOptions={selectedCodingLanguages}
+                                                    onChange={handleCodingLanguageChange}
+                                                    disabled={readOnly}
+                                                    multiselect={true}
+                                                    placeholder="Select one or more languages"
+                                                />
+                                            </div>
                                         </div>
                                     )}
 
