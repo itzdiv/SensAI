@@ -889,6 +889,23 @@ export default function LearnerCourseView({
         }, 2000); // Longer timeout for the longer sound
     };
 
+    // Initialize expandedModules from the isExpanded property of modules
+    useEffect(() => {
+        if (modules && modules.length > 0) {
+            const initialExpandedState: Record<string, boolean> = {};
+            modules.forEach(module => {
+                if (module.isExpanded) {
+                    initialExpandedState[module.id] = true;
+                }
+            });
+
+            // Only set if there are any expanded modules to avoid unnecessary state updates
+            if (Object.keys(initialExpandedState).length > 0) {
+                setExpandedModules(initialExpandedState);
+            }
+        }
+    }, [modules]);
+
     return (
         <div className="bg-black">
             {filteredModules.length > 0 ? (

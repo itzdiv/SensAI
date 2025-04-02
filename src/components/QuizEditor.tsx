@@ -141,7 +141,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const originalTitleRef = useRef<string>("");
 
     // Add loading state for fetching questions
-    const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+    const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
     // Track if data has been fetched to prevent infinite loops
     const [hasFetchedData, setHasFetchedData] = useState(false);
 

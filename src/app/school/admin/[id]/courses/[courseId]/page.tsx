@@ -768,59 +768,6 @@ export default function CreateCourse() {
         }
     };
 
-    const updateItemTitle = (moduleId: string, itemId: string, title: string) => {
-        setModules(modules.map(module => {
-            if (module.id === moduleId) {
-                return {
-                    ...module,
-                    items: module.items.map(item =>
-                        item.id === itemId ? { ...item, title } : item
-                    )
-                };
-            }
-            return module;
-        }));
-
-        // Also update active item title if it's currently being edited
-        if (activeItem && activeItem.id === itemId) {
-            setActiveItem({
-                ...activeItem,
-                title
-            });
-        }
-    };
-
-    const updateItemContent = (moduleId: string, itemId: string, content: any[]) => {
-        setModules(modules.map(module => {
-            if (module.id === moduleId) {
-                return {
-                    ...module,
-                    items: module.items.map(item => {
-                        if (item.id === itemId) {
-                            if (item.type === 'material') {
-                                return { ...item, content } as LearningMaterial;
-                            } else if (item.type === 'quiz') {
-                                return { ...item } as Quiz;
-                            } else if (item.type === 'exam') {
-                                return { ...item } as Exam;
-                            }
-                        }
-                        return item;
-                    })
-                };
-            }
-            return module;
-        }));
-
-        // Also update active item content if it's currently being edited
-        if (activeItem && activeItem.id === itemId && activeItem.type === 'material') {
-            setActiveItem({
-                ...activeItem,
-                content
-            });
-        }
-    };
-
     const deleteItem = (moduleId: string, itemId: string) => {
         setModules(modules.map(module => {
             if (module.id === moduleId) {
@@ -877,28 +824,6 @@ export default function CreateCourse() {
             }
             return module;
         }));
-    };
-
-    // Handle click on module header area to toggle expansion
-    const handleModuleClick = (e: React.MouseEvent, moduleId: string) => {
-        // Find the module
-        const module = modules.find(m => m.id === moduleId);
-        if (!module) return;
-
-        // If module is in editing mode, don't toggle expansion
-        if (module.isEditing) {
-            return;
-        }
-
-        // Prevent toggling if clicking on buttons
-        if (
-            (e.target as HTMLElement).tagName === 'BUTTON' ||
-            (e.target as HTMLElement).closest('button')
-        ) {
-            return;
-        }
-
-        toggleModule(moduleId);
     };
 
     // Open the dialog for editing a learning material or quiz
@@ -1038,13 +963,6 @@ export default function CreateCourse() {
             });
     };
 
-    // Handle quiz content changes
-    const handleQuizContentChange = (questions: QuizQuestion[]) => {
-        if (activeItem && activeModuleId && activeItem.type === 'quiz') {
-            updateQuizQuestions(activeModuleId, activeItem.id, questions);
-        }
-    };
-
     // Add a function to update quiz questions
     const updateQuizQuestions = (moduleId: string, itemId: string, questions: QuizQuestion[]) => {
         setModules(prevModules =>
@@ -1068,23 +986,11 @@ export default function CreateCourse() {
         );
     };
 
-    // Modify the publishItem function to first show the confirmation dialog
-    const publishItem = async (moduleId: string, itemId: string) => {
-        // Store the current module and item IDs for use when confirmed
-        setActiveModuleId(moduleId);
-
-        // Find the item to get its type
-        const module = modules.find(m => m.id === moduleId);
-        if (!module) return;
-
-        const item = module.items.find(i => i.id === itemId);
-        if (!item) return;
-
-        // Set the active item
-        setActiveItem(item);
-
-        // Show the confirmation dialog
-        setShowPublishConfirmation(true);
+    // Handle quiz content changes
+    const handleQuizContentChange = (questions: QuizQuestion[]) => {
+        if (activeItem && activeModuleId && activeItem.type === 'quiz') {
+            updateQuizQuestions(activeModuleId, activeItem.id, questions);
+        }
     };
 
     // Add a new function to handle the actual publishing after confirmation
@@ -1137,14 +1043,6 @@ export default function CreateCourse() {
     // Add a function to handle canceling the publish action
     const handleCancelPublish = () => {
         setShowPublishConfirmation(false);
-    };
-
-    const handleModuleTitleInput = (e: React.FormEvent<HTMLHeadingElement>, moduleId: string) => {
-        // Just store the current text content, but don't update the state yet
-        // This prevents React from re-rendering and resetting the cursor
-        const newTitle = e.currentTarget.textContent || "";
-
-        // We'll update the state when the user finishes editing (on blur or when save is clicked)
     };
 
     const saveModuleTitle = async (moduleId: string) => {

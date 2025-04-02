@@ -65,7 +65,14 @@ export function transformMilestonesToModules(milestones: Milestone[] | undefined
   });
 
   // Sort modules by position/ordering
-  return transformedModules.sort((a, b) => a.position - b.position);
+  const sortedModules = transformedModules.sort((a, b) => a.position - b.position);
+  
+  // Set the first module to be expanded by default if modules exist
+  if (sortedModules.length > 0) {
+    sortedModules[0].isExpanded = true;
+  }
+  
+  return sortedModules;
 }
 
 /**
