@@ -1088,43 +1088,52 @@ export default function CreateCourse() {
             // Extract cohort names for the celebration banner
             const cohortNames = tempSelectedCohorts.map(cohort => cohort.name);
 
-            // Make a single API call with all cohort IDs
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    cohort_ids: cohortIds
-                }),
-            });
-
-            // Check if the request failed
-            if (!response.ok) {
-                throw new Error(`Failed to publish course: ${response.status}`);
-            }
-
-            // Close the dialog and update cohort details for the celebration
-            setShowPublishDialog(false);
-            setCelebrationDetails({
-                cohortCount: tempSelectedCohorts.length,
-                cohortNames: cohortNames
-            });
-
-            // Show the celebratory banner instead of a toast
-            setShowCelebratoryBanner(true);
-
-            // Clear temp selection
-            setTempSelectedCohorts([]);
-
-            // Refresh the displayed cohorts
-            fetchCourseCohorts();
+            // Link the course to the selected cohorts
+            await linkCourseToCohorts(cohortIds, cohortNames);
         } catch (error) {
             console.error("Error publishing course:", error);
             setCohortError("Failed to publish course. Please try again later.");
         } finally {
             setIsLoadingCohorts(false);
         }
+    };
+
+    // Create a reusable function for linking a course to cohorts
+    const linkCourseToCohorts = async (cohortIds: number[], cohortNames: string[]) => {
+        // Make a single API call with all cohort IDs
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                cohort_ids: cohortIds
+            }),
+        });
+
+        // Check if the request failed
+        if (!response.ok) {
+            throw new Error(`Failed to link course to cohorts: ${response.status}`);
+        }
+
+        // Update cohort details for the celebration
+        setCelebrationDetails({
+            cohortCount: cohortIds.length,
+            cohortNames: cohortNames
+        });
+
+        if (showPublishDialog) {
+            setShowPublishDialog(false);
+        }
+
+        // Show the celebratory banner
+        setShowCelebratoryBanner(true);
+
+        // Reset selection
+        setTempSelectedCohorts([]);
+
+        // Refresh the displayed cohorts
+        fetchCourseCohorts();
     };
 
     // Function to fetch cohorts assigned to this course
@@ -1261,24 +1270,30 @@ export default function CreateCourse() {
     };
 
     // Add handler for cohort creation and linking
-    const handleCohortCreated = (cohort: any) => {
-        // Show celebratory banner with the newly created cohort
-        setCelebrationDetails({
-            cohortCount: 1,
-            cohortNames: [cohort.name]
-        });
+    const handleCohortCreated = async (cohort: any) => {
+        try {
+            // Close the create cohort dialog first
+            setShowCreateCohortDialog(false);
 
-        // Show the celebratory banner
-        setShowCelebratoryBanner(true);
+            // Link the course to the newly created cohort using the reusable function
+            await linkCourseToCohorts([cohort.id], [cohort.name]);
 
-        // Close the dialog
-        setShowPublishDialog(false);
 
-        // Reset selection
-        setTempSelectedCohorts([]);
+        } catch (error) {
+            console.error("Error linking course to cohort:", error);
+            // Show error toast
+            setToast({
+                show: true,
+                title: 'Error',
+                description: 'Failed to link course to cohort. Please try again.',
+                emoji: '❌'
+            });
 
-        // Refresh the course cohorts
-        fetchCourseCohorts();
+            // Auto-hide toast after 5 seconds
+            setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+            }, 5000);
+        }
     };
 
     return (
