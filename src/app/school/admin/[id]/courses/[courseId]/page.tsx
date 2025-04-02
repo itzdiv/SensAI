@@ -12,6 +12,8 @@ import CoursePublishSuccessBanner from "@/components/CoursePublishSuccessBanner"
 import { Module, ModuleItem, LearningMaterial, Quiz, Exam } from "@/types/course";
 import { Milestone } from "@/types";
 import { transformMilestonesToModules } from "@/lib/course";
+import { CourseCohortSelectionDialog } from "@/components/CourseCohortSelectionDialog";
+import { addModule } from "@/lib/api";
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
@@ -32,248 +34,6 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     linkedMaterialIds: [],
 };
 
-// Define interface for CohortSelectionDialog props
-interface CohortSelectionDialogProps {
-    isOpen: boolean;
-    onClose: () => void;
-    originButtonRef: React.RefObject<HTMLButtonElement | null>;
-    isPublishing: boolean;
-    onConfirm: () => void;
-    showLoading: boolean;
-    hasError: boolean;
-    errorMessage: string;
-    onRetry: () => void;
-    cohorts: any[]; // Using any[] for consistency with existing cohorts state
-    tempSelectedCohorts: any[];
-    onRemoveCohort: (cohortId: number) => void;
-    onSelectCohort: (cohort: any) => void;
-    onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    searchQuery: string;
-    filteredCohorts: any[];
-    totalSchoolCohorts: number;
-    schoolId: string;
-}
-
-// Add CohortSelectionDialog component
-const CohortSelectionDialog = ({
-    isOpen,
-    onClose,
-    originButtonRef,
-    isPublishing,
-    onConfirm,
-    showLoading,
-    hasError,
-    errorMessage,
-    onRetry,
-    cohorts,
-    tempSelectedCohorts,
-    onRemoveCohort,
-    onSelectCohort,
-    onSearchChange,
-    searchQuery,
-    filteredCohorts,
-    totalSchoolCohorts,
-    schoolId,
-}: CohortSelectionDialogProps) => {
-    const dropdownRef = useRef<HTMLDivElement>(null);
-    const [position, setPosition] = useState({ top: 0, left: 0 });
-
-    // Calculate position when button or isOpen changes
-    useEffect(() => {
-        if (isOpen && originButtonRef.current) {
-            const buttonRect = originButtonRef.current.getBoundingClientRect();
-            const buttonWidth = buttonRect.width;
-            const windowWidth = window.innerWidth;
-
-            // Position dropdown below button
-            const top = buttonRect.bottom + window.scrollY;
-
-            // Calculate left position to avoid going off-screen
-            // Default to aligning with left edge of button
-            let left = buttonRect.left + window.scrollX;
-
-            // If dropdown would go off right edge, align with right edge of button instead
-            const dropdownWidth = 400; // Width of dropdown from CSS
-            if (left + dropdownWidth > windowWidth) {
-                left = buttonRect.right - dropdownWidth + window.scrollX;
-            }
-
-            setPosition({ top, left });
-        }
-    }, [isOpen, originButtonRef]);
-
-    // Handle clicks outside of the dropdown
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            const target = event.target as Node;
-
-            if (dropdownRef.current &&
-                !dropdownRef.current.contains(target) &&
-                !(target as Element).closest('[data-dropdown-toggle="true"]')) {
-                onClose();
-            }
-        }
-
-        if (isOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [isOpen, onClose]);
-
-    if (!isOpen) return null;
-
-    const buttonText = isPublishing
-        ? showLoading
-            ? "Publishing..."
-            : "Publish course to cohorts"
-        : showLoading
-            ? "Adding..."
-            : "Add course to cohorts";
-
-    return (
-        <div
-            ref={dropdownRef}
-            className="fixed z-50 py-2 w-[400px] bg-[#1A1A1A] rounded-lg shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-                top: `${position.top}px`,
-                left: `${position.left}px`
-            }}
-        >
-            <div className="p-4 pb-2">
-                {/* Only show search and selected cohorts when not loading */}
-                {!showLoading && (
-                    <>
-                        {/* Only show search when there are available cohorts AND not all cohorts are selected */}
-                        {!hasError && cohorts.length > 0 && cohorts.length > tempSelectedCohorts.length && (
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search cohorts"
-                                    className="w-full bg-[#111] rounded-md px-3 py-2 text-white"
-                                    value={searchQuery}
-                                    onChange={onSearchChange}
-                                />
-                            </div>
-                        )}
-
-                        {/* Show temporarily selected cohorts */}
-                        {tempSelectedCohorts.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                {tempSelectedCohorts.map(cohort => (
-                                    <div
-                                        key={cohort.id}
-                                        className="flex items-center bg-[#222] px-3 py-1 rounded-full"
-                                    >
-                                        <span className="text-white text-sm font-light mr-2">{cohort.name}</span>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onRemoveCohort(cohort.id);
-                                            }}
-                                            className="text-gray-400 hover:text-white cursor-pointer"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-
-            <div className="max-h-72 overflow-y-auto py-2 px-2">
-                {showLoading ? (
-                    <div className="flex justify-center items-center py-6">
-                        <div className="w-8 h-8 border-2 border-t-green-500 border-r-green-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
-                    </div>
-                ) : hasError ? (
-                    <div className="p-4 text-center">
-                        <p className="text-red-400 mb-2">{errorMessage}</p>
-                        <button
-                            className="text-green-400 hover:text-green-300 cursor-pointer"
-                            onClick={onRetry}
-                        >
-                            Try again
-                        </button>
-                    </div>
-                ) : filteredCohorts.length === 0 ? (
-                    <div className="p-4 text-center">
-                        {totalSchoolCohorts === 0 ? (
-                            // School has no cohorts at all
-                            <>
-                                <h3 className="text-lg text-white font-light mb-1">No cohorts available</h3>
-                                <p className="text-gray-400 text-sm">Create cohorts in your school that you can publish courses to</p>
-                                <Link
-                                    href={`/school/admin/${schoolId}#cohorts`}
-                                    className="mt-4 inline-block px-4 py-2 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
-                                >
-                                    Go to School
-                                </Link>
-                            </>
-                        ) : totalSchoolCohorts > 0 && cohorts.length === 0 ? (
-                            // All cohorts have been assigned to the course already
-                            <>
-                                <h3 className="text-lg text-white font-light mb-1">All cohorts selected</h3>
-                                <p className="text-gray-400 text-sm">You have selected all available cohorts</p>
-                                <Link
-                                    href={`/school/admin/${schoolId}#cohorts`}
-                                    className="mt-4 inline-block px-4 py-2 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
-                                >
-                                    Create more cohorts
-                                </Link>
-                            </>
-                        ) : filteredCohorts.length === 0 && tempSelectedCohorts.length > 0 && tempSelectedCohorts.length === cohorts.length ? (
-                            // All available cohorts have been temporarily selected
-                            <>
-                                <h3 className="text-lg text-white font-light mb-1">All cohorts selected</h3>
-                                <p className="text-gray-400 text-sm">You have selected all available cohorts</p>
-                            </>
-                        ) : (
-                            // Search returned no results
-                            <>
-                                <h3 className="text-lg text-white font-light mb-1">No matching cohorts</h3>
-                                <p className="text-gray-400 text-sm">Try a different search term</p>
-                            </>
-                        )}
-                    </div>
-                ) : (
-                    <div className="space-y-0.5">
-                        {filteredCohorts.map(cohort => (
-                            <div
-                                key={cohort.id}
-                                className="flex items-center px-3 py-1.5 hover:bg-[#222] rounded-md cursor-pointer"
-                                onClick={() => onSelectCohort(cohort)}
-                            >
-                                <div className="w-6 h-6 bg-green-900 rounded-md flex items-center justify-center mr-2">
-                                    <UsersRound size={14} className="text-white" />
-                                </div>
-                                <p className="text-white text-sm font-light">{cohort.name}</p>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Publish/Add button at the end of the list */}
-                {(filteredCohorts.length > 0 || tempSelectedCohorts.length > 0) && (
-                    <div className="px-2 pt-4 pb-1">
-                        <button
-                            className="w-full bg-[#016037] text-white py-3 rounded-full text-sm hover:bg-[#017045] transition-colors cursor-pointer"
-                            onClick={onConfirm}
-                            disabled={showLoading}
-                        >
-                            {buttonText}
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
 
 export default function CreateCourse() {
     const router = useRouter();
@@ -433,100 +193,6 @@ export default function CreateCourse() {
     }, [isDialogOpen]);
 
     // Handle clicks outside of the dropdown for the publish dialog
-
-    const addModule = async () => {
-        // Generate a diverse set of theme-compatible colors for dark mode
-        const getRandomPastelColor = () => {
-            // Predefined set of diverse dark mode friendly colors in hex format
-            const themeColors = [
-                '#2d3748',    // Slate blue
-                '#433c4c',    // Deep purple
-                '#4a5568',    // Cool gray
-                '#312e51',    // Indigo
-                '#364135',    // Forest green
-                '#4c393a',    // Burgundy
-                '#334155',    // Navy blue
-                '#553c2d',    // Rust brown
-                '#37303f',    // Plum
-                '#3c4b64',    // Steel blue
-                '#463c46',    // Mauve
-                '#3c322d',    // Coffee
-            ];
-
-            // Ensure we don't pick a color similar to the last one
-            let newColorIndex;
-            do {
-                newColorIndex = Math.floor(Math.random() * themeColors.length);
-                // If we have more than 6 colors, make sure the new color is at least 3 positions away
-                // from the last one to ensure greater visual distinction
-            } while (
-                lastUsedColorIndex !== -1 &&
-                (Math.abs(newColorIndex - lastUsedColorIndex) < 3 ||
-                    newColorIndex === lastUsedColorIndex)
-            );
-
-            // Update the last used color index
-            setLastUsedColorIndex(newColorIndex);
-
-            return themeColors[newColorIndex];
-        };
-
-        // Select a random color for the module
-        const backgroundColor = getRandomPastelColor();
-
-        try {
-            // Make POST request to create a new milestone (module)
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/milestones`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: "New Module",
-                    color: backgroundColor, // Now sending color as hex with # symbol
-                    org_id: parseInt(schoolId)
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to create module: ${response.status}`);
-            }
-
-            // Get the module ID from the response
-            const data = await response.json();
-            console.log("Module created successfully:", data);
-
-            // Create the new module with the ID from the API
-            const newModule: Module = {
-                id: data.id.toString(), // Convert to string to match our Module interface
-                title: "New Module",
-                position: modules.length,
-                items: [],
-                isExpanded: true,
-                backgroundColor: `${backgroundColor}80`, // Add 50% opacity for UI display
-                isEditing: false
-            };
-
-            setModules([...modules, newModule]);
-            setActiveModuleId(newModule.id);
-        } catch (error) {
-            console.error("Error creating module:", error);
-
-            // Fallback to client-side ID generation if the API call fails
-            const newModule: Module = {
-                id: `module-${Date.now()}`,
-                title: "New Module",
-                position: modules.length,
-                items: [],
-                isExpanded: true,
-                backgroundColor: `${backgroundColor}80`, // Add 50% opacity for UI display
-                isEditing: false
-            };
-
-            setModules([...modules, newModule]);
-            setActiveModuleId(newModule.id);
-        }
-    };
 
     // Add back the handleKeyDown function for module titles
     const handleKeyDown = (e: React.KeyboardEvent<HTMLHeadingElement>) => {
@@ -1697,7 +1363,7 @@ export default function CreateCourse() {
                         </div>
 
                         <button
-                            onClick={addModule}
+                            onClick={() => addModule(courseId, schoolId, modules, setModules, setActiveModuleId, lastUsedColorIndex, setLastUsedColorIndex)}
                             className="mb-6 px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-100 cursor-pointer"
                         >
                             Add Module
@@ -1779,8 +1445,8 @@ export default function CreateCourse() {
                 </div>
             )}
 
-            {/* Render the CohortSelectionDialog */}
-            <CohortSelectionDialog
+            {/* Render the CourseCohortSelectionDialog */}
+            <CourseCohortSelectionDialog
                 isOpen={showPublishDialog}
                 onClose={closeCohortDialog}
                 originButtonRef={dialogOrigin === 'publish' ? publishButtonRef : addCohortButtonRef}
