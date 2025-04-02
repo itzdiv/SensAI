@@ -228,8 +228,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         const fetchQuestions = async (availableScorecards: ScorecardTemplate[] = []) => {
             // Only fetch if we have a taskId, the status is published, and we haven't already fetched
             if (taskId && status === 'published' && !hasFetchedData) {
-                setIsLoadingQuestions(true);
-
                 try {
                     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`);
                     if (!response.ok) {
@@ -334,6 +332,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 } finally {
                     setIsLoadingQuestions(false);
                 }
+            } else {
+                setIsLoadingQuestions(false);
             }
         };
 
@@ -1771,7 +1771,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             onClick={() => setActiveEditorTab('knowledge')}
                                         >
                                             <BookOpen size={16} className="mr-2" />
-                                            Knowledge Base
+                                            AI Training Resources
                                         </button>
                                     </div>
                                 </div>
