@@ -2242,11 +2242,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     <BookOpen size={16} className="text-amber-400 mb-2" />
                                                     <div>
                                                         <p className="text-gray-400 text-xs leading-tight mb-2">
-                                                            This knowledge base is <span className="font-bold text-white">optional</span> and will not be shown to learners but can be used by AI to provide more accurate and helpful feedback
+                                                            These resources are <span className="font-bold text-white">optional</span> and will not be shown to learners but can be used by AI to provide more accurate and helpful feedback
                                                         </p>
-                                                        <p className="text-gray-300 text-xs leading-tight">
-                                                            You can either link existing learning materials added to the course or add new material here, but it is not mandatory. Providing a knowledge base can make the feedback given by AI more specific to how you teach by letting it adapt to your teaching style.
-                                                        </p>
+
                                                     </div>
                                                 </div>
                                             </div>
@@ -2336,6 +2334,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                                 readOnly={readOnly}
                                                                 onEditorReady={setKnowledgeBaseEditorInstance}
                                                                 className="knowledge-base-editor"
+                                                                placeholder="Link existing materials using the button above or add new material here"
                                                             />
                                                         </div>
                                                     </div>
