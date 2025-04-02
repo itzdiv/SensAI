@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound } from "lucide-react";
+import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { useRouter, useParams } from "next/navigation";
@@ -14,6 +14,7 @@ import { Milestone } from "@/types";
 import { transformMilestonesToModules } from "@/lib/course";
 import { CourseCohortSelectionDialog } from "@/components/CourseCohortSelectionDialog";
 import { addModule } from "@/lib/api";
+import Tooltip from "@/components/Tooltip";
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
@@ -1486,14 +1487,25 @@ export default function CreateCourse() {
                                             key={cohort.id}
                                             className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
                                         >
-                                            <span className="text-white text-sm font-light mr-3">{cohort.name}</span>
-                                            <button
-                                                onClick={() => initiateCohortRemoval(cohort.id, cohort.name)}
-                                                className="text-gray-400 hover:text-white cursor-pointer"
-                                                aria-label="Remove cohort from course"
-                                            >
-                                                <X size={16} />
-                                            </button>
+                                            <Tooltip content="Open" position="top">
+                                                <button
+                                                    onClick={() => window.open(`/school/admin/${schoolId}/cohorts/${cohort.id}`, '_blank')}
+                                                    className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
+                                                    aria-label="Open cohort page"
+                                                >
+                                                    <ExternalLink size={16} />
+                                                </button>
+                                            </Tooltip>
+                                            <span className="text-white text-sm font-light">{cohort.name}</span>
+                                            <Tooltip content="Remove" position="top">
+                                                <button
+                                                    onClick={() => initiateCohortRemoval(cohort.id, cohort.name)}
+                                                    className="text-gray-400 hover:text-white cursor-pointer flex items-center ml-2"
+                                                    aria-label="Remove cohort from course"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </Tooltip>
                                         </div>
                                     ))}
                                 </div>

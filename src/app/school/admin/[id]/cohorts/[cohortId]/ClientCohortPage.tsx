@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "@/components/layout/header";
-import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight, GraduationCap, School, HelpCircle, Pencil } from "lucide-react";
+import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight, GraduationCap, School, HelpCircle, Pencil, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
@@ -618,14 +618,25 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                     key={course.id}
                                                     className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
                                                 >
-                                                    <span className="text-white text-sm font-light mr-3">{course.name}</span>
-                                                    <button
-                                                        onClick={() => initiateCourseUnlink(course)}
-                                                        className="text-gray-400 hover:text-white cursor-pointer"
-                                                        aria-label="Remove course from cohort"
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
+                                                    <Tooltip content="Open" position="top">
+                                                        <button
+                                                            onClick={() => window.open(`/school/admin/${schoolId}/courses/${course.id}`, '_blank')}
+                                                            className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
+                                                            aria-label="Open course page"
+                                                        >
+                                                            <ExternalLink size={16} />
+                                                        </button>
+                                                    </Tooltip>
+                                                    <span className="text-white text-sm font-light">{course.name}</span>
+                                                    <Tooltip content="Remove" position="top">
+                                                        <button
+                                                            onClick={() => initiateCourseUnlink(course)}
+                                                            className="text-gray-400 hover:text-white cursor-pointer flex items-center ml-2"
+                                                            aria-label="Remove course from cohort"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </Tooltip>
                                                 </div>
                                             ))}
                                         </div>
