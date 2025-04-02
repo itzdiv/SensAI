@@ -361,7 +361,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             // Get the current question type and check for empty correct answer or missing scorecard
             const currentQuestionType = quizEditorRef.current.getCurrentQuestionType();
 
-            if (currentQuestionType === 'objective') {
+            if (currentQuestionType === 'objective' || currentQuestionType === 'coding') {
                 // For objective questions, check if correct answer is empty
                 const hasCorrectAnswer = quizEditorRef.current.hasCorrectAnswer();
                 if (!hasCorrectAnswer) {

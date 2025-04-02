@@ -626,7 +626,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             }
 
             // For objective questions, check if correct answer is set
-            if (question.config.questionType === 'objective') {
+            if (question.config.questionType === 'objective' || question.config.questionType === 'coding') {
                 if (!validateCorrectAnswer(question.config)) {
                     // Navigate to the question with missing answer
                     setCurrentQuestionIndex(i);
