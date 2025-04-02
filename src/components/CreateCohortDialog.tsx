@@ -6,10 +6,11 @@ import { X } from 'lucide-react';
 interface CreateCohortDialogProps {
     open: boolean;
     onClose: () => void;
-    onCreateCohort: (name: string) => void;
+    onCreateCohort: (cohort: any) => void;
+    schoolId?: string;
 }
 
-export default function CreateCohortDialog({ open, onClose, onCreateCohort }: CreateCohortDialogProps) {
+export default function CreateCohortDialog({ open, onClose, onCreateCohort, schoolId }: CreateCohortDialogProps) {
     const [cohortName, setCohortName] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +24,7 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort }: Cr
         }
     }, [open]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         // Validate cohort name
         if (!cohortName.trim()) {
             setError('Cohort name is required');
@@ -33,13 +34,40 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort }: Cr
         // Set loading state to true
         setIsLoading(true);
 
-        // Call the create function
-        onCreateCohort(cohortName);
+        try {
+            // Make API call to create cohort
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: cohortName,
+                    org_id: schoolId ? parseInt(schoolId) : null
+                }),
+            });
 
-        // Reset form state
-        setCohortName('');
-        setError('');
-        // The parent component will handle closing the dialog after navigation begins
+            // Handle API errors
+            if (!response.ok) {
+                throw new Error(`Failed to create cohort: ${response.status} ${response.statusText}`);
+            }
+
+            // Get the new cohort data
+            const newCohortData = await response.json();
+
+            // Pass the created cohort back to the parent
+            onCreateCohort(newCohortData);
+
+            // Reset form state
+            setCohortName('');
+            setError('');
+
+        } catch (error) {
+            console.error('Error creating cohort:', error);
+            setError('Failed to create cohort. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     if (!open) return null;

@@ -278,56 +278,24 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         }
     };
 
-    const handleCreateCohort = async (name: string) => {
+    const handleCreateCohort = async (cohort: any) => {
         try {
-            console.log("Creating cohort with name:", name, "for organization:", id);
+            console.log("Cohort created:", cohort);
 
-            // Make API call to create cohort
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name,
-                    org_id: parseInt(id)
-                }),
-            });
-
-            // Log the raw response for debugging
-            console.log("API response status:", response.status);
-
-            if (!response.ok) {
-                throw new Error(`Failed to create cohort: ${response.status} ${response.statusText}`);
-            }
-
-            // Get the new cohort data with ID
-            const newCohortData = await response.json();
-
-            // Add console log to debug the response
-            console.log("Created cohort:", newCohortData);
-
-            // Check if the ID exists before navigating
-            if (newCohortData && newCohortData.id) {
-                console.log("Navigating to:", `/school/admin/${id}/cohorts/${newCohortData.id}`);
-
-                // Important: Navigate before closing the dialog to prevent flash of school page
-                // This navigation will unmount the current component, which implicitly closes the dialog
-                router.push(`/school/admin/${id}/cohorts/${newCohortData.id}`);
-
-                // No need to explicitly close the dialog as the navigation will unmount the component
+            // Important: Navigate before closing the dialog to prevent flash of school page
+            // This navigation will unmount the current component, which implicitly closes the dialog
+            if (cohort && cohort.id) {
+                console.log("Navigating to:", `/school/admin/${id}/cohorts/${cohort.id}`);
+                router.push(`/school/admin/${id}/cohorts/${cohort.id}`);
             } else {
-                console.error("Cohort ID is missing in the API response:", newCohortData);
+                console.error("Cohort ID is missing in the response:", cohort);
                 // Fallback to schools page if ID is missing and close dialog
                 setIsCreateCohortDialogOpen(false);
                 router.push(`/school/admin/${id}#cohorts`);
             }
-
         } catch (error) {
-            console.error('Error creating cohort:', error);
-            // Close dialog and show error if needed
+            console.error('Error handling cohort creation:', error);
             setIsCreateCohortDialogOpen(false);
-            // Here you would typically show an error message to the user
         }
     };
 
@@ -624,6 +592,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 open={isCreateCohortDialogOpen}
                 onClose={() => setIsCreateCohortDialogOpen(false)}
                 onCreateCohort={handleCreateCohort}
+                schoolId={id}
             />
 
             {/* Create Course Dialog */}

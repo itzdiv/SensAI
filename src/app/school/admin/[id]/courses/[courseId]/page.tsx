@@ -18,6 +18,8 @@ import { addModule } from "@/lib/api";
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
 
+// Import the CreateCohortDialog
+import CreateCohortDialog from '@/components/CreateCohortDialog';
 
 interface CourseDetails {
     id: number;
@@ -91,6 +93,9 @@ export default function CreateCourse() {
         cohortCount: 0,
         cohortNames: [] as string[]
     });
+
+    // Add a new state for direct create cohort dialog
+    const [showCreateCohortDialog, setShowCreateCohortDialog] = useState(false);
 
     // Fetch course details from the backend
     useEffect(() => {
@@ -1236,6 +1241,44 @@ export default function CreateCourse() {
     const closeCohortDialog = () => {
         setShowPublishDialog(false);
         setDialogOrigin(null);
+        setCohortSearchQuery('');
+        setFilteredCohorts([]);
+        setCohortError(null);
+    };
+
+    // Add handler for opening the create cohort dialog directly
+    const openCreateCohortDialog = () => {
+        // Close the cohort selection dialog first
+        setShowPublishDialog(false);
+
+        // Then open the create cohort dialog
+        setShowCreateCohortDialog(true);
+    };
+
+    // Add handler for closing the create cohort dialog
+    const closeCreateCohortDialog = () => {
+        setShowCreateCohortDialog(false);
+    };
+
+    // Add handler for cohort creation and linking
+    const handleCohortCreated = (cohort: any) => {
+        // Show celebratory banner with the newly created cohort
+        setCelebrationDetails({
+            cohortCount: 1,
+            cohortNames: [cohort.name]
+        });
+
+        // Show the celebratory banner
+        setShowCelebratoryBanner(true);
+
+        // Close the dialog
+        setShowPublishDialog(false);
+
+        // Reset selection
+        setTempSelectedCohorts([]);
+
+        // Refresh the course cohorts
+        fetchCourseCohorts();
     };
 
     return (
@@ -1465,6 +1508,9 @@ export default function CreateCourse() {
                 filteredCohorts={filteredCohorts}
                 totalSchoolCohorts={totalSchoolCohorts}
                 schoolId={schoolId}
+                courseId={courseId}
+                onCohortCreated={handleCohortCreated}
+                onOpenCreateCohortDialog={openCreateCohortDialog}
             />
 
             {/* Confirmation Dialog for Cohort Removal */}
@@ -1496,6 +1542,14 @@ export default function CreateCourse() {
                 onClose={closeCelebratoryBanner}
                 cohortCount={celebrationDetails.cohortCount}
                 cohortNames={celebrationDetails.cohortNames}
+            />
+
+            {/* Add the standalone CreateCohortDialog */}
+            <CreateCohortDialog
+                open={showCreateCohortDialog}
+                onClose={closeCreateCohortDialog}
+                onCreateCohort={handleCohortCreated}
+                schoolId={schoolId}
             />
         </div>
     );

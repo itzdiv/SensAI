@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 import { UsersRound } from 'lucide-react';
+import CreateCohortDialog from './CreateCohortDialog';
 
 // Define interface for CourseCohortSelectionDialog props
 interface CourseCohortSelectionDialogProps {
@@ -23,6 +24,9 @@ interface CourseCohortSelectionDialogProps {
     filteredCohorts: any[];
     totalSchoolCohorts: number;
     schoolId: string;
+    courseId?: string; // Add courseId for linking the new cohort
+    onCohortCreated?: (cohort: any) => void; // Callback when a cohort is created and linked
+    onOpenCreateCohortDialog: () => void; // New callback to open the CreateCohortDialog
 }
 
 // Add CohortSelectionDialog component
@@ -45,33 +49,58 @@ export const CourseCohortSelectionDialog = ({
     filteredCohorts,
     totalSchoolCohorts,
     schoolId,
+    courseId,
+    onCohortCreated,
+    onOpenCreateCohortDialog,
 }: CourseCohortSelectionDialogProps) => {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState({ top: 0, left: 0 });
 
     // Calculate position when button or isOpen changes
     useEffect(() => {
-        if (isOpen && originButtonRef.current) {
-            const buttonRect = originButtonRef.current.getBoundingClientRect();
-            const buttonWidth = buttonRect.width;
-            const windowWidth = window.innerWidth;
+        const updatePosition = () => {
+            if (isOpen && originButtonRef.current && dropdownRef.current) {
+                const buttonRect = originButtonRef.current.getBoundingClientRect();
+                const windowWidth = window.innerWidth;
 
-            // Position dropdown below button
-            const top = buttonRect.bottom + window.scrollY;
+                // Position dropdown below button
+                // Use viewport-relative position (since fixed positioning is relative to viewport)
+                const top = buttonRect.bottom;
 
-            // Calculate left position to avoid going off-screen
-            // Default to aligning with left edge of button
-            let left = buttonRect.left + window.scrollX;
+                // Calculate left position to avoid going off-screen
+                // Default to aligning with left edge of button
+                let left = buttonRect.left;
 
-            // If dropdown would go off right edge, align with right edge of button instead
-            const dropdownWidth = 400; // Width of dropdown from CSS
-            if (left + dropdownWidth > windowWidth) {
-                left = buttonRect.right - dropdownWidth + window.scrollX;
+                // If dropdown would go off right edge, align with right edge of button instead
+                const dropdownWidth = 400; // Width of dropdown from CSS
+                if (left + dropdownWidth > windowWidth) {
+                    left = buttonRect.right - dropdownWidth;
+                }
+
+                // Apply the new position directly to the DOM element for immediate effect
+                setPosition({ top, left });
             }
+        };
 
-            setPosition({ top, left });
+        // Initial position update
+        updatePosition();
+
+        // Add scroll and resize event listeners
+        if (isOpen) {
+            window.addEventListener('scroll', updatePosition, { passive: true });
+            window.addEventListener('resize', updatePosition, { passive: true });
+            // Add a more frequent position update for smoother following during scrolling
+            const intervalId = setInterval(updatePosition, 16); // ~60fps
+
+            return () => {
+                window.removeEventListener('scroll', updatePosition);
+                window.removeEventListener('resize', updatePosition);
+                clearInterval(intervalId);
+            };
         }
-    }, [isOpen, originButtonRef]);
+
+        return undefined;
+    }, [isOpen, originButtonRef, dropdownRef]);
 
     // Handle clicks outside of the dropdown
     useEffect(() => {
@@ -94,6 +123,12 @@ export const CourseCohortSelectionDialog = ({
         };
     }, [isOpen, onClose]);
 
+    // Update the click handler to use the new callback
+    const handleCreateCohortClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        onOpenCreateCohortDialog();
+    };
+
     if (!isOpen) return null;
 
     const buttonText = isPublishing
@@ -111,7 +146,8 @@ export const CourseCohortSelectionDialog = ({
             onClick={(e) => e.stopPropagation()}
             style={{
                 top: `${position.top}px`,
-                left: `${position.left}px`
+                left: `${position.left}px`,
+                position: 'fixed',
             }}
         >
             <div className="p-4 pb-2">
@@ -179,24 +215,24 @@ export const CourseCohortSelectionDialog = ({
                             <>
                                 <h3 className="text-lg text-white font-light mb-1">No cohorts available</h3>
                                 <p className="text-gray-400 text-sm">Create cohorts in your school that you can publish courses to</p>
-                                <Link
-                                    href={`/school/admin/${schoolId}#cohorts`}
+                                <button
+                                    onClick={handleCreateCohortClick}
                                     className="mt-4 inline-block px-4 py-2 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                                 >
                                     Create Cohort
-                                </Link>
+                                </button>
                             </>
                         ) : totalSchoolCohorts > 0 && cohorts.length === 0 ? (
                             // All cohorts have been assigned to the course already
                             <>
                                 <h3 className="text-lg text-white font-light mb-1">All cohorts selected</h3>
                                 <p className="text-gray-400 text-sm">You have selected all available cohorts</p>
-                                <Link
-                                    href={`/school/admin/${schoolId}#cohorts`}
+                                <button
+                                    onClick={handleCreateCohortClick}
                                     className="mt-4 inline-block px-4 py-2 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                                 >
                                     Create more cohorts
-                                </Link>
+                                </button>
                             </>
                         ) : filteredCohorts.length === 0 && tempSelectedCohorts.length > 0 && tempSelectedCohorts.length === cohorts.length ? (
                             // All available cohorts have been temporarily selected
