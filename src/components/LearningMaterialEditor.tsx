@@ -237,7 +237,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             },
                             {
                                 type: "paragraph",
-                                content: [{ "text": "This is where you'll create your learning material. You can either modify this template or remove it entirely to start from scratch.", "type": "text", styles: {} }]
+                                content: [{ "text": "This is where you will create your learning material. You can either modify this template or remove it entirely to start from scratch.", "type": "text", styles: {} }]
                             },
                             {
                                 type: "paragraph",
@@ -409,7 +409,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             },
                             {
                                 type: "paragraph",
-                                content: [{ "text": "When you're ready to make your content available to learners, click the Publish button. You can always edit and republish your content later.", "type": "text", styles: {} }]
+                                content: [{ "text": "When you are ready to make your content available to learners, click the Publish button. You can always edit and republish your content later.", "type": "text", styles: {} }]
                             },
                             {
                                 type: "paragraph",

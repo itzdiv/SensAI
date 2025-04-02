@@ -697,10 +697,17 @@ export default function CreateCourse() {
                         ...module,
                         items: module.items.map(item => {
                             if (item.id === itemId) {
+                                // Get numQuestions from activeItem if available (for quizzes/exams)
+                                const numQuestions = activeItem &&
+                                    (activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+                                    activeItem.questions ?
+                                    activeItem.questions.length : undefined;
+
                                 return {
                                     ...item,
                                     status,
-                                    title
+                                    title,
+                                    ...(numQuestions !== undefined && (item.type === 'quiz' || item.type === 'exam') ? { numQuestions } : {})
                                 };
                             }
                             return item;

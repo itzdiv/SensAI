@@ -518,10 +518,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         // Look for different input patterns
         const patterns = [
             /\binput\s*\([^)]*\)/g,               // Standard input() or input("prompt")
-            /\beval\s*\(\s*input\s*\([^)]*\)\s*\)/g, // eval(input())
-            /\bint\s*\(\s*input\s*\([^)]*\)\s*\)/g,  // int(input())
-            /\bfloat\s*\(\s*input\s*\([^)]*\)\s*\)/g, // float(input())
-            /\bstr\s*\(\s*input\s*\([^)]*\)\s*\)/g    // str(input())
         ];
 
         // Count all occurrences of input calls

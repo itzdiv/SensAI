@@ -863,7 +863,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }, [questions, currentQuestionIndex, onChange]);
 
     // Handle configuration change for the current question
-    const handleConfigChange = useCallback((configUpdate: Partial<QuizQuestionConfig>) => {
+    const handleConfigChange = useCallback((configUpdate: Partial<QuizQuestionConfig>, options?: { updateTemplate?: boolean, newQuestionType?: 'objective' | 'subjective' | 'coding' }) => {
         if (questions.length === 0) return;
 
         const updatedQuestions = [...questions];
@@ -875,12 +875,28 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             }
         };
 
+        // If updateTemplate flag is true and we have a newQuestionType, update the template content
+        if (options?.updateTemplate && options.newQuestionType && status === 'draft') {
+            const currentContent = updatedQuestions[currentQuestionIndex].content || [];
+
+            // Check if any block has an ID (indicating user modification)
+            const hasUserModifiedContent = currentContent.some(block => 'id' in block);
+
+            if (!hasUserModifiedContent) {
+                // Generate new template blocks based on the new question type
+                const newTemplateContent = getQuestionTemplateBlocks(options.newQuestionType);
+
+                // Update the content with the new template
+                updatedQuestions[currentQuestionIndex].content = newTemplateContent;
+            }
+        }
+
         setQuestions(updatedQuestions);
 
         if (onChange) {
             onChange(updatedQuestions);
         }
-    }, [questions, currentQuestionIndex, onChange]);
+    }, [questions, currentQuestionIndex, onChange, status]);
 
     const removeScorecardFromSchoolScoreboards = useCallback(() => {
         let scorecardForQuestion = questions[currentQuestionIndex].config.scorecardData
@@ -909,14 +925,355 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [questions, currentQuestionIndex, schoolScorecards, onChange]);
 
+    // Function to get template blocks based on question type
+    const getQuestionTemplateBlocks = (questionType: 'objective' | 'subjective' | 'coding') => {
+        // Common blocks that appear in all templates
+        const commonBlocks = [
+            {
+                type: "heading",
+                props: { level: 2 },
+                content: [{ "text": "Welcome to the Question Editor!", "type": "text", styles: {} }],
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "This is where you will create your question. You can modify this template or remove it to start from scratch.", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            },
+            {
+                type: "heading",
+                props: { level: 3 },
+                content: [{ "text": "Question Types", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "You can select from these question types:", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Objective", "type": "text", styles: { "bold": true } }, { "text": ": For questions with specific correct answers (multiple choice, true/false, etc.)", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Subjective", "type": "text", styles: { "bold": true } }, { "text": ": For questions that don't have a single correct answer.", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Coding", "type": "text", styles: { "bold": true } }, { "text": ": For questions that require learners to write code as their answer", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            }
+        ];
+
+        // Answer type section - not shown for coding questions
+        const answerTypeBlocks = questionType !== 'coding' ? [
+            {
+                type: "heading",
+                props: { level: 3 },
+                content: [{ "text": "Answer Types", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "You can select from these answer types:", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Text", "type": "text", styles: { "bold": true } }, { "text": ": Learners need to type their answer", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Audio", "type": "text", styles: { "bold": true } }, { "text": ": Learners need to record their answer", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            }
+        ] : [];
+
+        // Programming languages section - only shown for coding questions
+        const programmingLanguagesBlocks = questionType === 'coding' ? [
+            {
+                type: "heading",
+                props: { level: 3 },
+                content: [{ "text": "Programming Languages", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "You should select the programming languages learners will use to answer the question. You can select multiple languages from the dropdown.", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            }
+        ] : [];
+
+        // Tabs explanation - dependent on question type
+        let tabsExplanationBlocks = [];
+        if (questionType === 'objective') {
+            tabsExplanationBlocks = [
+                {
+                    type: "heading",
+                    props: { level: 3 },
+                    content: [{ "text": "Editor Tabs", "type": "text", styles: {} }]
+                },
+                {
+                    type: "paragraph",
+                    content: [{ "text": "The Question Editor has three tabs for this question type:", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Question", "type": "text", styles: { "bold": true } }, { "text": ": (Current tab) Where you write the question text", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Correct Answer", "type": "text", styles: { "bold": true } }, { "text": ": Where you provide the expected answer for automatic evaluation", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "AI Training", "type": "text", styles: { "bold": true } }, { "text": ": Where you can add knowledge base content to help AI evaluate learner responses", "type": "text", styles: {} }]
+                }
+            ];
+        } else if (questionType === 'subjective') {
+            tabsExplanationBlocks = [
+                {
+                    type: "heading",
+                    props: { level: 3 },
+                    content: [{ "text": "Editor Tabs", "type": "text", styles: {} }]
+                },
+                {
+                    type: "paragraph",
+                    content: [{ "text": "The Question Editor has three tabs for this question type:", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Question", "type": "text", styles: { "bold": true } }, { "text": ": (Current tab) Where you write the question text", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Scorecard", "type": "text", styles: { "bold": true } }, { "text": ": Where you define grading criteria for subjective responses", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "AI Training", "type": "text", styles: { "bold": true } }, { "text": ": Where you can add knowledge base content to help AI evaluate learner responses", "type": "text", styles: {} }]
+                }
+            ];
+        } else { // coding
+            tabsExplanationBlocks = [
+                {
+                    type: "heading",
+                    props: { level: 3 },
+                    content: [{ "text": "Editor Tabs", "type": "text", styles: {} }]
+                },
+                {
+                    type: "paragraph",
+                    content: [{ "text": "The Question Editor has three tabs for this question type:", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Question", "type": "text", styles: { "bold": true } }, { "text": ": (Current tab) Where you write the question text", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Correct Answer", "type": "text", styles: { "bold": true } }, { "text": ": Where you provide the expected code solution", "type": "text", styles: {} }]
+                },
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "AI Training", "type": "text", styles: { "bold": true } }, { "text": ": Where you can add knowledge base content to help AI evaluate learner code solutions", "type": "text", styles: {} }]
+                }
+            ];
+        }
+
+        // Available block types (from learning material editor)
+        const blockTypesBlocks = [
+            {
+                type: "heading",
+                props: { level: 3 },
+                content: [{ "text": "Available Block Types", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "Here are some examples of the different types of blocks you can use:", "type": "text", styles: {} }]
+            },
+            {
+                type: "heading",
+                props: { level: 2 },
+                content: [{ "text": "Headings (like this one)", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Bullet lists (like this)", "type": "text", styles: {} }]
+            },
+            {
+                type: "numberedListItem",
+                content: [{ "text": "Numbered lists (like this)", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "Regular paragraphs for your main content", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            },
+            {
+                type: "heading",
+                props: { level: 3 },
+                content: [{ "text": "Creating Nested Content", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "You can create nested content in two ways:", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Using the Tab key: Simply press Tab while your cursor is on a block to indent it", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Using the side menu: Hover near the left edge of a block, click the menu icon (the button with 6 dots), and drag the block to the desired nested position inside another block", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "Here is an example of a nested list:", "type": "text", styles: { "bold": true } }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Main topic 1", "type": "text", styles: {} }],
+                children: [
+                    {
+                        type: "bulletListItem",
+                        props: { indent: 1 },
+                        content: [{ "text": "Subtopic 1.1 (indented using Tab or side menu)", "type": "text", styles: {} }]
+                    },
+                    {
+                        type: "bulletListItem",
+                        props: { indent: 1 },
+                        content: [{ "text": "Subtopic 1.2", "type": "text", styles: {} }],
+                        children: [{
+                            type: "bulletListItem",
+                            props: { indent: 2 },
+                            content: [{ "text": "Further nested item (press Tab again to create deeper nesting)", "type": "text", styles: {} }]
+                        }]
+                    },
+
+                ]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            },
+        ];
+
+        // Writing effective questions section
+        const effectiveQuestionsBlocks = [
+            {
+                type: "heading",
+                props: { level: 3 },
+                content: [{ "text": "Writing Effective Questions", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "For best results:", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Be clear and specific in your question text", "type": "text", styles: {} }]
+            }
+        ];
+
+        // Question type specific tips
+        let questionTypeTipsBlocks = [];
+        if (questionType === 'subjective') {
+            questionTypeTipsBlocks = [
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Create a detailed scorecard with clear evaluation criteria or pick one of the templates already provided", "type": "text", styles: {} }]
+                }
+            ];
+        } else if (questionType === 'coding') {
+            questionTypeTipsBlocks = [
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Provide a clear problem statement and any constraints or performance requirements", "type": "text", styles: {} }]
+                }
+            ];
+        } else {
+            questionTypeTipsBlocks = [
+                {
+                    type: "bulletListItem",
+                    content: [{ "text": "Make sure your correct answer is complete and matches the expected format", "type": "text", styles: {} }]
+                }
+            ];
+        }
+
+        // Preview and publish explanation
+        const previewPublishBlocks = [
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            },
+            {
+                type: "heading",
+                props: { level: 3 },
+                content: [{ "text": "Preview and Publishing", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "When you're ready to test your quiz:", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Preview Button", "type": "text", styles: { "bold": true } }, { "text": ": Lets you see and answer the question exactly as a learner will see it", "type": "text", styles: {} }]
+            },
+            {
+                type: "bulletListItem",
+                content: [{ "text": "Publish Button", "type": "text", styles: { "bold": true } }, { "text": ": Makes the quiz available to learners. You can always edit and publish again", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "Delete this template when you are ready to create your own question!", "type": "text", styles: {} }]
+            }
+        ];
+
+        // Combine all blocks based on question type
+        return [
+            ...commonBlocks,
+            ...answerTypeBlocks,
+            ...programmingLanguagesBlocks,
+            ...tabsExplanationBlocks,
+            {
+                type: "paragraph",
+                content: [{ "text": "", "type": "text", styles: {} }]
+            },
+            ...blockTypesBlocks,
+            ...effectiveQuestionsBlocks,
+            ...questionTypeTipsBlocks,
+            ...previewPublishBlocks
+        ];
+    };
+
     // Add a new question
     const addQuestion = useCallback(() => {
+        const questionType = 'objective';
+
         const newQuestion: QuizQuestion = {
             id: `question-${Date.now()}`,
-            content: [],
+            content: getQuestionTemplateBlocks(questionType),
             config: {
                 ...defaultQuestionConfig,
-                questionType: 'objective',
+                questionType: questionType,
                 inputType: 'text' as 'text'
             }
         };
@@ -1376,17 +1733,23 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         if (!Array.isArray(option)) {
             setSelectedQuestionType(option);
 
-            // Update the question config with the new question type
+            // Get the new question type
+            const newQuestionType = option.value as 'objective' | 'subjective' | 'coding';
+
+            // Update the question config with the new question type and also update template if needed
             handleConfigChange({
-                questionType: option.value as 'objective' | 'subjective' | 'coding',
-                responseType: option.value === 'subjective' ? 'report' : 'chat',
-                inputType: option.value === 'coding' ? 'text' : currentQuestionConfig.inputType
+                questionType: newQuestionType,
+                responseType: newQuestionType === 'subjective' ? 'report' : 'chat',
+                inputType: newQuestionType === 'coding' ? 'text' : currentQuestionConfig.inputType
+            }, {
+                updateTemplate: true,
+                newQuestionType: newQuestionType
             });
 
             // Set active tab to question whenever question type changes
             setActiveEditorTab('question');
         }
-    }, [handleConfigChange]);
+    }, [handleConfigChange, status, questions, currentQuestionIndex, onChange, currentQuestionConfig.inputType]);
 
     // Handle answer type change
     const handleAnswerTypeChange = useCallback((option: DropdownOption | DropdownOption[]) => {
