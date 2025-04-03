@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/header";
-import { Building, ChevronDown, X } from "lucide-react";
+import { Building, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CohortCard from "@/components/CohortCard";
 import { useAuth } from "@/lib/auth";
@@ -11,6 +11,7 @@ import { Module, ModuleItem } from "@/types/course";
 import { getCompletionData } from "@/lib/api";
 import { Cohort, Task, Milestone } from "@/types";
 import { transformCourseToModules } from "@/lib/course";
+import MobileDropdown, { DropdownOption } from "@/components/MobileDropdown";
 
 interface School {
     id: number;
@@ -175,9 +176,22 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         setCourseModules(modules);
     };
 
-    // Handle cohort selection
+    // Keep the original handleCohortSelect function for the Header component
     const handleCohortSelect = (cohort: Cohort) => {
         setActiveCohort(cohort);
+        setShowCohortSelector(false);
+    };
+
+    // Transform cohorts to dropdown options
+    const cohortOptions: DropdownOption<Cohort>[] = cohorts.map(cohort => ({
+        id: cohort.id,
+        label: <span className="text-white font-light">{cohort.name}</span>,
+        value: cohort
+    }));
+
+    // Handle cohort selection from dropdown
+    const handleCohortOptionSelect = (option: DropdownOption<Cohort>) => {
+        setActiveCohort(option.value);
         setShowCohortSelector(false);
     };
 
@@ -259,22 +273,17 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                             Try Again
                                         </button>
                                     </div>
-                                ) : courses.length === 0 ? (
-                                    <div className="mt-12 text-center px-4">
-                                        <h3 className="text-xl font-light mb-2">No courses available</h3>
-                                        <p className="text-gray-400">There are no courses in this cohort yet</p>
-                                    </div>
                                 ) : (
                                     <div className="w-full">
                                         {/* Mobile Cohort Banner - Only show on mobile when multiple cohorts exist */}
                                         {cohorts.length > 1 && activeCohort && (
-                                            <div className="w-full bg-gray-900 p-4 mb-6">
+                                            <div className="sm:hidden w-full bg-gradient-to-r from-zinc-900 via-slate-800 to-neutral-900 p-4 mb-6 border-b border-slate-700 shadow-md">
                                                 <div className="flex justify-between items-center">
                                                     <h2 className="text-white font-light text-lg truncate mr-2">
                                                         {activeCohort.name}
                                                     </h2>
                                                     <button
-                                                        className="bg-transparent text-white font-light text-sm border border-gray-700 rounded-full px-3 py-1 hover:bg-gray-800 transition-colors cursor-pointer"
+                                                        className="bg-black bg-opacity-30 text-white font-light text-sm border border-slate-600 rounded-full px-3 py-1 hover:bg-slate-700 hover:bg-opacity-50 transition-all cursor-pointer"
                                                         onClick={() => setShowCohortSelector(true)}
                                                     >
                                                         Switch
@@ -283,54 +292,46 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                             </div>
                                         )}
 
-                                        {/* Mobile Cohort Selector Bottom Sheet */}
-                                        {showCohortSelector && (
-                                            <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex flex-col justify-end">
-                                                <div className="bg-black border-t border-gray-800 rounded-t-xl max-h-[80vh] overflow-hidden">
-                                                    <div className="flex justify-between items-center p-4 border-b border-gray-800">
-                                                        <h3 className="text-white font-light text-lg">Switch Cohort</h3>
-                                                        <button
-                                                            className="text-gray-400 hover:text-white transition-colors cursor-pointer"
-                                                            onClick={() => setShowCohortSelector(false)}
-                                                        >
-                                                            <X className="h-5 w-5" />
-                                                        </button>
+                                        {/* Mobile Cohort Selector using MobileDropdown component */}
+                                        <MobileDropdown
+                                            isOpen={showCohortSelector}
+                                            onClose={() => setShowCohortSelector(false)}
+                                            title="Switch Cohort"
+                                            options={cohortOptions}
+                                            selectedId={activeCohort?.id}
+                                            onSelect={handleCohortOptionSelect}
+                                            contentClassName="bg-gradient-to-b from-slate-800 via-zinc-900 to-stone-900 border-t border-slate-700"
+                                            selectedOptionClassName="bg-gradient-to-r from-slate-800 to-zinc-800 bg-opacity-90"
+                                            optionClassName="hover:bg-slate-800 hover:bg-opacity-50"
+                                        />
+
+                                        {courses.length === 0 ? (
+                                            <div className="mt-12 text-center px-4">
+                                                <h3 className="text-xl font-light mb-2">No courses available</h3>
+                                                <p className="text-gray-400">There are no courses in this cohort yet</p>
+                                            </div>
+                                        ) : (
+                                            // Course Content using LearnerCohortView
+                                            <div className="w-full px-4">
+                                                {courses.length > 0 && (
+                                                    <div className="w-full">
+                                                        <LearnerCohortView
+                                                            courseTitle={courses.length > 1 ? "" : courses[activeCourseIndex].name}
+                                                            modules={courseModules}
+                                                            schoolId={school.id.toString()}
+                                                            cohortId={activeCohort?.id.toString()}
+                                                            streakDays={2}
+                                                            activeDays={["M", "T"]}
+                                                            completedTaskIds={completedTaskIds}
+                                                            completedQuestionIds={completedQuestionIds}
+                                                            courses={courses}
+                                                            onCourseSelect={handleCourseSelect}
+                                                            activeCourseIndex={activeCourseIndex}
+                                                        />
                                                     </div>
-                                                    <div className="overflow-y-auto p-1 max-h-[calc(80vh-60px)]">
-                                                        {cohorts.map(cohort => (
-                                                            <button
-                                                                key={cohort.id}
-                                                                className={`flex w-full items-center p-4 text-left hover:bg-gray-800 cursor-pointer ${activeCohort && activeCohort.id === cohort.id ? 'bg-gray-800' : ''}`}
-                                                                onClick={() => handleCohortSelect(cohort)}
-                                                            >
-                                                                <span className="text-white font-light">{cohort.name}</span>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                                )}
                                             </div>
                                         )}
-
-                                        {/* Course Content using LearnerCohortView */}
-                                        <div className="w-full px-4">
-                                            {courses.length > 0 && (
-                                                <div className="w-full">
-                                                    <LearnerCohortView
-                                                        courseTitle={courses.length > 1 ? "" : courses[activeCourseIndex].name}
-                                                        modules={courseModules}
-                                                        schoolId={school.id.toString()}
-                                                        cohortId={activeCohort?.id.toString()}
-                                                        streakDays={2}
-                                                        activeDays={["M", "T"]}
-                                                        completedTaskIds={completedTaskIds}
-                                                        completedQuestionIds={completedQuestionIds}
-                                                        courses={courses}
-                                                        onCourseSelect={handleCourseSelect}
-                                                        activeCourseIndex={activeCourseIndex}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
                                     </div>
                                 )}
                             </>

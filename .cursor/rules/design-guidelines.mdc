@@ -1,7 +1,6 @@
 ---
 description: Design Guidelines
 globs: *.tsx
-alwaysApply: false
 ---
 
 # Design Guidelines
@@ -46,8 +45,7 @@ alwaysApply: false
 - Never use bold fonts for headings unless explicitly requested
 
 ### Colors
-- Primary palette: Black, white, and shades of gray
-- Use color sparingly and purposefully
+- Primary Palette: Use black, white, and shades of gray as the foundation. Use color purposefully—for highlights, interactions, feedback, and visual hierarchy. Any additional color should feel cohesive with the minimal, dark aesthetic of the app.
 - Maintain proper contrast ratios for accessibility
 - Implement proper dark mode inversions
 - **CRITICAL**: Never add colored information boxes or colored backgrounds for sections

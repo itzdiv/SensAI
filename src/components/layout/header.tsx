@@ -210,7 +210,7 @@ export function Header({
 
                 {/* Center - Cohort Selector or Active Cohort Name */}
                 {cohorts.length > 0 && activeCohort && (
-                    <div className="hidden md:flex flex-1 justify-center mx-1 sm:mx-2">
+                    <div className="hidden sm:flex flex-1 justify-center mx-1 sm:mx-2">
                         {cohorts.length > 1 ? (
                             <div className="relative" ref={cohortDropdownRef}>
                                 <button

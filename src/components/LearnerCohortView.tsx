@@ -5,7 +5,8 @@ import TopPerformers from "./TopPerformers";
 import { Module } from "@/types/course";
 import { useAuth } from "@/lib/auth";
 import { Course, Cohort } from "@/types";
-import { ChevronUp, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import MobileDropdown, { DropdownOption } from "./MobileDropdown";
 
 // Constants for localStorage keys
 const LAST_INCREMENT_DATE_KEY = 'streak_last_increment_date';
@@ -49,6 +50,10 @@ export default function LearnerCohortView({
 
     // State to track whether to show the TopPerformers component
     const [showTopPerformers, setShowTopPerformers] = useState<boolean>(true);
+
+    // State for mobile course dropdown
+    const [mobileDropdownOpen, setMobileDropdownOpen] = useState<boolean>(false);
+    const courseDropdownRef = useRef<HTMLDivElement>(null);
 
     // Add useEffect to monitor showTopPerformers changes
     useEffect(() => {
@@ -250,10 +255,24 @@ export default function LearnerCohortView({
     // Determine if sidebar should be shown
     const showSidebar = cohortId ? true : false;
 
+    // Convert courses to dropdown options
+    const courseOptions: DropdownOption<number>[] = courses.map((course, index) => ({
+        id: course.id,
+        label: course.name,
+        value: index
+    }));
+
     // Handle course selection
     const handleCourseSelect = (index: number) => {
         if (onCourseSelect) {
             onCourseSelect(index);
+        }
+    };
+
+    // Handle course selection from dropdown
+    const handleCourseDropdownSelect = (option: DropdownOption<number>) => {
+        if (onCourseSelect) {
+            onCourseSelect(option.value);
         }
     };
 
@@ -264,20 +283,48 @@ export default function LearnerCohortView({
         console.log("setShowTopPerformers called with:", !isEmpty);
     }, []);
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
+                setMobileDropdownOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const getActiveCourse = () => {
+        return courses[activeCourseIndex] || null;
+    };
+
+    // Clean up event listeners when component unmounts
+    useEffect(() => {
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.body.style.overflow = '';
+            }
+        };
+    }, []);
+
     return (
         <div className="bg-black">
             <div className="lg:flex lg:flex-row lg:justify-between">
                 {/* Left Column: Course Tabs and Course Content */}
                 <div className="lg:w-2/3 lg:pr-8">
-                    {/* Course Tabs */}
+                    {/* Course Selector */}
                     {courses.length > 1 && (
                         <div className="mb-6 sm:mb-8">
-                            <div className="inline-block border-b border-gray-800 w-full overflow-hidden">
+                            {/* Desktop Tabs - Hidden on Mobile */}
+                            <div className="hidden sm:inline-block border-b border-gray-800 w-full overflow-hidden">
                                 <div className="flex space-x-1 overflow-x-auto pb-2 scrollbar-hide">
                                     {courses.map((course, index) => (
                                         <button
                                             key={course.id}
-                                            className={`px-3 sm:px-4 py-2 rounded-t-lg text-xs sm:text-sm font-light whitespace-nowrap transition-colors cursor-pointer flex-shrink-0 ${index === activeCourseIndex
+                                            className={`px-4 py-2 rounded-t-lg text-sm font-light whitespace-nowrap transition-colors cursor-pointer flex-shrink-0 ${index === activeCourseIndex
                                                 ? 'bg-gray-800 text-white'
                                                 : 'text-gray-400 hover:text-white hover:bg-gray-900'
                                                 }`}
@@ -288,6 +335,37 @@ export default function LearnerCohortView({
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Mobile Course Selector - Visible only on small screens */}
+                            <div className="sm:hidden">
+                                {/* Current course indicator */}
+                                <button
+                                    onClick={() => setMobileDropdownOpen(true)}
+                                    className="w-full text-left py-3 px-1 border-b border-gray-800 flex items-center justify-between cursor-pointer group transition-opacity"
+                                    aria-haspopup="true"
+                                >
+                                    <div>
+                                        <div className="text-xs text-gray-500 mb-1">Current Course</div>
+                                        <div className="text-white font-light">{getActiveCourse()?.name || "Select Course"}</div>
+                                    </div>
+                                    <div className="bg-gray-800 rounded-full p-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <ChevronDown size={16} className="text-white transition-colors" />
+                                    </div>
+                                </button>
+                            </div>
+
+                            {/* Mobile Dropdown using MobileDropdown component */}
+                            <MobileDropdown
+                                isOpen={mobileDropdownOpen}
+                                onClose={() => setMobileDropdownOpen(false)}
+                                title="Select Course"
+                                options={courseOptions}
+                                selectedId={getActiveCourse()?.id}
+                                onSelect={handleCourseDropdownSelect}
+                                contentClassName="bg-[#0f0f0f]"
+                                selectedOptionClassName="text-white"
+                                optionClassName="text-gray-400 hover:text-white"
+                            />
                         </div>
                     )}
 
