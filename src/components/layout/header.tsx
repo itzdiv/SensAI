@@ -8,7 +8,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useSchools } from "@/lib/api";
 import CreateCourseDialog from "@/components/CreateCourseDialog";
 import SchoolPickerDialog from "@/components/SchoolPickerDialog";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus, X, Book, School } from "lucide-react";
 import { Cohort } from "@/types";
 
 interface HeaderProps {
@@ -30,8 +30,10 @@ export function Header({
     const [cohortDropdownOpen, setCohortDropdownOpen] = useState(false);
     const [isCreateCourseDialogOpen, setIsCreateCourseDialogOpen] = useState(false);
     const [isSchoolPickerOpen, setIsSchoolPickerOpen] = useState(false);
+    const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
     const cohortDropdownRef = useRef<HTMLDivElement>(null);
+    const mobileActionsRef = useRef<HTMLDivElement>(null);
     const { schools, isLoading } = useSchools();
 
     // Check if user has a school they own (role admin)
@@ -42,7 +44,7 @@ export function Header({
     const ownedSchool = schools?.find(school => school.role === 'owner' || school.role === 'admin');
     const schoolId = ownedSchool?.id || (schools && schools.length > 0 ? schools[0].id : null);
 
-    // Close the profile menu when clicking outside
+    // Close the profile menu and mobile actions when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -51,13 +53,16 @@ export function Header({
             if (cohortDropdownRef.current && !cohortDropdownRef.current.contains(event.target as Node)) {
                 setCohortDropdownOpen(false);
             }
+            if (mobileActionsRef.current && !mobileActionsRef.current.contains(event.target as Node)) {
+                setMobileActionsOpen(false);
+            }
         }
 
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [profileMenuRef, cohortDropdownRef]);
+    }, [profileMenuRef, cohortDropdownRef, mobileActionsRef]);
 
     // Handle logout
     const handleLogout = () => {
@@ -75,6 +80,11 @@ export function Header({
         if (cohorts.length > 1) {
             setCohortDropdownOpen(!cohortDropdownOpen);
         }
+    };
+
+    // Toggle mobile actions menu
+    const toggleMobileActions = () => {
+        setMobileActionsOpen(!mobileActionsOpen);
     };
 
     // Handle cohort selection
@@ -114,6 +124,12 @@ export function Header({
         router.push("/school/admin/create");
     };
 
+    // Handle creating a new course button click
+    const handleCreateCourseButtonClick = () => {
+        setIsCreateCourseDialogOpen(true);
+        setMobileActionsOpen(false);
+    };
+
     // Handle creating a new course with the provided name
     const handleCreateCourse = async (courseName: string) => {
         if (hasOwnedSchool && schoolId) {
@@ -148,6 +164,12 @@ export function Header({
         }
     };
 
+    // Handle go to school button click
+    const handleGoToSchoolClick = () => {
+        handleButtonClick({} as React.MouseEvent);
+        setMobileActionsOpen(false);
+    };
+
     // Get user initials for avatar
     const getInitials = () => {
         if (session?.user?.name) {
@@ -176,6 +198,11 @@ export function Header({
                             alt="SensAI Logo"
                             width={120}
                             height={40}
+                            className="w-[100px] h-auto sm:w-[120px]"
+                            style={{
+                                maxWidth: '100%',
+                                height: 'auto'
+                            }}
                             priority
                         />
                     </div>
@@ -221,7 +248,7 @@ export function Header({
                     {showCreateCourseButton && (
                         <button
                             onClick={handleButtonClick}
-                            className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
+                            className="hidden md:block px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
                         >
                             {getButtonText()}
                         </button>
@@ -267,6 +294,67 @@ export function Header({
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Floating Action Button and Menu */}
+            {showCreateCourseButton && (
+                <div className="md:hidden" ref={mobileActionsRef}>
+                    {/* Semi-transparent overlay */}
+                    {mobileActionsOpen && (
+                        <div
+                            className="fixed inset-0 z-10"
+                            style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                            aria-hidden="true"
+                        />
+                    )}
+
+                    {/* Main FAB button */}
+                    <button
+                        onClick={toggleMobileActions}
+                        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none"
+                        aria-label="Actions menu"
+                    >
+                        {mobileActionsOpen ?
+                            <X className="h-6 w-6" /> :
+                            <Plus className="h-6 w-6" />
+                        }
+                    </button>
+
+                    {/* Action buttons that appear when FAB is clicked */}
+                    {mobileActionsOpen && (
+                        <div className="fixed bottom-24 right-6 flex flex-col gap-4 items-end z-20">
+                            {/* Create Course Button */}
+                            <div className="flex items-center gap-3">
+                                <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                    Create a Course
+                                </span>
+                                <button
+                                    onClick={handleCreateCourseButtonClick}
+                                    className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                    aria-label="Create a course"
+                                >
+                                    <Book className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            {/* Go To School Button - only shown if hasOwnedSchool is true */}
+                            {hasOwnedSchool && (
+                                <div className="flex items-center gap-3">
+                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                        Go To School
+                                    </span>
+                                    <button
+                                        onClick={handleGoToSchoolClick}
+                                        className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                        aria-label="Go to school"
+                                    >
+                                        <School className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Create Course Dialog */}
             <CreateCourseDialog
