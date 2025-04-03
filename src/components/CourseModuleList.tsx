@@ -647,7 +647,7 @@ export default function CourseModuleList({
                                                 }));
                                             }
                                         }}
-                                        className="flex items-center px-3 py-1 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer rounded-full border border-gray-700 bg-gray-900"
+                                        className="flex items-center px-3 py-1 text-sm text-gray-400 hover:text-white focus:outline-none focus:ring-0 focus:border-0 transition-colors cursor-pointer rounded-full border border-gray-700 bg-gray-900"
                                         aria-label={getIsExpanded(module.id) ? "Collapse module" : "Expand module"}
                                     >
                                         {getIsExpanded(module.id) ? (

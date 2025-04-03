@@ -4,7 +4,8 @@ import LearningStreak from "./LearningStreak";
 import TopPerformers from "./TopPerformers";
 import { Module } from "@/types/course";
 import { useAuth } from "@/lib/auth";
-import { Course } from "@/types";
+import { Course, Cohort } from "@/types";
+import { ChevronUp, X } from "lucide-react";
 
 // Constants for localStorage keys
 const LAST_INCREMENT_DATE_KEY = 'streak_last_increment_date';
@@ -270,13 +271,13 @@ export default function LearnerCohortView({
                 <div className="lg:w-2/3 lg:pr-8">
                     {/* Course Tabs */}
                     {courses.length > 1 && (
-                        <div className="mb-8">
-                            <div className="inline-block border-b border-gray-800">
-                                <div className="flex space-x-1 overflow-x-auto pb-2">
+                        <div className="mb-6 sm:mb-8">
+                            <div className="inline-block border-b border-gray-800 w-full overflow-hidden">
+                                <div className="flex space-x-1 overflow-x-auto pb-2 scrollbar-hide">
                                     {courses.map((course, index) => (
                                         <button
                                             key={course.id}
-                                            className={`px-4 py-2 rounded-t-lg text-sm font-light whitespace-nowrap transition-colors cursor-pointer ${index === activeCourseIndex
+                                            className={`px-3 sm:px-4 py-2 rounded-t-lg text-xs sm:text-sm font-light whitespace-nowrap transition-colors cursor-pointer flex-shrink-0 ${index === activeCourseIndex
                                                 ? 'bg-gray-800 text-white'
                                                 : 'text-gray-400 hover:text-white hover:bg-gray-900'
                                                 }`}
@@ -293,7 +294,7 @@ export default function LearnerCohortView({
                     {/* Course Content */}
                     <div>
                         {courseTitle && (
-                            <h1 className="text-4xl font-light text-white mb-8">
+                            <h1 className="text-2xl md:text-3xl font-light text-white mb-4 md:mb-6 px-1 sm:px-0">
                                 {courseTitle}
                             </h1>
                         )}
@@ -329,7 +330,6 @@ export default function LearnerCohortView({
                                 onEmptyData={handleEmptyPerformersData}
                             />
                         )}
-
                     </div>
                 )}
             </div>

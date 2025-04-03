@@ -210,15 +210,15 @@ export function Header({
 
                 {/* Center - Cohort Selector or Active Cohort Name */}
                 {cohorts.length > 0 && activeCohort && (
-                    <div className="flex-1 flex justify-center">
+                    <div className="hidden md:flex flex-1 justify-center mx-1 sm:mx-2">
                         {cohorts.length > 1 ? (
                             <div className="relative" ref={cohortDropdownRef}>
                                 <button
-                                    className="flex items-center text-xl font-light bg-transparent hover:bg-gray-900 rounded-full px-4 py-2 cursor-pointer"
+                                    className="flex items-center text-xl font-light bg-transparent hover:bg-gray-900 rounded-full px-4 py-2 cursor-pointer truncate max-w-none"
                                     onClick={toggleCohortDropdown}
                                 >
-                                    {activeCohort.name}
-                                    <ChevronDown className="ml-2 h-5 w-5" />
+                                    <span className="truncate">{activeCohort.name}</span>
+                                    <ChevronDown className="ml-1 sm:ml-2 h-5 w-5 flex-shrink-0" />
                                 </button>
 
                                 {cohortDropdownOpen && (
@@ -227,7 +227,7 @@ export function Header({
                                             {cohorts.map(cohort => (
                                                 <li
                                                     key={cohort.id}
-                                                    className={`px-4 py-2 hover:bg-gray-800 cursor-pointer ${activeCohort.id === cohort.id ? 'bg-gray-800' : ''}`}
+                                                    className={`px-4 py-2 hover:bg-gray-800 cursor-pointer truncate ${activeCohort.id === cohort.id ? 'bg-gray-800' : ''}`}
                                                     onClick={() => handleCohortSelect(cohort)}
                                                 >
                                                     {cohort.name}
@@ -238,7 +238,7 @@ export function Header({
                                 )}
                             </div>
                         ) : (
-                            <h2 className="text-xl font-light">{activeCohort.name}</h2>
+                            <h2 className="text-xl font-light truncate max-w-none">{activeCohort.name}</h2>
                         )}
                     </div>
                 )}

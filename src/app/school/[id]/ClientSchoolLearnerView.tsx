@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/header";
-import { Building, ChevronDown } from "lucide-react";
+import { Building, ChevronDown, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CohortCard from "@/components/CohortCard";
 import { useAuth } from "@/lib/auth";
@@ -36,6 +36,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     const [loadingCourses, setLoadingCourses] = useState(true);
     const [courseError, setCourseError] = useState<string | null>(null);
     const [courseModules, setCourseModules] = useState<Module[]>([]);
+    const [showCohortSelector, setShowCohortSelector] = useState<boolean>(false);
 
     // Add state for completion data
     const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, boolean>>({});
@@ -73,6 +74,8 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                     throw new Error(`API error: ${cohortsResponse.status}`);
                 }
                 const cohortsData = await cohortsResponse.json();
+
+                console.log("cohortsData", cohortsData);
 
                 // Transform cohorts data
                 const transformedCohorts: Cohort[] = cohortsData.map((cohort: any) => ({
@@ -175,6 +178,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     // Handle cohort selection
     const handleCohortSelect = (cohort: Cohort) => {
         setActiveCohort(cohort);
+        setShowCohortSelector(false);
     };
 
     // Show loading state while auth is loading
@@ -224,10 +228,10 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                 onCohortSelect={handleCohortSelect}
             />
             <div className="min-h-screen bg-black text-white">
-                <div className="container mx-auto px-4 py-8">
+                <div className="container mx-auto py-4 md:py-8">
                     <main>
                         {cohorts.length === 0 && (
-                            <div className="mt-24">
+                            <div className="mt-24 px-4">
                                 <div className="flex flex-col items-center justify-center py-12 rounded-lg">
                                     <h3 className="text-xl font-light mb-2">No cohorts available</h3>
                                     <p className="text-gray-400">You are not enrolled in any cohorts for this school</p>
@@ -242,7 +246,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                         <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                                     </div>
                                 ) : courseError ? (
-                                    <div className="mt-12 text-center">
+                                    <div className="mt-12 text-center px-4">
                                         <p className="text-red-400 mb-4">{courseError}</p>
                                         <button
                                             onClick={() => {
@@ -256,14 +260,59 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                         </button>
                                     </div>
                                 ) : courses.length === 0 ? (
-                                    <div className="mt-12 text-center">
+                                    <div className="mt-12 text-center px-4">
                                         <h3 className="text-xl font-light mb-2">No courses available</h3>
                                         <p className="text-gray-400">There are no courses in this cohort yet</p>
                                     </div>
                                 ) : (
                                     <div className="w-full">
+                                        {/* Mobile Cohort Banner - Only show on mobile when multiple cohorts exist */}
+                                        {cohorts.length > 1 && activeCohort && (
+                                            <div className="w-full bg-gray-900 p-4 mb-6">
+                                                <div className="flex justify-between items-center">
+                                                    <h2 className="text-white font-light text-lg truncate mr-2">
+                                                        {activeCohort.name}
+                                                    </h2>
+                                                    <button
+                                                        className="bg-transparent text-white font-light text-sm border border-gray-700 rounded-full px-3 py-1 hover:bg-gray-800 transition-colors cursor-pointer"
+                                                        onClick={() => setShowCohortSelector(true)}
+                                                    >
+                                                        Switch
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Mobile Cohort Selector Bottom Sheet */}
+                                        {showCohortSelector && (
+                                            <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex flex-col justify-end">
+                                                <div className="bg-black border-t border-gray-800 rounded-t-xl max-h-[80vh] overflow-hidden">
+                                                    <div className="flex justify-between items-center p-4 border-b border-gray-800">
+                                                        <h3 className="text-white font-light text-lg">Switch Cohort</h3>
+                                                        <button
+                                                            className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                                            onClick={() => setShowCohortSelector(false)}
+                                                        >
+                                                            <X className="h-5 w-5" />
+                                                        </button>
+                                                    </div>
+                                                    <div className="overflow-y-auto p-1 max-h-[calc(80vh-60px)]">
+                                                        {cohorts.map(cohort => (
+                                                            <button
+                                                                key={cohort.id}
+                                                                className={`flex w-full items-center p-4 text-left hover:bg-gray-800 cursor-pointer ${activeCohort && activeCohort.id === cohort.id ? 'bg-gray-800' : ''}`}
+                                                                onClick={() => handleCohortSelect(cohort)}
+                                                            >
+                                                                <span className="text-white font-light">{cohort.name}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Course Content using LearnerCohortView */}
-                                        <div className="w-full">
+                                        <div className="w-full px-4">
                                             {courses.length > 0 && (
                                                 <div className="w-full">
                                                     <LearnerCohortView
