@@ -467,6 +467,13 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     const [stdInput, setStdInput] = useState<string>('');
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
+    // Reset active language when languages prop changes
+    useEffect(() => {
+        if (normalizedLanguages.length > 0) {
+            setActiveLanguage(normalizedLanguages[0]);
+        }
+    }, [normalizedLanguages]);
+
     // Mobile preview state
     const [showMobilePreview, setShowMobilePreview] = useState<boolean>(false);
 
