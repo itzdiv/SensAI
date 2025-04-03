@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
 import SimpleTooltip from './SimpleTooltip';
+import Tooltip from './Tooltip';
 
 export interface DropdownOption {
     label: string;
@@ -16,6 +17,7 @@ interface DropdownProps {
     selectedOptions?: DropdownOption[];
     onChange: (option: DropdownOption | DropdownOption[]) => void;
     disabled?: boolean;
+    disabledTooltip?: string;
     multiselect?: boolean;
     placeholder?: string;
 }
@@ -28,6 +30,7 @@ const Dropdown: React.FC<DropdownProps> = ({
     selectedOptions = [],
     onChange,
     disabled = false,
+    disabledTooltip = "",
     multiselect = false,
     placeholder = "Select one or more options",
 }) => {
@@ -85,12 +88,9 @@ const Dropdown: React.FC<DropdownProps> = ({
         };
     }, []);
 
-    return (
-        <div className="flex items-center text-gray-500 text-sm w-full">
-            <span className="w-1/6 mr-2 flex items-center hover:bg-[#2A2A2A] px-3 py-2 rounded-md">
-                {icon && <span className="mr-2">{icon}</span>}
-                {title}
-            </span>
+    // Render dropdown's selectable portion with optional tooltip if disabled
+    const renderDropdownSelectable = () => {
+        const content = (
             <div
                 className={`relative w-5/6 py-1.5 px-1.5 ${disabled ? 'opacity-70 cursor-default' : 'cursor-pointer'} ${showDropdown ? 'bg-[#2A2A2A] rounded-t-md' : `${!disabled ? 'hover:bg-[#2A2A2A]' : ''} rounded-md`}`}
                 ref={dropdownRef}
@@ -176,6 +176,27 @@ const Dropdown: React.FC<DropdownProps> = ({
                     </div>
                 )}
             </div>
+        );
+
+        // If disabled and has disabled tooltip, wrap in tooltip
+        if (disabled && disabledTooltip) {
+            return (
+                <Tooltip content={disabledTooltip} position="right">
+                    {content}
+                </Tooltip>
+            );
+        }
+
+        return content;
+    };
+
+    return (
+        <div className="flex items-center text-gray-500 text-sm w-full">
+            <span className="w-1/6 mr-2 flex items-center hover:bg-[#2A2A2A] px-3 py-2 rounded-md">
+                {icon && <span className="mr-2">{icon}</span>}
+                {title}
+            </span>
+            {renderDropdownSelectable()}
         </div>
     );
 };

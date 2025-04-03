@@ -1611,7 +1611,6 @@ export default function LearnerQuizView({
                 .mobile-view-button {
                     display: none;
                     position: fixed;
-                    bottom: 120px;
                     z-index: 1000;
                     width: 50px;
                     height: 50px;
@@ -1634,7 +1633,6 @@ export default function LearnerQuizView({
 
                 .mobile-view-menu {
                     position: fixed;
-                    bottom: 140px;
                     width: 180px;
                     background-color: #333333;
                     border-radius: 8px;
@@ -1858,7 +1856,7 @@ export default function LearnerQuizView({
 
             {/* Mobile view menu */}
             {isMobileMenuOpen && (
-                <div className="fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '200px' }} ref={mobileMenuRef}>
+                <div className="fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '240px' }} ref={mobileMenuRef}>
                     {/* Question Only Button */}
                     <div className="flex items-center gap-3">
                         <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">

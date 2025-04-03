@@ -27,6 +27,8 @@ import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, AP
 import LearningMaterialLinker from "./LearningMaterialLinker";
 // Import Toast component
 import Toast from "./Toast";
+// Import Tooltip component
+import Tooltip from "./Tooltip";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -2097,19 +2099,18 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         ) : (
                             <div className="w-full flex flex-col mx-6 mb-4">
                                 <div className="flex flex-col space-y-2 mb-4">
-                                    {taskType !== 'exam' && (
-                                        <div className="flex items-center">
-                                            <Dropdown
-                                                icon={<HelpCircle size={16} />}
-                                                title="Question Type"
-                                                options={questionTypeOptions}
-                                                selectedOption={selectedQuestionType}
-                                                onChange={handleQuestionTypeChange}
-                                                disabled={readOnly}
-                                            />
-                                        </div>
-                                    )}
 
+                                    <div className="flex items-center">
+                                        <Dropdown
+                                            icon={<HelpCircle size={16} />}
+                                            title="Question Type"
+                                            options={questionTypeOptions}
+                                            selectedOption={selectedQuestionType}
+                                            onChange={handleQuestionTypeChange}
+                                            disabled={readOnly || status === 'published'}
+                                            disabledTooltip={status === 'published' ? "Question type cannot be changed for published questions" : ""}
+                                        />
+                                    </div>
                                     {selectedQuestionType.value !== 'coding' ? (
                                         <div className="mb-4 flex items-center">
                                             <Dropdown
