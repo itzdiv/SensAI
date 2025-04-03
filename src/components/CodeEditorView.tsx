@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
-import { Play, Send, Terminal } from 'lucide-react';
+import { Play, Send, Terminal, ArrowLeft, X } from 'lucide-react';
 import Toast from './Toast';
 
 interface CodeEditorViewProps {
@@ -8,7 +8,6 @@ interface CodeEditorViewProps {
     languages?: string[];
     handleCodeSubmit: (code: Record<string, string>) => void;
     onCodeRun?: (previewContent: string, output: string, executionTime?: string, isRunning?: boolean) => void;
-    onClearOutput?: () => void;
 }
 
 // Preview component that can be used in a separate column
@@ -19,6 +18,8 @@ export interface CodePreviewProps {
     isWebPreview: boolean;
     executionTime?: string;
     onClear?: () => void;
+    onBack?: () => void;
+    isMobileView?: boolean;
 }
 
 export const CodePreview: React.FC<CodePreviewProps> = ({
@@ -27,7 +28,9 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
     output,
     isWebPreview,
     executionTime,
-    onClear
+    onClear,
+    onBack,
+    isMobileView = false
 }) => {
     const [isIframeLoading, setIsIframeLoading] = useState(true);
 
@@ -106,17 +109,28 @@ export const CodePreview: React.FC<CodePreviewProps> = ({
     ` : previewContent;
 
     return (
-        <div className="flex-1 flex flex-col bg-[#111111] overflow-hidden h-full">
+        <div className={`flex-1 flex flex-col bg-[#111111] overflow-hidden h-full ${isMobileView ? 'mobile-preview-container' : ''}`}>
             <div className="px-4 bg-[#222222] text-white font-medium flex justify-between items-center">
-                <span className="text-sm py-2">{isWebPreview ? 'Preview' : 'Output'}</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
+                    <span className="text-sm py-2">{isWebPreview ? 'Preview' : 'Output'}</span>
+                </div>
+                <div className="items-center gap-2 flex">
                     {(!isWebPreview && output && onClear) && (
                         <button
                             onClick={onClear}
-                            className="text-sm text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-[#333333] transition-colors cursor-pointer"
+                            className="hidden md:block text-sm text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-[#333333] transition-colors cursor-pointer"
                             aria-label="Clear output"
                         >
                             Clear
+                        </button>
+                    )}
+                    {isMobileView && onBack && (
+                        <button
+                            onClick={onBack}
+                            className="text-sm text-gray-400 hover:text-white p-1 rounded hover:bg-[#333333] transition-colors"
+                            aria-label="Close preview"
+                        >
+                            <X size={16} />
                         </button>
                     )}
                 </div>
@@ -453,6 +467,9 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     const [stdInput, setStdInput] = useState<string>('');
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
+    // Mobile preview state
+    const [showMobilePreview, setShowMobilePreview] = useState<boolean>(false);
+
     // Check if web preview is available (HTML, CSS, JS)
     const hasWebLanguages = normalizedLanguages.some(lang =>
         ['html', 'css', 'javascript'].includes(lang)
@@ -470,6 +487,27 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         description: '',
         emoji: '',
     });
+
+    // Check if we're on a mobile device
+    const [isMobileView, setIsMobileView] = useState<boolean>(false);
+
+    // Effect to detect mobile devices
+    useEffect(() => {
+        const checkMobileView = () => {
+            setIsMobileView(window.innerWidth < 1024);
+        };
+
+        // Initial check
+        checkMobileView();
+
+        // Listen for window resize events
+        window.addEventListener('resize', checkMobileView);
+
+        // Cleanup event listener
+        return () => {
+            window.removeEventListener('resize', checkMobileView);
+        };
+    }, []);
 
     // Auto-close toast after 5 seconds
     useEffect(() => {
@@ -500,6 +538,23 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 ...prevCode,
                 [activeLanguage]: value
             }));
+        }
+    };
+
+    // Handle mobile back button click
+    const handleMobileBackClick = () => {
+        setShowMobilePreview(false);
+
+        // Notify parent that preview was closed
+        if (onCodeRun) {
+            // Signal that the preview is closed with empty content
+            // This doesn't clear the actual content but just signals UI state change
+            onCodeRun(
+                '',
+                output,
+                executionTime,
+                false
+            );
         }
     };
 
@@ -585,6 +640,11 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
         setIsRunning(true);
         console.log('Running code for activeLanguage:', activeLanguage);
+
+        // If on mobile, show the preview
+        if (isMobileView) {
+            setShowMobilePreview(true);
+        }
 
         try {
             // For React code
@@ -707,6 +767,11 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         try {
             setIsRunning(true);
             setExecutionTime(''); // Reset execution time when starting new execution
+
+            // If on mobile, show the preview
+            if (isMobileView) {
+                setShowMobilePreview(true);
+            }
 
             // Check if language is supported by Judge0
             const languageId = JUDGE0_LANGUAGE_IDS[language];
@@ -1072,6 +1137,19 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         return tableHtml;
     };
 
+    // Effect to notify parent when mobile preview changes
+    useEffect(() => {
+        if (isMobileView && onCodeRun) {
+            // When mobile preview is shown/hidden, notify parent to help with layout adjustments
+            onCodeRun(
+                previewContent,
+                output,
+                executionTime,
+                isRunning
+            );
+        }
+    }, [showMobilePreview, isMobileView]);
+
     return (
         <div className="flex flex-col h-full overflow-hidden">
             {/* Toast notification for input validation */}
@@ -1083,8 +1161,52 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 onClose={() => setShowToast(false)}
             />
 
+            {/* Mobile-specific styles */}
+            <style jsx global>{`
+                @media (max-width: 1024px) {
+                    .mobile-preview-container {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        z-index: 1000;
+                        background-color: #111111;
+                        animation: slide-up 0.3s ease-out;
+                    }
+                    
+                    @keyframes slide-up {
+                        from {
+                            transform: translateY(100%);
+                        }
+                        to {
+                            transform: translateY(0);
+                        }
+                    }
+
+                    .hidden-on-mobile {
+                        display: none !important;
+                    }
+                }
+            `}</style>
+
+            {/* Mobile preview overlay when active */}
+            {isMobileView && showMobilePreview && (previewContent || output) ? (
+                <div className="fixed inset-0 z-50 bg-[#111111]">
+                    <CodePreview
+                        isRunning={isRunning}
+                        previewContent={previewContent}
+                        output={output}
+                        isWebPreview={hasWebLanguages || activeLanguage === 'react' || activeLanguage === 'sql'}
+                        executionTime={executionTime}
+                        onBack={handleMobileBackClick}
+                        isMobileView={true}
+                    />
+                </div>
+            ) : null}
+
             {/* Language tabs */}
-            {normalizedLanguages.length > 0 ? (
+            {normalizedLanguages.length > 0 && !isMobileView && (
                 <div className="flex items-center overflow-x-auto bg-[#1D1D1D] hide-scrollbar">
                     {/* Show all language tabs */}
                     {normalizedLanguages.map((lang) => (
@@ -1103,7 +1225,29 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                         </button>
                     ))}
                 </div>
-            ) : null}
+            )}
+
+            {/* Mobile language tabs - more compact */}
+            {normalizedLanguages.length > 0 && isMobileView && (
+                <div className="flex items-center overflow-x-auto bg-[#1D1D1D] hide-scrollbar">
+                    {/* Show all language tabs */}
+                    {normalizedLanguages.map((lang) => (
+                        <button
+                            key={lang}
+                            onClick={() => {
+                                console.log('Setting active language to:', lang);
+                                setActiveLanguage(lang);
+                            }}
+                            className={`px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${activeLanguage === lang
+                                ? 'bg-[#2D2D2D] text-white border-b-2 border-white'
+                                : 'text-gray-400 hover:text-white hover:bg-[#222222]'
+                                }`}
+                        >
+                            {LANGUAGE_DISPLAY_NAMES[lang] || lang}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Main editor area with potential split for input */}
             <div className="flex-1 overflow-hidden flex flex-col">

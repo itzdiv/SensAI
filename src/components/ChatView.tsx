@@ -223,25 +223,6 @@ const ChatView: React.FC<ChatViewProps> = ({
         }
     };
 
-    // Handle clearing code output
-    const handleClearOutput = () => {
-        setPreviewContent('');
-        setOutput('');
-        setExecutionTime('');
-
-        // Update the state for LearnerQuizView
-        if (onCodeStateChange) {
-            onCodeStateChange({
-                isViewingCode,
-                isRunning: false,
-                previewContent: '',
-                output: '',
-                hasWebLanguages: hasWebLanguages,
-                executionTime: ''
-            });
-        }
-    };
-
     // Handle code submission
     const handleCodeSubmit = (code: Record<string, string>) => {
         // Add code to chat history as a user message
@@ -335,7 +316,6 @@ const ChatView: React.FC<ChatViewProps> = ({
                     languages={codingLanguages}
                     handleCodeSubmit={handleCodeSubmit}
                     onCodeRun={handleCodeRun}
-                    onClearOutput={handleClearOutput}
                 />
             );
         } else {
@@ -492,6 +472,46 @@ const ChatView: React.FC<ChatViewProps> = ({
                     .input-container {
                         flex-shrink: 0 !important;
                         margin-top: auto !important;
+                    }
+                    
+                    /* Mobile code preview styles */
+                    .mobile-code-preview {
+                        position: fixed !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        bottom: 0 !important;
+                        z-index: 50 !important;
+                        background-color: #111111 !important;
+                    }
+                    
+                    .mobile-code-preview-enter {
+                        animation: slide-up 0.3s ease-out !important;
+                    }
+                    
+                    @keyframes slide-up {
+                        from {
+                            transform: translateY(100%);
+                        }
+                        to {
+                            transform: translateY(0);
+                        }
+                    }
+                    
+                    .mobile-back-button {
+                        position: absolute !important;
+                        top: 12px !important;
+                        left: 12px !important;
+                        z-index: 60 !important;
+                        background-color: rgba(0, 0, 0, 0.5) !important;
+                        color: white !important;
+                        border: none !important;
+                        border-radius: 50% !important;
+                        width: 36px !important;
+                        height: 36px !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
                     }
                 }
 

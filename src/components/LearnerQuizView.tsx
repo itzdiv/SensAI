@@ -32,6 +32,7 @@ export interface LearnerQuizViewProps {
     taskId?: string;
     completedQuestionIds?: Record<string, boolean>;
     onAiRespondingChange?: (isResponding: boolean) => void;
+    onMobileViewChange?: (mode: MobileViewMode) => void;
 }
 
 export default function LearnerQuizView({
@@ -48,7 +49,8 @@ export default function LearnerQuizView({
     isTestMode = false,
     taskId = '',
     completedQuestionIds: initialCompletedQuestionIds = {},
-    onAiRespondingChange
+    onAiRespondingChange,
+    onMobileViewChange
 }: LearnerQuizViewProps) {
     // Constant message for exam submission confirmation
     const EXAM_CONFIRMATION_MESSAGE = "Thank you for your submission. We will review it shortly";
@@ -1429,15 +1431,25 @@ export default function LearnerQuizView({
         hasWebLanguages: false
     });
 
-    // Handle code view state changes from ChatView
+    // Update the state with any code preview changes
     const handleCodeStateChange = (newState: CodeViewState) => {
-        // Only update state if there are actual changes to prevent infinite loops
         setCodeViewState(prevState => {
-            // Return previous state if new state is deeply equal to prevent unnecessary updates
-            if (isEqual(prevState, newState)) {
-                return prevState;
+            const updatedState = { ...prevState, ...newState };
+
+            // On mobile, handle the preview differently
+            const isMobileView = window.innerWidth < 1024;
+            if (isMobileView && updatedState.previewContent && !prevState.previewContent) {
+                // When preview content is first set on mobile, automatically go to full chat view
+                // This ensures the preview is visible
+                setMobileViewMode('chat-full');
+
+                // Notify parent if needed
+                if (onMobileViewChange) {
+                    onMobileViewChange({ mode: 'chat-full' });
+                }
             }
-            return newState;
+
+            return updatedState;
         });
     };
 
