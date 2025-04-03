@@ -1151,7 +1151,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
     }, [showMobilePreview, isMobileView]);
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full overflow-auto">
             {/* Toast notification for input validation */}
             <Toast
                 show={showToast}
@@ -1159,6 +1159,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 description={toastData.description}
                 emoji={toastData.emoji}
                 onClose={() => setShowToast(false)}
+                isMobileView={isMobileView}
             />
 
             {/* Mobile-specific styles */}
@@ -1250,9 +1251,9 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
             )}
 
             {/* Main editor area with potential split for input */}
-            <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-auto flex flex-col">
                 {/* Code editor */}
-                <div className={`flex-1 overflow-hidden ${showInputPanel && 'h-2/3'}`}>
+                <div className={`${showInputPanel ? 'flex-none' : 'flex-1'} ${showInputPanel ? 'h-2/3' : ''}`}>
                     <Editor
                         height="100%"
                         language={getMonacoLanguage(activeLanguage)}
@@ -1274,7 +1275,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
                 {/* Input panel (conditionally shown) */}
                 {showInputPanel && (
-                    <div className="h-1/3 border-t border-[#444444] flex flex-col">
+                    <div className="flex-none h-1/3 border-t border-[#444444] flex flex-col">
                         <div className={`px-4 py-2 ${inputError ? 'bg-red-800' : 'bg-[#222222]'} text-white text-sm font-medium flex justify-between items-center`}>
                             <span>{inputError ? 'Input Required' : 'Input (stdin)'}</span>
                         </div>

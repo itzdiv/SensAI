@@ -191,6 +191,8 @@ const ChatView: React.FC<ChatViewProps> = ({
     // Toggle between chat and code views
     const toggleCodeView = () => {
         setIsViewingCode(prev => !prev);
+        // No need to call onMobileViewChange here
+        // This ensures the mobile view mode stays the same when toggling between code and chat
     };
 
     // Handle code run
@@ -407,7 +409,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     };
 
     return (
-        <div className="flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-hidden h-full chat-view-wrapper">
+        <div className="flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-auto h-full chat-view-wrapper">
             {/* Global style for maximum specificity - this will apply regardless of Next.js styling restrictions */}
             <style global jsx>{`
                 /* Target the specific textarea with an important ID */
@@ -457,7 +459,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                         max-height: 100% !important;
                         display: flex !important;
                         flex-direction: column !important;
-                        overflow: hidden !important;
+                        overflow: auto !important;
                         padding-top: 0.75rem !important;
                         padding-bottom: 0.75rem !important;
                     }

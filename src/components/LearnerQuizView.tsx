@@ -1436,9 +1436,18 @@ export default function LearnerQuizView({
         setCodeViewState(prevState => {
             const updatedState = { ...prevState, ...newState };
 
-            // On mobile, handle the preview differently
+            // Remove the automatic view mode change when toggling between code and chat
+            // to preserve the user's selected view mode
+
+            // On mobile, when preview content is first loaded for a code run,
+            // we still want to show it (but not when just toggling modes)
             const isMobileView = window.innerWidth < 1024;
-            if (isMobileView && updatedState.previewContent && !prevState.previewContent) {
+            if (isMobileView &&
+                updatedState.previewContent &&
+                !prevState.previewContent &&
+                // Only switch if this is a fresh code run, not just a mode toggle
+                updatedState.output) {
+
                 // When preview content is first set on mobile, automatically go to full chat view
                 // This ensures the preview is visible
                 setMobileViewMode('chat-full');
@@ -1498,7 +1507,7 @@ export default function LearnerQuizView({
             // Add current mode class
             quizContainer.classList.add(`mode-${mobileViewMode}`);
         }
-    }, [mobileViewMode]);
+    }, [mobileViewMode, codeViewState.isViewingCode]); // Also reapply when code view toggle changes
 
     // Handler for mobile view mode changes from ChatView component
     const handleMobileViewChange = useCallback((mode: 'question-full' | 'chat-full' | 'split') => {
@@ -1764,8 +1773,7 @@ export default function LearnerQuizView({
                 </div>
 
                 {/* Middle column - Chat/Code View */}
-                <div className="flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222] chat-container"
-                    style={{ overflow: 'hidden' }}>
+                <div className="flex flex-col bg-[#111111] h-full overflow-auto lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222] chat-container">
                     {isViewingScorecard ? (
                         /* Use the ScorecardView component */
                         <ScorecardView
@@ -1803,7 +1811,7 @@ export default function LearnerQuizView({
 
                 {/* Third column - Code Preview (only shown for coding questions) */}
                 {isCodeQuestion && codeViewState.isViewingCode && (
-                    <div className="border-l border-[#222222] bg-[#111111] h-full overflow-hidden">
+                    <div className="border-l border-[#222222] bg-[#111111] h-full overflow-auto">
                         <CodePreview
                             isRunning={codeViewState.isRunning}
                             previewContent={codeViewState.previewContent}

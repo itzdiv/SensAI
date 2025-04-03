@@ -21,17 +21,13 @@ const ScorecardView: React.FC<ScorecardViewProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-full px-6 py-6 overflow-hidden relative">
-            {/* Fixed position header with back button */}
-            <div className="sticky top-0 left-0 right-0 z-10 mb-6">
-                <button
-                    onClick={handleBackToChat}
-                    className="px-3 py-1.5 bg-[#222222] text-sm text-white rounded-full hover:bg-[#333333] transition-colors flex items-center cursor-pointer"
-                >
-                    <ChevronLeft size={14} className="mr-1" />
-                    Back
-                </button>
-            </div>
+        <div className="flex flex-col h-full px-6 py-6 overflow-auto relative">
+            <button
+                onClick={handleBackToChat}
+                className="inline-flex justify-center items-center rounded-full w-10 h-10 bg-[#1D1D1D] text-white hover:bg-[#2A2A2A] focus:outline-none mb-4"
+            >
+                <ChevronLeft size={24} />
+            </button>
 
             <div className="overflow-y-auto hide-scrollbar h-full pt-2">
                 <div className="flex flex-col mb-6">
