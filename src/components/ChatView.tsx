@@ -7,6 +7,21 @@ import CodeEditorView from './CodeEditorView';
 import { MessageCircle, Code } from 'lucide-react';
 import isEqual from 'lodash/isEqual';
 
+// Export interface for code view state to be used by parent components
+export interface CodeViewState {
+    isViewingCode: boolean;
+    isRunning: boolean;
+    previewContent: string;
+    output: string;
+    hasWebLanguages: boolean;
+    executionTime?: string;
+}
+
+// Define MobileViewChangeEvent interface for the parent component
+export interface MobileViewChangeEvent {
+    mode: 'question-full' | 'chat-full' | 'split';
+}
+
 interface ChatViewProps {
     currentChatHistory: ChatMessage[];
     isAiResponding: boolean;
@@ -29,16 +44,7 @@ interface ChatViewProps {
     handleRetry?: () => void;
     onCodeStateChange?: (state: CodeViewState) => void;
     initialIsViewingCode?: boolean;
-}
-
-// Export interface for code view state to be used by parent components
-export interface CodeViewState {
-    isViewingCode: boolean;
-    isRunning: boolean;
-    previewContent: string;
-    output: string;
-    hasWebLanguages: boolean;
-    executionTime?: string;
+    onMobileViewChange?: (event: MobileViewChangeEvent) => void;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({
@@ -62,7 +68,8 @@ const ChatView: React.FC<ChatViewProps> = ({
     currentQuestionId = '',
     handleRetry,
     onCodeStateChange,
-    initialIsViewingCode = false
+    initialIsViewingCode = false,
+    onMobileViewChange
 }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 

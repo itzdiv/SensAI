@@ -2,7 +2,7 @@
 
 import "@blocknote/core/fonts/inter.css";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
 import ChatView, { CodeViewState } from './ChatView';
@@ -11,6 +11,11 @@ import ConfirmationDialog from './ConfirmationDialog';
 import { getKnowledgeBaseContent, extractTextFromBlocks } from './QuizEditor';
 import { CodePreview } from './CodeEditorView';
 import isEqual from 'lodash/isEqual';
+
+// Add interface for mobile view mode
+export interface MobileViewMode {
+    mode: 'question-full' | 'chat-full' | 'split';
+}
 
 export interface LearnerQuizViewProps {
     questions: QuizQuestion[];
@@ -1415,7 +1420,7 @@ export default function LearnerQuizView({
         }
     }, [isAiResponding, onAiRespondingChange]);
 
-    // Add new state for code view
+    // Add state for code view
     const [codeViewState, setCodeViewState] = useState<CodeViewState>({
         isViewingCode: false,
         isRunning: false,
@@ -1441,6 +1446,52 @@ export default function LearnerQuizView({
         if (!validQuestions || validQuestions.length === 0) return false;
         return validQuestions[currentQuestionIndex]?.config?.questionType === 'coding';
     }, [validQuestions, currentQuestionIndex]);
+
+    // Mobile view controls
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [mobileViewMode, setMobileViewMode] = useState<'question-full' | 'chat-full' | 'split'>('split');
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+    // Handle clicks outside the mobile menu to close it
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+                setIsMobileMenuOpen(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Toggle mobile menu
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(prev => !prev);
+    };
+
+    // Direct handler for changing view mode
+    const setViewMode = (mode: 'question-full' | 'chat-full' | 'split') => {
+        setMobileViewMode(mode);
+        setIsMobileMenuOpen(false);
+    };
+
+    // Apply CSS classes based on mode
+    useEffect(() => {
+        const quizContainer = document.querySelector('.quiz-view-container');
+        if (quizContainer) {
+            // Remove existing mode classes
+            quizContainer.classList.remove('mode-split', 'mode-question-full', 'mode-chat-full');
+            // Add current mode class
+            quizContainer.classList.add(`mode-${mobileViewMode}`);
+        }
+    }, [mobileViewMode]);
+
+    // Handler for mobile view mode changes from ChatView component
+    const handleMobileViewChange = useCallback((mode: 'question-full' | 'chat-full' | 'split') => {
+        setMobileViewMode(mode);
+    }, []);
 
     return (
         <div className={`w-full h-full ${className}`}>
@@ -1553,6 +1604,98 @@ export default function LearnerQuizView({
                     .question-container .quiz-viewer-preview {
                         max-height: calc(100% - 80px) !important;
                         overflow: auto !important;
+                    }
+                }
+
+                /* Mobile view floating button styles */
+                .mobile-view-button {
+                    display: none;
+                    position: fixed;
+                    right: 16px;
+                    bottom: 120px;
+                    z-index: 1000;
+                    width: 50px;
+                    height: 50px;
+                    border-radius: 50%;
+                    background-color: #9333EA;
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .mobile-view-button:hover {
+                    background-color: #A855F7;
+                    transform: scale(1.05);
+                }
+
+                .mobile-view-menu {
+                    position: fixed;
+                    bottom: 140px;
+                    right: 16px;
+                    width: 180px;
+                    background-color: #333333;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                    overflow: hidden;
+                    z-index: 1001;
+                }
+
+                .mobile-view-menu-item {
+                    display: flex;
+                    align-items: center;
+                    padding: 12px;
+                    color: white;
+                    cursor: pointer;
+                    transition: background-color 0.2s ease;
+                }
+
+                .mobile-view-menu-item:hover {
+                    background-color: #444444;
+                }
+
+                .mobile-view-menu-item svg {
+                    margin-right: 8px;
+                }
+
+                @media (max-width: 1024px) {
+                    .mobile-view-button {
+                        display: flex;
+                    }
+                    
+                    /* Mobile layout view modes */
+                    .quiz-view-container.mode-question-full {
+                        grid-template-rows: 100% 0% !important;
+                    }
+                    
+                    .quiz-view-container.mode-question-full .question-container {
+                        display: block !important;
+                        height: 100% !important;
+                    }
+                    
+                    .quiz-view-container.mode-question-full .chat-container {
+                        display: none !important;
+                    }
+                    
+                    .quiz-view-container.mode-chat-full {
+                        grid-template-rows: 0% 100% !important;
+                    }
+                    
+                    .quiz-view-container.mode-chat-full .question-container {
+                        display: none !important;
+                    }
+                    
+                    .quiz-view-container.mode-chat-full .chat-container {
+                        display: flex !important;
+                        height: 100% !important;
+                    }
+                    
+                    .quiz-view-container.mode-split {
+                        grid-template-rows: 50% 50% !important;
                     }
                 }
             `}</style>
@@ -1684,6 +1827,82 @@ export default function LearnerQuizView({
                 onCancel={handleNavigationCancel}
                 type="custom"
             />
+
+            {/* Mobile view floating button */}
+            <button
+                onClick={toggleMobileMenu}
+                className="fixed bottom-120 right-6 w-14 h-14 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none mobile-view-button"
+                aria-label="View options"
+            >
+                {isMobileMenuOpen ? (
+                    <X className="h-6 w-6" />
+                ) : (
+                    mobileViewMode === 'split' ? (
+                        <SplitSquareVertical className="h-6 w-6" />
+                    ) : mobileViewMode === 'question-full' ? (
+                        <Maximize2 className="h-6 w-6" />
+                    ) : (
+                        <MessageCircle className="h-6 w-6" />
+                    )
+                )}
+            </button>
+
+            {/* Semi-transparent overlay when menu is open */}
+            {isMobileMenuOpen && (
+                <div
+                    className="fixed inset-0 z-10"
+                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                    aria-hidden="true"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
+
+            {/* Mobile view menu */}
+            {isMobileMenuOpen && (
+                <div className="fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '180px' }} ref={mobileMenuRef}>
+                    {/* Question Only Button */}
+                    <div className="flex items-center gap-3">
+                        <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                            Expand Question
+                        </span>
+                        <button
+                            onClick={() => setViewMode('question-full')}
+                            className="w-12 h-12 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                            aria-label="Show question only"
+                        >
+                            <Maximize2 className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    {/* Chat Only Button */}
+                    <div className="flex items-center gap-3">
+                        <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                            Expand Chat
+                        </span>
+                        <button
+                            onClick={() => setViewMode('chat-full')}
+                            className="w-12 h-12 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                            aria-label="Show chat only"
+                        >
+                            <MessageCircle className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    {/* Split View Button */}
+                    <div className="flex items-center gap-3">
+                        <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                            Split View
+                        </span>
+                        <button
+                            onClick={() => setViewMode('split')}
+                            className="w-12 h-12 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                            aria-label="Show split view"
+                        >
+                            <SplitSquareVertical className="h-5 w-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 } 
