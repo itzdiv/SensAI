@@ -1451,12 +1451,36 @@ export default function LearnerQuizView({
                     display: grid;
                     grid-template-columns: 1fr 1fr 0.75fr;
                     height: 100%;
+                    
+                    @media (max-width: 1024px) {
+                        grid-template-columns: 1fr;
+                        grid-template-rows: 0.5fr 0.5fr 0.5fr;
+                        height: 100vh;
+                        overflow: hidden;
+                    }
                 }
                 
                 .two-column-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
                     height: 100%;
+                    
+                    @media (max-width: 1024px) {
+                        grid-template-columns: 1fr;
+                        grid-template-rows: 50% 50%;
+                        height: 100%;
+                        overflow: hidden;
+                    }
+                }
+                
+                /* When sidebar is visible on mobile, ensure row-based layout */
+                .sidebar-visible .two-column-grid {
+                    @media (max-width: 1024px) {
+                        grid-template-columns: 1fr;
+                        grid-template-rows: 50% 50%;
+                        height: 100%;
+                        overflow: hidden;
+                    }
                 }
                 
                 .preview-placeholder {
@@ -1476,11 +1500,67 @@ export default function LearnerQuizView({
                     margin-bottom: 1rem;
                     opacity: 0.5;
                 }
+
+                /* Make sure the question and chat containers properly fit their content */
+                @media (max-width: 1024px) {
+                    .quiz-view-container {
+                        height: 100% !important;
+                        max-height: 100% !important;
+                        overflow: hidden !important;
+                        display: grid !important;
+                        grid-template-rows: 50% 50% !important;
+                        grid-template-columns: 1fr !important;
+                    }
+                    
+                    .question-container {
+                        height: 100% !important;
+                        max-height: 100% !important;
+                        overflow-y: auto !important;
+                        grid-row: 1 !important;
+                    }
+                    
+                    .chat-container {
+                        height: 100% !important;
+                        max-height: 100% !important;
+                        overflow: hidden !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        grid-row: 2 !important;
+                    }
+                    
+                    /* Ensure the messages area scrolls but input stays fixed */
+                    .chat-container .messages-container {
+                        flex: 1 !important;
+                        overflow-y: auto !important;
+                        min-height: 0 !important;
+                    }
+                    
+                    /* Ensure the input area stays at the bottom and doesn't scroll */
+                    .chat-container .input-container {
+                        flex-shrink: 0 !important;
+                        position: sticky !important;
+                        bottom: 0 !important;
+                        background-color: #111111 !important;
+                        z-index: 10 !important;
+                        padding-top: 0.5rem !important;
+                        border-top: 1px solid #222222 !important;
+                    }
+                }
+
+                /* Ensure the editor stays within the question container on mobile */
+                @media (max-width: 1024px) {
+                    .question-container .quiz-viewer,
+                    .question-container .quiz-viewer-preview {
+                        max-height: calc(100% - 80px) !important;
+                        overflow: auto !important;
+                    }
+                }
             `}</style>
 
-            <div className={`rounded-md overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} bg-[#111111]`}>
+            <div className={`rounded-md overflow-hidden ${isCodeQuestion && codeViewState.isViewingCode ? 'three-column-grid' : 'two-column-grid'} bg-[#111111] quiz-view-container`}>
                 {/* Left side - Question (33% or 50% depending on layout) */}
-                <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A]">
+                <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A] lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container"
+                    style={{ overflow: 'auto' }}>
                     {/* Navigation controls at the top of left side - only show if more than one question */}
                     {validQuestions.length > 1 ? (
                         <div className="flex items-center justify-between w-full mb-6">
@@ -1533,7 +1613,8 @@ export default function LearnerQuizView({
                 </div>
 
                 {/* Middle column - Chat/Code View */}
-                <div className="flex flex-col bg-[#111111] h-full overflow-hidden">
+                <div className="flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222] chat-container"
+                    style={{ overflow: 'hidden' }}>
                     {isViewingScorecard ? (
                         /* Use the ScorecardView component */
                         <ScorecardView

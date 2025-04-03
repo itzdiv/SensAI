@@ -1182,6 +1182,7 @@ export default function LearnerCourseView({
                             {/* Dialog Content */}
                             <div
                                 className="flex-1 overflow-y-auto p-0 dialog-content-editor relative"
+                                style={{ height: 'calc(100vh - 140px)' }}
                             >
                                 {isLoading ? (
                                     <div className="flex items-center justify-center h-full">
@@ -1230,6 +1231,7 @@ export default function LearnerCourseView({
                                                     completedQuestionIds={completedQuestions}
                                                     isDarkMode={true}
                                                     onAiRespondingChange={handleAiRespondingChange}
+                                                    className={`${isSidebarOpen ? 'sidebar-visible' : ''}`}
                                                 />
                                             </>
                                         )}
@@ -1237,8 +1239,8 @@ export default function LearnerCourseView({
                                 )}
                             </div>
 
-                            {/* Navigation Footer */}
-                            <div className="flex items-center justify-between p-4 border-t border-gray-800 bg-[#111111]">
+                            {/* Navigation Footer - Hidden on mobile */}
+                            <div className="hidden lg:flex items-center justify-between p-4 border-t border-gray-800 bg-[#111111]">
                                 {!isFirstTask() && getPreviousTaskInfo() && (
                                     <button
                                         onClick={goToPreviousTask}

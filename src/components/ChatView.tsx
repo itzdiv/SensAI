@@ -343,19 +343,21 @@ const ChatView: React.FC<ChatViewProps> = ({
                             viewOnly={viewOnly}
                         />
                     ) : (
-                        <ChatHistoryView
-                            chatHistory={currentChatHistory}
-                            onViewScorecard={handleViewScorecard}
-                            isAiResponding={isAiResponding}
-                            showPreparingReport={showPreparingReport}
-                            currentQuestionConfig={currentQuestionConfig}
-                            onRetry={handleRetry}
-                        />
+                        <div className="flex-1 overflow-y-auto messages-container">
+                            <ChatHistoryView
+                                chatHistory={currentChatHistory}
+                                onViewScorecard={handleViewScorecard}
+                                isAiResponding={isAiResponding}
+                                showPreparingReport={showPreparingReport}
+                                currentQuestionConfig={currentQuestionConfig}
+                                onRetry={handleRetry}
+                            />
+                        </div>
                     )}
 
                     {/* Input area with fixed position at bottom */}
                     {!viewOnly && (
-                        <div className="pt-2 bg-[#111111]">
+                        <div className="pt-2 bg-[#111111] input-container">
                             {!(taskType === 'exam' && isQuestionCompleted) && (
                                 /* Input area - conditional render based on input type */
                                 <>
@@ -416,7 +418,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     };
 
     return (
-        <div className="flex-1 flex flex-col px-6 py-6 overflow-hidden">
+        <div className="flex-1 flex flex-col px-6 py-6 overflow-hidden h-full chat-view-wrapper">
             {/* Global style for maximum specificity - this will apply regardless of Next.js styling restrictions */}
             <style global jsx>{`
                 /* Target the specific textarea with an important ID */
@@ -457,6 +459,31 @@ const ChatView: React.FC<ChatViewProps> = ({
                 .hide-scrollbar {
                     -ms-overflow-style: none;
                     scrollbar-width: none;
+                }
+
+                /* Make sure the ChatView adapts to mobile layout */
+                @media (max-width: 1024px) {
+                    .chat-view-wrapper {
+                        height: 100% !important;
+                        max-height: 100% !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        overflow: hidden !important;
+                        padding-top: 0.75rem !important;
+                        padding-bottom: 0.75rem !important;
+                    }
+                    
+                    .messages-container {
+                        flex: 1 !important;
+                        overflow-y: auto !important;
+                        min-height: 0 !important;
+                        max-height: none !important;
+                    }
+                    
+                    .input-container {
+                        flex-shrink: 0 !important;
+                        margin-top: auto !important;
+                    }
                 }
 
                 /* Toggle switch styles */
