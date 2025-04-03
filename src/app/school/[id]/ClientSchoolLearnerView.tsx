@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/header";
-import { Building, ChevronDown } from "lucide-react";
+import { Building, ChevronDown, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CohortCard from "@/components/CohortCard";
 import { useAuth } from "@/lib/auth";
@@ -195,11 +195,18 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         setShowCohortSelector(false);
     };
 
+    // Handle back button click
+    const handleBackClick = () => {
+        router.push('/');
+    };
+
     // Show loading state while auth is loading
     if (authLoading) {
         return (
             <div className="min-h-screen bg-black text-white">
-                <Header showCreateCourseButton={false} />
+                <div className="hidden sm:block">
+                    <Header showCreateCourseButton={false} />
+                </div>
                 <div className="flex justify-center items-center py-12">
                     <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                 </div>
@@ -217,7 +224,9 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     if (loading) {
         return (
             <div className="min-h-screen bg-black text-white">
-                <Header showCreateCourseButton={false} />
+                <div className="hidden sm:block">
+                    <Header showCreateCourseButton={false} />
+                </div>
                 <div className="flex justify-center items-center py-12">
                     <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                 </div>
@@ -235,14 +244,16 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
 
     return (
         <>
-            <Header
-                showCreateCourseButton={false}
-                cohorts={cohorts}
-                activeCohort={activeCohort}
-                onCohortSelect={handleCohortSelect}
-            />
+            <div className="hidden sm:block">
+                <Header
+                    showCreateCourseButton={false}
+                    cohorts={cohorts}
+                    activeCohort={activeCohort}
+                    onCohortSelect={handleCohortSelect}
+                />
+            </div>
             <div className="min-h-screen bg-black text-white">
-                <div className="container mx-auto py-4 md:py-8">
+                <div className="container mx-auto">
                     <main>
                         {cohorts.length === 0 && (
                             <div className="mt-24 px-4">
@@ -275,19 +286,29 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                     </div>
                                 ) : (
                                     <div className="w-full">
-                                        {/* Mobile Cohort Banner - Only show on mobile when multiple cohorts exist */}
-                                        {cohorts.length > 1 && activeCohort && (
-                                            <div className="sm:hidden w-full bg-gradient-to-r from-teal-800 via-emerald-700 to-cyan-800 p-4 mb-6 border-b border-emerald-600 shadow-md">
+                                        {/* Mobile Cohort Banner - Always show on mobile */}
+                                        {activeCohort && (
+                                            <div className="sm:hidden w-full bg-gradient-to-r from-teal-800 via-emerald-700 to-cyan-800 p-4 border-b border-emerald-600 shadow-md">
                                                 <div className="flex justify-between items-center">
-                                                    <h2 className="text-white font-light text-lg truncate mr-2">
-                                                        {activeCohort.name}
-                                                    </h2>
-                                                    <button
-                                                        className="bg-teal-900 bg-opacity-80 text-white font-light text-sm border border-cyan-600 rounded-full px-3 py-1 hover:bg-emerald-700 hover:bg-opacity-70 transition-all cursor-pointer"
-                                                        onClick={() => setShowCohortSelector(true)}
-                                                    >
-                                                        Switch
-                                                    </button>
+                                                    <div className="flex items-center">
+                                                        <button
+                                                            onClick={handleBackClick}
+                                                            className="mr-2 text-white hover:text-gray-200 transition-colors"
+                                                        >
+                                                            <ChevronLeft size={20} />
+                                                        </button>
+                                                        <h2 className="text-white font-light text-lg truncate mr-2">
+                                                            {activeCohort.name}
+                                                        </h2>
+                                                    </div>
+                                                    {cohorts.length > 1 && (
+                                                        <button
+                                                            className="bg-teal-900 bg-opacity-80 text-white font-light text-sm border border-cyan-600 rounded-full px-3 py-1 hover:bg-emerald-700 hover:bg-opacity-70 transition-all cursor-pointer"
+                                                            onClick={() => setShowCohortSelector(true)}
+                                                        >
+                                                            Switch
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -309,7 +330,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                             </div>
                                         ) : (
                                             // Course Content using LearnerCohortView
-                                            <div className="w-full px-4">
+                                            <div className="w-full px-4 py-4 md:py-8">
                                                 {courses.length > 0 && (
                                                     <div className="w-full">
                                                         <LearnerCohortView
