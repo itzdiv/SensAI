@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ModuleItem, Module } from "@/types/course";
 import CourseModuleList from "./CourseModuleList";
 import dynamic from "next/dynamic";
-import { X, CheckCircle, BookOpen, HelpCircle, Clipboard, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, CheckCircle, BookOpen, HelpCircle, Clipboard, ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import confetti from "canvas-confetti";
 import SuccessSound from "./SuccessSound";
@@ -80,6 +80,9 @@ export default function LearnerCourseView({
     const [isAiResponding, setIsAiResponding] = useState(false);
     const [showNavigationConfirmation, setShowNavigationConfirmation] = useState(false);
     const [pendingNavigation, setPendingNavigation] = useState<{ action: string; params?: any }>({ action: '' });
+
+    // Add state for mobile sidebar visibility
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // List of encouragement messages
     const encouragementMessages = [
@@ -199,6 +202,8 @@ export default function LearnerCourseView({
         setActiveItem(null);
         setActiveModuleId(null);
         setActiveQuestionId(null);
+        // Reset sidebar state
+        setIsSidebarOpen(false);
 
         // Reset history entry flag when dialog is closed
         hasAddedHistoryEntryRef.current = false;
@@ -293,6 +298,8 @@ export default function LearnerCourseView({
 
     // Execute open task item (without checks)
     const executeOpenTaskItem = async (moduleId: string, itemId: string, questionId?: string) => {
+        // Reset sidebar state when opening a new task
+        setIsSidebarOpen(false);
         setIsLoading(true);
         try {
             // Find the item in the modules
@@ -906,6 +913,11 @@ export default function LearnerCourseView({
         }
     }, [modules]);
 
+    // Toggle sidebar visibility for mobile
+    const toggleSidebar = () => {
+        setIsSidebarOpen(prev => !prev);
+    };
+
     return (
         <div className="bg-black">
             {filteredModules.length > 0 ? (
@@ -960,17 +972,25 @@ export default function LearnerCourseView({
                         className="w-full h-full flex flex-row"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Sidebar with module tasks */}
-                        <div className="w-64 h-full bg-[#121212] border-r border-gray-800 flex flex-col overflow-hidden">
+                        {/* Sidebar with module tasks - hidden on mobile by default */}
+                        <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} md:relative md:block w-64 h-full bg-[#121212] border-r border-gray-800 flex flex-col overflow-hidden z-10`}>
                             {/* Sidebar Header */}
-                            <div className="p-4 border-b border-gray-800 bg-[#0A0A0A]">
+                            <div className="p-4 border-b border-gray-800 bg-[#0A0A0A] flex items-center justify-between">
                                 <h3 className="text-lg font-light text-white truncate">
                                     {filteredModules.find(m => m.id === activeModuleId)?.title || "Module"}
                                 </h3>
+                                {/* Close button for mobile sidebar */}
+                                <button
+                                    onClick={toggleSidebar}
+                                    className="md:hidden text-gray-400 hover:text-white"
+                                    aria-label="Close sidebar"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
                             </div>
 
                             {/* Task List */}
-                            <div className="flex-1 overflow-y-auto pt-0 pb-2">
+                            <div className="overflow-y-auto">
                                 {activeModuleId && filteredModules.find(m => m.id === activeModuleId)?.items.map((item) => (
                                     <div key={item.id}>
                                         <div
@@ -1056,8 +1076,8 @@ export default function LearnerCourseView({
                                 ))}
                             </div>
 
-                            {/* Back to Course Button */}
-                            <div className="p-3 border-t border-gray-800">
+                            {/* Back to Course Button - hidden on mobile, fixed at bottom for laptop */}
+                            <div className="hidden md:block p-3 border-t border-gray-800 bg-[#121212] absolute bottom-0 left-0 right-0">
                                 <button
                                     onClick={closeDialog}
                                     className="w-full flex items-center justify-center px-3 py-2 text-sm text-gray-300 hover:text-white bg-[#1A1A1A] hover:bg-[#222222] rounded transition-colors cursor-pointer"
@@ -1075,6 +1095,14 @@ export default function LearnerCourseView({
                                 style={{ backgroundColor: '#111111' }}
                             >
                                 <div className="flex-1 flex items-center">
+                                    {/* Hamburger menu for mobile */}
+                                    <button
+                                        onClick={toggleSidebar}
+                                        className="md:hidden text-gray-400 hover:text-white mr-3"
+                                        aria-label="Toggle sidebar"
+                                    >
+                                        <Menu size={20} />
+                                    </button>
                                     <h2
                                         ref={dialogTitleRef}
                                         contentEditable={false}
