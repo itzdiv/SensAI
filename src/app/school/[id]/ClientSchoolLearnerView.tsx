@@ -277,13 +277,13 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                     <div className="w-full">
                                         {/* Mobile Cohort Banner - Only show on mobile when multiple cohorts exist */}
                                         {cohorts.length > 1 && activeCohort && (
-                                            <div className="sm:hidden w-full bg-gradient-to-r from-zinc-900 via-slate-800 to-neutral-900 p-4 mb-6 border-b border-slate-700 shadow-md">
+                                            <div className="sm:hidden w-full bg-gradient-to-r from-teal-800 via-emerald-700 to-cyan-800 p-4 mb-6 border-b border-emerald-600 shadow-md">
                                                 <div className="flex justify-between items-center">
                                                     <h2 className="text-white font-light text-lg truncate mr-2">
                                                         {activeCohort.name}
                                                     </h2>
                                                     <button
-                                                        className="bg-black bg-opacity-30 text-white font-light text-sm border border-slate-600 rounded-full px-3 py-1 hover:bg-slate-700 hover:bg-opacity-50 transition-all cursor-pointer"
+                                                        className="bg-teal-900 bg-opacity-80 text-white font-light text-sm border border-cyan-600 rounded-full px-3 py-1 hover:bg-emerald-700 hover:bg-opacity-70 transition-all cursor-pointer"
                                                         onClick={() => setShowCohortSelector(true)}
                                                     >
                                                         Switch
@@ -300,9 +300,6 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                             options={cohortOptions}
                                             selectedId={activeCohort?.id}
                                             onSelect={handleCohortOptionSelect}
-                                            contentClassName="bg-gradient-to-b from-slate-800 via-zinc-900 to-stone-900 border-t border-slate-700"
-                                            selectedOptionClassName="bg-gradient-to-r from-slate-800 to-zinc-800 bg-opacity-90"
-                                            optionClassName="hover:bg-slate-800 hover:bg-opacity-50"
                                         />
 
                                         {courses.length === 0 ? (

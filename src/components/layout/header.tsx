@@ -214,7 +214,7 @@ export function Header({
                         {cohorts.length > 1 ? (
                             <div className="relative" ref={cohortDropdownRef}>
                                 <button
-                                    className="flex items-center text-xl font-light bg-transparent hover:bg-gray-900 rounded-full px-4 py-2 cursor-pointer truncate max-w-none"
+                                    className="flex items-center text-xl font-light bg-transparent hover:bg-[#0f0f0f] rounded-full px-4 py-2 cursor-pointer truncate max-w-none"
                                     onClick={toggleCohortDropdown}
                                 >
                                     <span className="truncate">{activeCohort.name}</span>
@@ -222,12 +222,13 @@ export function Header({
                                 </button>
 
                                 {cohortDropdownOpen && (
-                                    <div className="absolute left-1/2 transform -translate-x-1/2 z-10 mt-1 w-full min-w-[200px] bg-gray-900 border border-gray-700 rounded-lg shadow-lg">
-                                        <ul className="py-1">
+                                    <div className="absolute left-1/2 transform -translate-x-1/2 z-10 mt-1 w-full min-w-[200px] bg-[#0f0f0f] rounded-lg shadow-lg">
+                                        <ul className="py-2">
                                             {cohorts.map(cohort => (
                                                 <li
                                                     key={cohort.id}
-                                                    className={`px-4 py-2 hover:bg-gray-800 cursor-pointer truncate ${activeCohort.id === cohort.id ? 'bg-gray-800' : ''}`}
+                                                    className={`px-4 py-3 hover:bg-gray-900 cursor-pointer truncate ${activeCohort.id === cohort.id ? 'text-white font-light' : 'text-gray-300'
+                                                        }`}
                                                     onClick={() => handleCohortSelect(cohort)}
                                                 >
                                                     {cohort.name}

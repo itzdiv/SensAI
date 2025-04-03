@@ -317,20 +317,30 @@ export default function LearnerCohortView({
                 <div className="lg:w-2/3 lg:pr-8">
                     {/* Course Selector */}
                     {courses.length > 1 && (
-                        <div className="mb-6 sm:mb-8">
+                        <div className="mb-8 sm:mb-10">
                             {/* Desktop Tabs - Hidden on Mobile */}
-                            <div className="hidden sm:inline-block border-b border-gray-800 w-full overflow-hidden">
-                                <div className="flex space-x-1 overflow-x-auto pb-2 scrollbar-hide">
+                            <div className="hidden sm:block w-full">
+                                <div className="flex items-center border-b border-gray-900 overflow-x-auto scrollbar-hide">
                                     {courses.map((course, index) => (
                                         <button
                                             key={course.id}
-                                            className={`px-4 py-2 rounded-t-lg text-sm font-light whitespace-nowrap transition-colors cursor-pointer flex-shrink-0 ${index === activeCourseIndex
-                                                ? 'bg-gray-800 text-white'
-                                                : 'text-gray-400 hover:text-white hover:bg-gray-900'
+                                            className={`px-8 py-4 text-base md:text-lg tracking-wide whitespace-nowrap transition-all duration-200 cursor-pointer flex-shrink-0 relative group ${index === activeCourseIndex
+                                                ? 'text-white font-light'
+                                                : 'text-gray-500 hover:text-gray-300 font-light'
                                                 }`}
                                             onClick={() => handleCourseSelect(index)}
                                         >
-                                            {course.name}
+                                            <span className="relative z-10">{course.name}</span>
+
+                                            {/* Active indicator - visible only for active tab */}
+                                            {index === activeCourseIndex && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-white" />
+                                            )}
+
+                                            {/* Hover indicator - visible only on hover for inactive tabs */}
+                                            {index !== activeCourseIndex && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-700 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+                                            )}
                                         </button>
                                     ))}
                                 </div>

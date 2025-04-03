@@ -96,7 +96,8 @@ function MobileDropdown<T = any>({
         >
             <div
                 ref={dropdownRef}
-                className={`w-full bg-[#0f0f0f] rounded-t-xl p-4 transition-transform duration-300 ease-in-out max-h-[80vh] overflow-auto ${animateIn ? 'translate-y-0' : 'translate-y-full'} ${contentClassName}`}
+                className={`w-full bg-gradient-to-b from-slate-800 via-zinc-900 
+             to-stone-900 border-t border-slate-700 rounded-t-xl p-4 transition-transform duration-300 ease-in-out max-h-[80vh] overflow-auto ${animateIn ? 'translate-y-0' : 'translate-y-full'} ${contentClassName}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-6">
@@ -115,8 +116,8 @@ function MobileDropdown<T = any>({
                         <button
                             key={option.id}
                             className={`flex w-full items-center p-4 text-left rounded-lg my-1 transition-colors cursor-pointer ${isOptionSelected(option)
-                                ? `bg-gradient-to-r from-slate-800 to-zinc-800 bg-opacity-90 ${selectedOptionClassName}`
-                                : `hover:bg-slate-800 hover:bg-opacity-50 ${optionClassName}`
+                                ? `bg-gradient-to-r from-slate-800 to-zinc-800 bg-opacity-90`
+                                : `hover:bg-slate-800 hover:bg-opacity-50`
                                 }`}
                             onClick={() => handleOptionSelect(option)}
                         >
