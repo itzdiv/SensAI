@@ -264,7 +264,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                         >
                             <div
                                 className={`rounded-2xl px-4 py-2 ${message.messageType === 'audio'
-                                    ? 'w-[75%]'
+                                    ? 'w-full sm:w-[75%]'
                                     : message.messageType === 'code'
                                         ? 'bg-[#282828] text-white w-[90%]'
                                         : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`

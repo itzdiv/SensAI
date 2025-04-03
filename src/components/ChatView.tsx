@@ -369,11 +369,13 @@ const ChatView: React.FC<ChatViewProps> = ({
                                 /* Input area - conditional render based on input type */
                                 <>
                                     {currentQuestionConfig?.inputType === 'audio' ? (
-                                        <AudioInputComponent
-                                            onAudioSubmit={handleAudioSubmit}
-                                            isSubmitting={isSubmitting || isAiResponding}
-                                            maxDuration={currentQuestionConfig?.audioMaxDuration || 120}
-                                        />
+                                        <div className="w-full sm:w-auto">
+                                            <AudioInputComponent
+                                                onAudioSubmit={handleAudioSubmit}
+                                                isSubmitting={isSubmitting || isAiResponding}
+                                                maxDuration={currentQuestionConfig?.audioMaxDuration || 120}
+                                            />
+                                        </div>
                                     ) : (
                                         /* Completely restructured textarea container */
                                         <div className="relative flex items-center bg-[#111111] rounded-3xl py-1 overflow-hidden border border-[#222222]">
@@ -425,7 +427,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     };
 
     return (
-        <div className="flex-1 flex flex-col px-6 py-6 overflow-hidden h-full chat-view-wrapper">
+        <div className="flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-hidden h-full chat-view-wrapper">
             {/* Global style for maximum specificity - this will apply regardless of Next.js styling restrictions */}
             <style global jsx>{`
                 /* Target the specific textarea with an important ID */
@@ -523,6 +525,18 @@ const ChatView: React.FC<ChatViewProps> = ({
                 .code-toggle-option.active {
                     color: #ffffff;
                     background-color: #222222;
+                }
+                
+                /* Responsive styles for audio component */
+                @media (max-width: 640px) {
+                    audio {
+                        width: 100% !important;
+                    }
+                    
+                    /* Ensure audio controls are properly sized on mobile */
+                    .audio-recorder-container {
+                        width: 100% !important;
+                    }
                 }
             `}</style>
 

@@ -1101,33 +1101,37 @@ export default function LearnerCourseView({
                         <div className="flex-1 h-full flex flex-col bg-[#1A1A1A]">
                             {/* Dialog Header */}
                             <div
-                                className="flex items-center justify-between p-4 border-b border-gray-800"
+                                className="flex items-start justify-between p-4 border-b border-gray-800"
                                 style={{ backgroundColor: '#111111' }}
                             >
-                                <div className="flex-1 flex items-center">
+                                <div className="flex items-start">
                                     {/* Hamburger menu for mobile */}
                                     <button
                                         onClick={toggleSidebar}
-                                        className="lg:hidden text-gray-400 hover:text-white mr-3"
+                                        className="lg:hidden text-gray-400 hover:text-white mr-3 flex-shrink-0 mt-1"
                                         aria-label="Toggle sidebar"
                                     >
                                         <Menu size={20} />
                                     </button>
-                                    {/* Completed icon displays next to title - only on mobile */}
-                                    {activeItem?.type === 'material' && completedTasks[activeItem?.id] && (
-                                        <CheckCircle size={18} className="text-green-500 mr-2 flex-shrink-0 lg:hidden" />
-                                    )}
-                                    <h2
-                                        ref={dialogTitleRef}
-                                        contentEditable={false}
-                                        suppressContentEditableWarning
-                                        onKeyDown={handleKeyDown}
-                                        className="text-xl sm:text-2xl lg:text-2xl font-light text-white outline-none truncate"
-                                    >
-                                        {activeItem?.title}
-                                    </h2>
+                                    <div className="flex flex-col min-w-0 pr-2">
+                                        <div className="flex items-center mb-1">
+                                            {/* Completed icon displays next to title - only on mobile */}
+                                            {activeItem?.type === 'material' && completedTasks[activeItem?.id] && (
+                                                <CheckCircle size={18} className="text-green-500 mr-2 flex-shrink-0 lg:hidden" />
+                                            )}
+                                            <h2
+                                                ref={dialogTitleRef}
+                                                contentEditable={false}
+                                                suppressContentEditableWarning
+                                                onKeyDown={handleKeyDown}
+                                                className="text-xl sm:text-2xl lg:text-2xl font-light text-white outline-none break-words hyphens-auto"
+                                            >
+                                                {activeItem?.title}
+                                            </h2>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-3 flex-shrink-0 ml-2">
                                     {/* Show completed status for both quiz and exam questions that have been answered */}
                                     {((activeItem?.type === 'exam' || activeItem?.type === 'quiz') &&
                                         ((activeItem.questions?.length === 1 && completedTasks[activeItem.id]) ||

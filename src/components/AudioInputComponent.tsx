@@ -370,6 +370,8 @@ export default function AudioInputComponent({
             setAudioBlob(null);
             setLiveWaveformData([]);
             setSnapshotWaveformData([]);
+            // Close the delete confirmation dialog if it's open
+            setShowDeleteConfirmation(false);
         }
     };
 
@@ -417,9 +419,11 @@ export default function AudioInputComponent({
         <div className="relative">
             {/* Recording status and timer */}
             {isRecording && (
-                <div className="absolute -top-10 left-0 right-0 text-center text-red-500 font-light text-sm flex items-center justify-center">
-                    <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                    <span>Recording {formatTime(recordingDuration)}</span>
+                <div className="absolute -top-10 left-0 right-0 text-center flex items-center justify-center z-20">
+                    <div className="bg-black/80 rounded-full px-4 py-2 shadow-md flex items-center">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                        <span className="text-red-500 font-light text-sm">Recording {formatTime(recordingDuration)}</span>
+                    </div>
                 </div>
             )}
 
@@ -451,7 +455,7 @@ export default function AudioInputComponent({
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                     <button
-                        className="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center bg-[#222222] text-white hover:bg-[#333333] mr-3 cursor-pointer"
+                        className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0 rounded-full flex items-center justify-center bg-[#222222] text-white hover:bg-[#333333] cursor-pointer mr-3"
                         onClick={isRecording ? stopRecording : audioBlob ? togglePlayback : startRecording}
                         disabled={isDisabled}
                         type="button"
@@ -459,7 +463,7 @@ export default function AudioInputComponent({
                         {isRecording ? (
                             <div className="w-3 h-3 bg-white"></div>
                         ) : audioBlob ? (
-                            isPlaying ? <Pause size={16} /> : <Play size={16} />
+                            isPlaying ? <Pause size={16} /> : <><Play size={14} className="sm:hidden" /> <Play size={16} className="hidden sm:block" /></>
                         ) : (
                             <Mic size={16} />
                         )}
@@ -472,7 +476,10 @@ export default function AudioInputComponent({
                     <div className="flex w-full items-center">
                         {/* Waveform container that adjusts width based on recording state */}
                         <div
-                            className={`h-10 flex items-center justify-center relative cursor-pointer ${audioBlob ? 'flex-1' : 'w-full'}`}
+                            className={`h-10 flex items-center justify-center relative cursor-pointer ${audioBlob
+                                ? 'flex-1 max-w-[calc(100%-80px)] sm:max-w-none' // Add max-width constraint on mobile
+                                : 'w-full'
+                                }`}
                             onClick={audioBlob && !isRecording ? handleSeek : undefined}
                         >
                             {/* Waveform visualization - show different components based on state */}
@@ -484,38 +491,44 @@ export default function AudioInputComponent({
                                     playbackProgress={playbackProgress}
                                 />
                             ) : (
-                                <div className="text-gray-400 text-sm">Click the microphone to start recording</div>
+                                <div className="text-gray-400 text-xs sm:text-sm">Click the microphone to start recording</div>
                             )}
                         </div>
 
                         {/* Action buttons - added delete button */}
                         {audioBlob && (
-                            <div className="ml-3 flex-shrink-0 flex space-x-2">
+                            <div className="ml-2 sm:ml-3 flex-shrink-0 flex space-x-1 sm:space-x-2">
                                 {/* Delete button */}
                                 <button
-                                    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#222222] text-white hover:bg-[#333333] cursor-pointer"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-[#222222] text-white hover:bg-[#333333] cursor-pointer"
                                     onClick={handleDeleteClick}
                                     disabled={isSubmitting || isDisabled}
                                     aria-label="Delete audio"
                                     type="button"
                                 >
-                                    <Trash2 size={16} />
+                                    <Trash2 size={14} className="sm:hidden" />
+                                    <Trash2 size={16} className="hidden sm:block" />
                                 </button>
 
                                 {/* Submit button */}
                                 <button
-                                    className="w-10 h-10 rounded-full flex items-center justify-center bg-white cursor-pointer"
+                                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white cursor-pointer"
                                     onClick={handleSubmit}
                                     disabled={isSubmitting || isDisabled}
                                     aria-label="Submit audio"
                                     type="button"
                                 >
                                     {isSubmitting ? (
-                                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                                     ) : (
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
+                                        <>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:hidden">
+                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="hidden sm:block">
+                                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                        </>
                                     )}
                                 </button>
                             </div>

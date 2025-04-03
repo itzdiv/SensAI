@@ -1611,7 +1611,6 @@ export default function LearnerQuizView({
                 .mobile-view-button {
                     display: none;
                     position: fixed;
-                    right: 16px;
                     bottom: 120px;
                     z-index: 1000;
                     width: 50px;
@@ -1636,7 +1635,6 @@ export default function LearnerQuizView({
                 .mobile-view-menu {
                     position: fixed;
                     bottom: 140px;
-                    right: 16px;
                     width: 180px;
                     background-color: #333333;
                     border-radius: 8px;
@@ -1831,7 +1829,8 @@ export default function LearnerQuizView({
             {/* Mobile view floating button */}
             <button
                 onClick={toggleMobileMenu}
-                className="fixed bottom-120 right-6 w-14 h-14 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none mobile-view-button"
+                className="fixed right-6 w-14 h-14 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none mobile-view-button"
+                style={{ bottom: '160px' }}
                 aria-label="View options"
             >
                 {isMobileMenuOpen ? (
@@ -1859,7 +1858,7 @@ export default function LearnerQuizView({
 
             {/* Mobile view menu */}
             {isMobileMenuOpen && (
-                <div className="fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '180px' }} ref={mobileMenuRef}>
+                <div className="fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '200px' }} ref={mobileMenuRef}>
                     {/* Question Only Button */}
                     <div className="flex items-center gap-3">
                         <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
