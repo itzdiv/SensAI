@@ -290,7 +290,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                     />
                                 ) : (
                                     <div>
-                                        <p className="text-sm break-words whitespace-normal break-anywhere">{message.content}</p>
+                                        <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">{message.content}</pre>
                                         {shouldShowViewReport(message) && (
                                             <div className="my-3">
                                                 <button
