@@ -972,8 +972,18 @@ export default function LearnerCourseView({
                         className="w-full h-full flex flex-row"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Mobile overlay - only shown when sidebar is open on mobile */}
+                        {isSidebarOpen && (
+                            <div
+                                className="fixed inset-0 z-10"
+                                onClick={toggleSidebar}
+                                style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                                aria-label="Close sidebar overlay"
+                            ></div>
+                        )}
+
                         {/* Sidebar with module tasks - hidden on mobile by default */}
-                        <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} md:relative md:block w-64 h-full bg-[#121212] border-r border-gray-800 flex flex-col overflow-hidden z-10`}>
+                        <div className={`${isSidebarOpen ? 'absolute inset-0' : 'hidden'} lg:relative lg:block w-64 h-full bg-[#121212] border-r border-gray-800 flex flex-col overflow-hidden z-10`}>
                             {/* Sidebar Header */}
                             <div className="p-4 border-b border-gray-800 bg-[#0A0A0A] flex items-center justify-between">
                                 <h3 className="text-lg font-light text-white truncate">
@@ -982,7 +992,7 @@ export default function LearnerCourseView({
                                 {/* Close button for mobile sidebar */}
                                 <button
                                     onClick={toggleSidebar}
-                                    className="md:hidden text-gray-400 hover:text-white"
+                                    className="lg:hidden text-gray-400 hover:text-white"
                                     aria-label="Close sidebar"
                                 >
                                     <ChevronLeft size={20} />
@@ -1077,7 +1087,7 @@ export default function LearnerCourseView({
                             </div>
 
                             {/* Back to Course Button - hidden on mobile, fixed at bottom for laptop */}
-                            <div className="hidden md:block p-3 border-t border-gray-800 bg-[#121212] absolute bottom-0 left-0 right-0">
+                            <div className="hidden lg:block p-3 border-t border-gray-800 bg-[#121212] absolute bottom-0 left-0 right-0">
                                 <button
                                     onClick={closeDialog}
                                     className="w-full flex items-center justify-center px-3 py-2 text-sm text-gray-300 hover:text-white bg-[#1A1A1A] hover:bg-[#222222] rounded transition-colors cursor-pointer"
@@ -1098,21 +1108,21 @@ export default function LearnerCourseView({
                                     {/* Hamburger menu for mobile */}
                                     <button
                                         onClick={toggleSidebar}
-                                        className="md:hidden text-gray-400 hover:text-white mr-3"
+                                        className="lg:hidden text-gray-400 hover:text-white mr-3"
                                         aria-label="Toggle sidebar"
                                     >
                                         <Menu size={20} />
                                     </button>
                                     {/* Completed icon displays next to title - only on mobile */}
                                     {activeItem?.type === 'material' && completedTasks[activeItem?.id] && (
-                                        <CheckCircle size={18} className="text-green-500 mr-2 flex-shrink-0 md:hidden" />
+                                        <CheckCircle size={18} className="text-green-500 mr-2 flex-shrink-0 lg:hidden" />
                                     )}
                                     <h2
                                         ref={dialogTitleRef}
                                         contentEditable={false}
                                         suppressContentEditableWarning
                                         onKeyDown={handleKeyDown}
-                                        className="text-xl sm:text-2xl md:text-2xl font-light text-white outline-none truncate"
+                                        className="text-xl sm:text-2xl lg:text-2xl font-light text-white outline-none truncate"
                                     >
                                         {activeItem?.title}
                                     </h2>
@@ -1133,7 +1143,7 @@ export default function LearnerCourseView({
                                     {/* Show "Completed" button for learning materials on desktop */}
                                     {activeItem?.type === 'material' && completedTasks[activeItem?.id] && (
                                         <button
-                                            className="hidden md:flex items-center px-4 py-2 text-sm text-white bg-green-700 rounded-full transition-colors cursor-default"
+                                            className="hidden lg:flex items-center px-4 py-2 text-sm text-white bg-green-700 rounded-full transition-colors cursor-default"
                                             disabled
                                         >
                                             <CheckCircle size={16} className="mr-2" />
@@ -1144,7 +1154,7 @@ export default function LearnerCourseView({
                                     {activeItem?.type === 'material' && !completedTasks[activeItem?.id] && !viewOnly && (
                                         <button
                                             onClick={markTaskComplete}
-                                            className={`hidden md:flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                                            className={`hidden lg:flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                                             aria-label="Mark complete"
                                             disabled={isMarkingComplete}
                                         >
@@ -1162,7 +1172,7 @@ export default function LearnerCourseView({
                                     )}
                                     <button
                                         onClick={closeDialog}
-                                        className="text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer p-1 md:hidden"
+                                        className="text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer p-1 lg:hidden"
                                     >
                                         <X size={20} />
                                     </button>
@@ -1183,7 +1193,7 @@ export default function LearnerCourseView({
                                         {activeItem?.type === 'material' && !completedTasks[activeItem?.id] && !viewOnly && (
                                             <button
                                                 onClick={markTaskComplete}
-                                                className={`md:hidden fixed bottom-20 right-8 z-10 flex items-center justify-center w-14 h-14 text-white bg-green-600 hover:bg-green-700 rounded-full shadow-lg transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                className={`lg:hidden fixed bottom-20 right-8 z-10 flex items-center justify-center w-14 h-14 text-white bg-green-600 hover:bg-green-700 rounded-full shadow-lg transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
                                                 aria-label="Mark complete"
                                                 disabled={isMarkingComplete}
                                             >
