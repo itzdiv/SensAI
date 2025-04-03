@@ -12,6 +12,12 @@ import MobileDropdown, { DropdownOption } from "./MobileDropdown";
 const LAST_INCREMENT_DATE_KEY = 'streak_last_increment_date';
 const LAST_STREAK_COUNT_KEY = 'streak_last_count';
 
+// Mobile tab options
+enum MobileTab {
+    Course = 'course',
+    Progress = 'progress'
+}
+
 interface LearnerCohortViewProps {
     courseTitle: string;
     modules: Module[];
@@ -54,6 +60,9 @@ export default function LearnerCohortView({
     // State for mobile course dropdown
     const [mobileDropdownOpen, setMobileDropdownOpen] = useState<boolean>(false);
     const courseDropdownRef = useRef<HTMLDivElement>(null);
+
+    // State for the active mobile tab
+    const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>(MobileTab.Course);
 
     // Add useEffect to monitor showTopPerformers changes
     useEffect(() => {
@@ -311,10 +320,16 @@ export default function LearnerCohortView({
     }, []);
 
     return (
-        <div className="bg-black">
+        <div className="bg-black min-h-screen pb-16 lg:pb-0">
+            {courseTitle && (
+                <h1 className="text-2xl md:text-3xl font-light text-white mb-4 md:mb-6 px-1 sm:px-0">
+                    {courseTitle}
+                </h1>
+            )}
+
             <div className="lg:flex lg:flex-row lg:justify-between">
                 {/* Left Column: Course Tabs and Course Content */}
-                <div className="lg:w-2/3 lg:pr-8">
+                <div className={`lg:w-2/3 lg:pr-8 ${showSidebar && activeMobileTab === MobileTab.Progress ? 'hidden lg:block' : ''}`}>
                     {/* Course Selector */}
                     {courses.length > 1 && (
                         <div className="mb-8 sm:mb-10">
@@ -381,12 +396,6 @@ export default function LearnerCohortView({
 
                     {/* Course Content */}
                     <div>
-                        {courseTitle && (
-                            <h1 className="text-2xl md:text-3xl font-light text-white mb-4 md:mb-6 px-1 sm:px-0">
-                                {courseTitle}
-                            </h1>
-                        )}
-
                         <LearnerCourseView
                             modules={modules}
                             completedTaskIds={localCompletedTaskIds}
@@ -400,7 +409,7 @@ export default function LearnerCohortView({
 
                 {/* Right Column: Streak and Performers */}
                 {showSidebar && (
-                    <div className="w-full lg:w-1/3 space-y-6 mt-6 lg:mt-0">
+                    <div className={`w-full lg:w-1/3 space-y-6 mt-6 lg:mt-0 ${activeMobileTab === MobileTab.Course ? 'hidden lg:block' : ''}`}>
                         {/* Streak component when not loading and cohort ID exists */}
                         {!isLoadingStreak && cohortId && (
                             <LearningStreak
@@ -421,6 +430,38 @@ export default function LearnerCohortView({
                     </div>
                 )}
             </div>
+
+            {/* Mobile Bottom Tabs - Only visible on mobile */}
+            {showSidebar && (
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black to-[rgba(0,0,0,0.9)] border-t border-gray-900 z-20">
+                    <div className="flex h-16">
+                        <button
+                            className={`flex-1 flex flex-col items-center justify-center transition-colors ${activeMobileTab === MobileTab.Course
+                                ? 'text-white'
+                                : 'text-gray-500'
+                                }`}
+                            onClick={() => setActiveMobileTab(MobileTab.Course)}
+                        >
+                            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            </svg>
+                            <span className="text-xs font-light">Course</span>
+                        </button>
+                        <button
+                            className={`flex-1 flex flex-col items-center justify-center transition-colors ${activeMobileTab === MobileTab.Progress
+                                ? 'text-white'
+                                : 'text-gray-500'
+                                }`}
+                            onClick={() => setActiveMobileTab(MobileTab.Progress)}
+                        >
+                            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span className="text-xs font-light">Progress</span>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 } 

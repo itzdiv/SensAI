@@ -105,25 +105,44 @@ export default function ClientLeaderboardView({
         <div className={`${view === 'admin' ? '' : 'min-h-screen'} bg-black text-white`}>
             {view === 'learner' && <Header showCreateCourseButton={false} />}
 
-            <main className={`container mx-auto ${view === 'admin' ? '' : 'px-4 py-8'}`}>
+            <main className={`container mx-auto ${view === 'admin' ? '' : 'px-4 md:py-8'}`}>
                 {/* Back button and page title */}
-                {view === 'learner' && <div className="flex mb-8">
-                    <div className="flex-1 text-center">
-                        <h1 className="flex">
-                            <span
-                                className="text-gray-400 mt-3 text-lg font-light cursor-pointer hover:text-gray-300"
+                {view === 'learner' && (
+                    <>
+                        {/* Mobile back button - visible only on small screens */}
+                        <div className="sm:hidden mb-4">
+                            <button
                                 onClick={() => router.back()}
+                                className="flex items-center space-x-2 px-3 py-2 bg-gray-800/40 hover:bg-gray-700/60 rounded-full text-sm text-gray-300 transition-colors"
                             >
-                                {cohortName}
-                            </span>
-                            <span className="mx-2 text-lg mt-3 font-light text-gray-400">/</span>
-                            <span className="text-4xl font-light">Leaderboard</span>
-                        </h1>
-                    </div>
+                                <ArrowLeft size={16} />
+                                <span>Back to {cohortName}</span>
+                            </button>
+                        </div>
 
-                    {/* Empty div for flex balance */}
-                    <div className="w-24"></div>
-                </div>}
+                        {/* Title - different layouts for mobile and desktop */}
+                        <div className="flex mb-8">
+                            <div className="flex-1 text-center">
+                                {/* Desktop: cohort / leaderboard format */}
+                                <h1 className="hidden sm:flex sm:flex-row items-center justify-center">
+                                    <span
+                                        className="text-gray-400 text-lg font-light cursor-pointer hover:text-gray-300"
+                                        onClick={() => router.back()}
+                                    >
+                                        {cohortName}
+                                    </span>
+                                    <span className="mx-2 text-lg font-light text-gray-400">/</span>
+                                    <span className="text-4xl font-light">Leaderboard</span>
+                                </h1>
+
+                                {/* Mobile: only leaderboard title */}
+                                <h1 className="sm:hidden text-3xl font-light">
+                                    Leaderboard
+                                </h1>
+                            </div>
+                        </div>
+                    </>
+                )}
 
                 {loading ? (
                     <div className="flex justify-center my-12">
@@ -146,13 +165,26 @@ export default function ClientLeaderboardView({
                 ) : (
                     <div className="bg-[#121212] rounded-lg border border-gray-800 overflow-hidden">
                         {/* Column Headers */}
-                        <div className={`grid ${view === 'admin' ? 'grid-cols-8 py-3 text-sm' : 'grid-cols-12 py-4'} gap-2 px-4 border-b border-gray-800 bg-[#2A2000] font-light`}>
+                        <div className={`grid ${view === 'admin'
+                            ? 'grid-cols-7 sm:grid-cols-8 py-2 sm:py-3 text-xs sm:text-sm'
+                            : 'grid-cols-7 sm:grid-cols-10 md:grid-cols-12 py-3 sm:py-4 text-xs sm:text-sm'
+                            } gap-1 sm:gap-2 px-2 sm:px-4 border-b border-gray-800 bg-[#2A2000] font-light`}>
                             <div className="col-span-1 text-center">Rank</div>
-                            <div className={`${view === 'admin' ? 'col-span-3 xl:col-span-4' : 'col-span-5 lg:col-span-6'}`}>Learner</div>
-                            <div className={`${view === 'admin' ? 'col-span-2 xl:col-span-1' : 'col-span-3 lg:col-span-2'} text-center`}>Streak</div>
-                            <div className={`${view === 'admin' ? 'col-span-2' : 'col-span-3 lg:col-span-3'} text-right pr-2`}>
-                                <span className={`${view === 'admin' ? 'xl:hidden' : 'hidden'}`}>Completed</span>
-                                <span className={`${view === 'admin' ? 'hidden xl:inline' : ''}`}>Tasks Completed</span>
+                            <div className={`${view === 'admin'
+                                ? 'col-span-3 sm:col-span-3 md:col-span-4'
+                                : 'col-span-3 sm:col-span-4 md:col-span-5 lg:col-span-6'}`}>
+                                Learner
+                            </div>
+                            <div className={`${view === 'admin'
+                                ? 'col-span-1 sm:col-span-2 md:col-span-1'
+                                : 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2'} text-center`}>
+                                Streak
+                            </div>
+                            <div className={`${view === 'admin'
+                                ? 'col-span-2'
+                                : 'col-span-2 sm:col-span-3 lg:col-span-3'} text-right pr-1 sm:pr-2`}>
+                                <span className="hidden md:inline">Tasks Completed</span>
+                                <span className="md:hidden">Tasks</span>
                             </div>
                         </div>
 
@@ -161,22 +193,28 @@ export default function ClientLeaderboardView({
                             {performers.slice(0, topN !== undefined ? topN : performers.length).map((performer, index) => (
                                 <div
                                     key={index}
-                                    className={`grid ${view === 'admin' ? 'grid-cols-8 py-2' : 'grid-cols-12 py-4'} gap-2 px-4 items-center ${isCurrentUser(performer) ? 'bg-blue-900/20' : ''}`}
+                                    className={`grid ${view === 'admin'
+                                        ? 'grid-cols-7 sm:grid-cols-8 py-2 text-xs sm:text-sm'
+                                        : 'grid-cols-7 sm:grid-cols-10 md:grid-cols-12 py-3 sm:py-4 text-xs sm:text-sm'
+                                        } gap-1 sm:gap-2 px-2 sm:px-4 items-center ${isCurrentUser(performer) ? 'bg-blue-900/20' : ''}`}
                                 >
                                     {/* Position Column */}
                                     <div className="col-span-1 flex justify-center">
                                         {shouldShowMedal(performer) ? (
-                                            <div className={`${view === 'admin' ? 'w-8 h-8' : 'w-10 h-10'} flex items-center justify-center`}>
+                                            <div className={`${view === 'admin' ? 'w-6 h-6 sm:w-8 sm:h-8' : 'w-7 h-7 sm:w-10 sm:h-10'} flex items-center justify-center`}>
                                                 <Image
                                                     src={getPositionBadge(performer.position)!}
                                                     alt={`Position ${performer.position}`}
-                                                    width={view === 'admin' ? 24 : 36}
-                                                    height={view === 'admin' ? 24 : 36}
+                                                    width={view === 'admin' ? 20 : 28}
+                                                    height={view === 'admin' ? 20 : 28}
+                                                    className="w-auto h-auto sm:w-full sm:h-full"
                                                 />
                                             </div>
                                         ) : (
-                                            <div className={`${view === 'admin' ? 'w-7 h-7' : 'w-9 h-9'}  rounded-full flex items-center justify-center bg-gray-800/30`}>
-                                                <div className={`${view === 'admin' ? 'w-6 h-6' : 'w-8 h-8'} rounded-full flex items-center justify-center font-light text-base border-2 
+                                            <div className={`${view === 'admin' ? 'w-5 h-5 sm:w-7 sm:h-7' : 'w-6 h-6 sm:w-9 sm:h-9'}  rounded-full flex items-center justify-center bg-gray-800/30`}>
+                                                <div className={`${view === 'admin'
+                                                    ? 'w-4 h-4 sm:w-6 sm:h-6 text-xs sm:text-sm'
+                                                    : 'w-5 h-5 sm:w-8 sm:h-8 text-xs sm:text-base'} rounded-full flex items-center justify-center font-light border-2 
                                                     ${isCurrentUser(performer)
                                                         ? 'text-blue-500 border-blue-500'
                                                         : 'text-gray-400 border-gray-700'}`}>
@@ -187,11 +225,13 @@ export default function ClientLeaderboardView({
                                     </div>
 
                                     {/* Name Column */}
-                                    <div className={`${view === 'admin' ? 'col-span-3 xl:col-span-4 text-sm' : 'col-span-5 lg:col-span-6'} flex items-center`}>
+                                    <div className={`${view === 'admin'
+                                        ? 'col-span-3 sm:col-span-3 md:col-span-4'
+                                        : 'col-span-3 sm:col-span-4 md:col-span-5 lg:col-span-6'} flex items-center`}>
                                         <div className="font-medium text-white flex items-center overflow-hidden">
                                             <span className="truncate">{performer.name}</span>
                                             {isCurrentUser(performer) && (
-                                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400 flex-shrink-0">
+                                                <span className="ml-1 sm:ml-2 inline-flex items-center px-1 sm:px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400 flex-shrink-0">
                                                     You
                                                 </span>
                                             )}
@@ -199,12 +239,17 @@ export default function ClientLeaderboardView({
                                     </div>
 
                                     {/* Streak Column */}
-                                    <div className={`${view === 'admin' ? 'col-span-2 xl:col-span-1 text-sm' : 'col-span-3 lg:col-span-2'} text-center text-gray-400`}>
-                                        {performer.streakDays} Day{performer.streakDays === 1 ? "" : "s"}
+                                    <div className={`${view === 'admin'
+                                        ? 'col-span-1 sm:col-span-2 md:col-span-1'
+                                        : 'col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2'} text-center text-gray-400`}>
+                                        <span className="hidden sm:inline">{performer.streakDays} Day{performer.streakDays === 1 ? "" : "s"}</span>
+                                        <span className="sm:hidden">{performer.streakDays}d</span>
                                     </div>
 
                                     {/* Tasks Solved Column */}
-                                    <div className={`${view === 'admin' ? 'col-span-2 text-sm' : 'col-span-3 lg:col-span-3'} text-right pr-2 text-gray-400`}>
+                                    <div className={`${view === 'admin'
+                                        ? 'col-span-2'
+                                        : 'col-span-2 sm:col-span-3 lg:col-span-3'} text-right pr-1 sm:pr-2 text-gray-400`}>
                                         {performer.tasksSolved}
                                     </div>
                                 </div>
