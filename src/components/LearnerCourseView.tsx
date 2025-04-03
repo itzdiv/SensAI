@@ -1103,12 +1103,16 @@ export default function LearnerCourseView({
                                     >
                                         <Menu size={20} />
                                     </button>
+                                    {/* Completed icon displays next to title - only on mobile */}
+                                    {activeItem?.type === 'material' && completedTasks[activeItem?.id] && (
+                                        <CheckCircle size={18} className="text-green-500 mr-2 flex-shrink-0 md:hidden" />
+                                    )}
                                     <h2
                                         ref={dialogTitleRef}
                                         contentEditable={false}
                                         suppressContentEditableWarning
                                         onKeyDown={handleKeyDown}
-                                        className="text-2xl font-light text-white outline-none"
+                                        className="text-xl sm:text-2xl md:text-2xl font-light text-white outline-none truncate"
                                     >
                                         {activeItem?.title}
                                     </h2>
@@ -1126,34 +1130,35 @@ export default function LearnerCourseView({
                                                 Completed
                                             </button>
                                         )}
-                                    {activeItem?.type === 'material' && (
-                                        completedTasks[activeItem?.id] ? (
-                                            <button
-                                                className="flex items-center px-4 py-2 text-sm text-white bg-green-700 rounded-full transition-colors cursor-default"
-                                                disabled
-                                            >
-                                                <CheckCircle size={16} className="mr-2" />
-                                                Completed
-                                            </button>
-                                        ) : !viewOnly ? (
-                                            <button
-                                                onClick={markTaskComplete}
-                                                className={`flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
-                                                aria-label="Mark complete"
-                                                disabled={isMarkingComplete}
-                                            >
-                                                {isMarkingComplete ? (
-                                                    <>
-                                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle size={16} className="mr-2" />
-                                                        Mark Complete
-                                                    </>
-                                                )}
-                                            </button>
-                                        ) : null
+                                    {/* Show "Completed" button for learning materials on desktop */}
+                                    {activeItem?.type === 'material' && completedTasks[activeItem?.id] && (
+                                        <button
+                                            className="hidden md:flex items-center px-4 py-2 text-sm text-white bg-green-700 rounded-full transition-colors cursor-default"
+                                            disabled
+                                        >
+                                            <CheckCircle size={16} className="mr-2" />
+                                            Completed
+                                        </button>
+                                    )}
+                                    {/* Restore the original Mark Complete button for desktop */}
+                                    {activeItem?.type === 'material' && !completedTasks[activeItem?.id] && !viewOnly && (
+                                        <button
+                                            onClick={markTaskComplete}
+                                            className={`hidden md:flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                                            aria-label="Mark complete"
+                                            disabled={isMarkingComplete}
+                                        >
+                                            {isMarkingComplete ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle size={16} className="mr-2" />
+                                                    Mark Complete
+                                                </>
+                                            )}
+                                        </button>
                                     )}
                                     <button
                                         onClick={closeDialog}
@@ -1166,7 +1171,7 @@ export default function LearnerCourseView({
 
                             {/* Dialog Content */}
                             <div
-                                className="flex-1 overflow-y-auto p-0 dialog-content-editor"
+                                className="flex-1 overflow-y-auto p-0 dialog-content-editor relative"
                             >
                                 {isLoading ? (
                                     <div className="flex items-center justify-center h-full">
@@ -1174,6 +1179,22 @@ export default function LearnerCourseView({
                                     </div>
                                 ) : (
                                     <>
+                                        {/* Floating Action Button (FAB) for Mark Complete - mobile only */}
+                                        {activeItem?.type === 'material' && !completedTasks[activeItem?.id] && !viewOnly && (
+                                            <button
+                                                onClick={markTaskComplete}
+                                                className={`md:hidden fixed bottom-20 right-8 z-10 flex items-center justify-center w-14 h-14 text-white bg-green-600 hover:bg-green-700 rounded-full shadow-lg transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+                                                aria-label="Mark complete"
+                                                disabled={isMarkingComplete}
+                                            >
+                                                {isMarkingComplete ? (
+                                                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <CheckCircle size={24} />
+                                                )}
+                                            </button>
+                                        )}
+
                                         {activeItem?.type === 'material' && (
                                             <div className="pt-6">
                                                 <DynamicLearningMaterialEditor
