@@ -745,7 +745,7 @@ export default function CourseModuleList({
                                                             ({completedQuestionIds[item.id]
                                                                 ? mode === 'view' && !completedItems[item.id] && Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
                                                                     ? `${Object.values(completedQuestionIds[item.id]).filter(Boolean).length} / ${(item as Quiz | Exam).numQuestions}`
-                                                                    : `${Object.keys(completedQuestionIds[item.id]).length} questions`
+                                                                    : `${Object.keys(completedQuestionIds[item.id]).length} question${Object.keys(completedQuestionIds[item.id]).length === 1 ? "" : "s"}`
                                                                 : `${(item as Quiz | Exam).numQuestions} question${(item as Quiz | Exam).numQuestions === 1 ? "" : "s"}`})
                                                         </span>
                                                     )}
