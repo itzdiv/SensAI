@@ -1291,15 +1291,37 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Add a new question
     const addQuestion = useCallback(() => {
-        const questionType = 'objective';
+        // Get the previous question's configuration if available
+        // Otherwise, use default values
+        let questionType = 'objective';
+        let inputType: 'text' | 'code' | 'audio' = 'text';
+        let codingLanguages: string[] = [];
+
+        // If there's at least one question (to be used as a reference)
+        if (questions.length > 0) {
+            const previousQuestion = questions[questions.length - 1];
+            if (previousQuestion && previousQuestion.config) {
+                // Use the previous question's type
+                questionType = previousQuestion.config.questionType;
+                // Use the previous question's input type (answer type)
+                inputType = previousQuestion.config.inputType;
+                // Use the previous question's coding languages if available
+                if (previousQuestion.config.codingLanguages &&
+                    Array.isArray(previousQuestion.config.codingLanguages) &&
+                    previousQuestion.config.codingLanguages.length > 0) {
+                    codingLanguages = [...previousQuestion.config.codingLanguages];
+                }
+            }
+        }
 
         const newQuestion: QuizQuestion = {
             id: `question-${Date.now()}`,
-            content: getQuestionTemplateBlocks(questionType),
+            content: getQuestionTemplateBlocks(questionType as 'objective' | 'subjective' | 'coding'),
             config: {
                 ...defaultQuestionConfig,
-                questionType: questionType,
-                inputType: 'text' as 'text'
+                questionType: questionType as 'objective' | 'subjective' | 'coding',
+                inputType: inputType,
+                codingLanguages: codingLanguages
             }
         };
 
