@@ -414,8 +414,8 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         lang.toLowerCase() === 'nodejs'
     );
 
-    console.log('Original languages:', languages);
-    console.log('Has React languages:', hasReact);
+    // console.log('Original languages:', languages);
+    // console.log('Has React languages:', hasReact);
 
     // When only React is selected, don't normalize languages (skip the mapping to JavaScript)
     let normalizedLanguages: string[];
@@ -440,18 +440,22 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         );
     }
 
-    // Initialize code state with provided initialCode or defaults
-    const [code, setCode] = useState<Record<string, string>>(() => {
-        const initialState: Record<string, string> = {};
-
-        console.log(normalizedLanguages);
+    // Helper method to setup code state with defaults
+    const setupCodeState = (initial: Record<string, string>): Record<string, string> => {
+        console.log('Setting up code state with:', initial);
+        const state: Record<string, string> = {};
 
         // Add entries for all valid languages
         normalizedLanguages.forEach(lang => {
-            initialState[lang] = initialCode[lang] || DEFAULT_LANGUAGE_CONTENTS[lang] || '';
+            state[lang] = initial[lang] || DEFAULT_LANGUAGE_CONTENTS[lang] || '';
         });
 
-        return initialState;
+        return state;
+    };
+
+    // Initialize code state with provided initialCode or defaults
+    const [code, setCode] = useState<Record<string, string>>(() => {
+        return setupCodeState(initialCode);
     });
 
     // State for the active language tab
@@ -530,12 +534,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
     // Update code state when initialCode changes
     useEffect(() => {
-        if (Object.keys(initialCode).length > 0) {
-            setCode(prevCode => ({
-                ...prevCode,
-                ...initialCode
-            }));
-        }
+        setCode(setupCodeState(initialCode));
     }, [initialCode]);
 
     // Handle code change for the active language

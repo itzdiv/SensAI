@@ -110,60 +110,67 @@ const ChatView: React.FC<ChatViewProps> = ({
 
     // Extract code from chat history for coding questions
     useEffect(() => {
-        if (isCodingQuestion && currentChatHistory.length > 0) {
-            // Filter messages to find code type messages
-            const codeMessages = currentChatHistory.filter(
-                message => message.messageType === 'code' && message.sender === 'user'
-            );
+        if (!isCodingQuestion) {
+            return;
+        }
 
-            // Use the most recent code message if any exists
-            if (codeMessages.length > 0) {
-                const lastCodeMessage = codeMessages[codeMessages.length - 1];
-                const codeContent = lastCodeMessage.content;
-                const codeByLanguage: Record<string, string> = {};
+        if (currentChatHistory.length === 0) {
+            setCodeContent({});
+            return;
+        }
 
-                try {
-                    // Try to parse code sections based on language markers
-                    const languagePattern = /\/\/ ([A-Z]+)\n([\s\S]*?)(?=\/\/ [A-Z]+\n|$)/g;
-                    let match;
-                    let foundAnyMatches = false;
+        // Filter messages to find code type messages
+        const codeMessages = currentChatHistory.filter(
+            message => message.messageType === 'code' && message.sender === 'user'
+        );
 
-                    while ((match = languagePattern.exec(codeContent)) !== null) {
-                        foundAnyMatches = true;
-                        const lang = match[1].toLowerCase();
-                        const code = match[2].trim();
+        // Use the most recent code message if any exists
+        if (codeMessages.length > 0) {
+            const lastCodeMessage = codeMessages[codeMessages.length - 1];
+            const codeContent = lastCodeMessage.content;
+            const codeByLanguage: Record<string, string> = {};
 
-                        // Map common language variations
-                        const normalizedLang =
-                            lang === 'javascript' || lang === 'js' ? 'javascript' :
-                                lang === 'html' ? 'html' :
-                                    lang === 'css' ? 'css' :
-                                        lang === 'python' || lang === 'py' ? 'python' :
-                                            lang === 'typescript' || lang === 'ts' ? 'typescript' :
-                                                lang;
+            try {
+                // Try to parse code sections based on language markers
+                const languagePattern = /\/\/ ([A-Z]+)\n([\s\S]*?)(?=\/\/ [A-Z]+\n|$)/g;
+                let match;
+                let foundAnyMatches = false;
 
-                        codeByLanguage[normalizedLang] = code;
-                    }
+                while ((match = languagePattern.exec(codeContent)) !== null) {
+                    foundAnyMatches = true;
+                    const lang = match[1].toLowerCase();
+                    const code = match[2].trim();
 
-                    // If no language headers were found, use the content as the first language
-                    if (!foundAnyMatches && codingLanguages.length > 0) {
-                        codeByLanguage[codingLanguages[0].toLowerCase()] = codeContent;
-                    }
+                    // Map common language variations
+                    const normalizedLang =
+                        lang === 'javascript' || lang === 'js' ? 'javascript' :
+                            lang === 'html' ? 'html' :
+                                lang === 'css' ? 'css' :
+                                    lang === 'python' || lang === 'py' ? 'python' :
+                                        lang === 'typescript' || lang === 'ts' ? 'typescript' :
+                                            lang;
 
-                    // Ensure all configured languages have an entry
-                    codingLanguages.forEach((lang: string) => {
-                        const normalizedLang = lang.toLowerCase();
-                        if (!codeByLanguage[normalizedLang]) {
-                            // If a language doesn't have code yet, initialize with empty string
-                            codeByLanguage[normalizedLang] = '';
-                        }
-                    });
-
-                    // Set the code content for the editor
-                    setCodeContent(codeByLanguage);
-                } catch (error) {
-                    console.error('Error parsing code from chat history:', error);
+                    codeByLanguage[normalizedLang] = code;
                 }
+
+                // If no language headers were found, use the content as the first language
+                if (!foundAnyMatches && codingLanguages.length > 0) {
+                    codeByLanguage[codingLanguages[0].toLowerCase()] = codeContent;
+                }
+
+                // Ensure all configured languages have an entry
+                codingLanguages.forEach((lang: string) => {
+                    const normalizedLang = lang.toLowerCase();
+                    if (!codeByLanguage[normalizedLang]) {
+                        // If a language doesn't have code yet, initialize with empty string
+                        codeByLanguage[normalizedLang] = '';
+                    }
+                });
+
+                // Set the code content for the editor
+                setCodeContent(codeByLanguage);
+            } catch (error) {
+                console.error('Error parsing code from chat history:', error);
             }
         }
     }, [currentChatHistory, isCodingQuestion, codingLanguages]);
