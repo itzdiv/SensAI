@@ -130,35 +130,11 @@ export function Header({
         setMobileActionsOpen(false);
     };
 
-    // Handle creating a new course with the provided name
-    const handleCreateCourse = async (courseName: string) => {
+    // Handle success callback from CreateCourseDialog
+    const handleCourseCreationSuccess = (courseData: { id: string; name: string }) => {
         if (hasOwnedSchool && schoolId) {
-            try {
-                // Make API request to create course
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        name: courseName,
-                        org_id: Number(schoolId)
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to create course');
-                }
-
-                const data = await response.json();
-                // Redirect to the new course page - no need to close dialog since navigation will unmount components
-                router.push(`/school/admin/${schoolId}/courses/${data.id}`);
-            } catch (error) {
-                console.error("Error creating course:", error);
-                // Only close dialog on error
-                setIsCreateCourseDialogOpen(false);
-                throw error; // Re-throw to let the dialog handle the error
-            }
+            // Redirect to the new course page - dialog will be unmounted during navigation
+            router.push(`/school/admin/${schoolId}/courses/${courseData.id}`);
         } else {
             router.push("/school/admin/create");
         }
@@ -345,10 +321,10 @@ export function Header({
                                     </span>
                                     <button
                                         onClick={handleGoToSchoolClick}
-                                        className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                        className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
                                         aria-label="Go to school"
                                     >
-                                        <School className="h-5 w-5" />
+                                        <School className="h-6 w-6" />
                                     </button>
                                 </div>
                             )}
@@ -361,7 +337,8 @@ export function Header({
             <CreateCourseDialog
                 open={isCreateCourseDialogOpen}
                 onClose={() => setIsCreateCourseDialogOpen(false)}
-                onCreateCourse={handleCreateCourse}
+                onSuccess={handleCourseCreationSuccess}
+                schoolId={schoolId || undefined}
             />
 
             {/* School Picker Dialog */}

@@ -299,34 +299,10 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         }
     };
 
-    // Handle creating a new course with the provided name
-    const handleCreateCourse = async (name: string) => {
-        try {
-            // Make API request to create course
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name,
-                    org_id: Number(id)
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to create course');
-            }
-
-            const data = await response.json();
-            // Redirect to the new course page - no need to close dialog since navigation will unmount components
-            router.push(`/school/admin/${id}/courses/${data.id}`);
-        } catch (error) {
-            console.error("Error creating course:", error);
-            // Only close dialog on error
-            setIsCreateCourseDialogOpen(false);
-            throw error; // Re-throw to let the dialog handle the error
-        }
+    // Handle course creation success
+    const handleCourseCreationSuccess = (courseData: { id: string; name: string }) => {
+        // Redirect to the new course page - dialog will be unmounted during navigation
+        router.push(`/school/admin/${id}/courses/${courseData.id}`);
     };
 
     // Handle tab change
@@ -599,7 +575,8 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             <CreateCourseDialog
                 open={isCreateCourseDialogOpen}
                 onClose={() => setIsCreateCourseDialogOpen(false)}
-                onCreateCourse={handleCreateCourse}
+                onSuccess={handleCourseCreationSuccess}
+                schoolId={id}
             />
 
             {/* Toast notification */}

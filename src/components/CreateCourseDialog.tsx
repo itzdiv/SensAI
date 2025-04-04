@@ -6,10 +6,16 @@ import { X } from 'lucide-react';
 interface CreateCourseDialogProps {
     open: boolean;
     onClose: () => void;
-    onCreateCourse: (name: string) => Promise<void>;
+    onSuccess?: (courseData: { id: string; name: string }) => void;
+    schoolId?: string | number;
 }
 
-export default function CreateCourseDialog({ open, onClose, onCreateCourse }: CreateCourseDialogProps) {
+export default function CreateCourseDialog({
+    open,
+    onClose,
+    onSuccess,
+    schoolId
+}: CreateCourseDialogProps) {
     const [courseName, setCourseName] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -32,11 +38,39 @@ export default function CreateCourseDialog({ open, onClose, onCreateCourse }: Cr
 
         try {
             setIsLoading(true);
-            await onCreateCourse(courseName);
+
+            // Make API request to create course
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: courseName,
+                    org_id: Number(schoolId)
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create course');
+            }
+
+            const data = await response.json();
+
+            // Reset form
             setCourseName('');
             setError('');
-            // Navigation will be handled by parent after successful API call
+
+            // Call the success callback with the created course data
+            if (onSuccess) {
+                onSuccess({
+                    id: data.id,
+                    name: courseName
+                });
+            }
+
         } catch (err) {
+            console.error("Error creating course:", err);
             setError('Failed to create course. Please try again.');
         } finally {
             setIsLoading(false);

@@ -87,35 +87,11 @@ export default function Home() {
     }
   }, [hasSchool, schoolId, router]);
 
-  // Handle creating a new course with the provided name
-  const handleCreateCourse = useCallback(async (courseName: string) => {
+  // Handle success callback from CreateCourseDialog
+  const handleCourseCreationSuccess = useCallback((courseData: { id: string; name: string }) => {
     if (hasSchool && schoolId) {
-      try {
-        // Make API request to create course
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: courseName,
-            org_id: Number(schoolId)
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create course');
-        }
-
-        const data = await response.json();
-        // Redirect to the new course page - no need to close dialog since navigation will unmount components
-        router.push(`/school/admin/${schoolId}/courses/${data.id}`);
-      } catch (error) {
-        console.error('Error creating course:', error);
-        // Only close dialog on error
-        setIsCreateCourseDialogOpen(false);
-        throw error; // Re-throw to let the dialog handle the error
-      }
+      // Redirect to the new course page - dialog will be unmounted during navigation
+      router.push(`/school/admin/${schoolId}/courses/${courseData.id}`);
     } else {
       router.push("/school/admin/create");
     }
@@ -151,9 +127,9 @@ export default function Home() {
               {/* Segmented control for tabs */}
               {showSegmentedTabs && (
                 <div className="flex justify-center mb-8">
-                  <div className="inline-flex bg-[#222222] rounded-lg p-1">
+                  <div className="inline-flex bg-[#222222] rounded-lg p-1 w-full sm:w-auto">
                     <button
-                      className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeTab === 'teaching'
+                      className={`flex items-center justify-center px-1 xxs:px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm xxs:font-medium cursor-pointer flex-1 sm:flex-initial ${activeTab === 'teaching'
                         ? 'bg-[#333333] text-white'
                         : 'text-gray-400 hover:text-white'
                         }`}
@@ -165,7 +141,7 @@ export default function Home() {
                       Your Courses
                     </button>
                     <button
-                      className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeTab === 'learning'
+                      className={`flex items-center justify-center px-1 xxs:px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm xxs:font-medium cursor-pointer flex-1 sm:flex-initial ${activeTab === 'learning'
                         ? 'bg-[#333333] text-white'
                         : 'text-gray-400 hover:text-white'
                         }`}
@@ -227,7 +203,8 @@ export default function Home() {
       <CreateCourseDialog
         open={isCreateCourseDialogOpen}
         onClose={() => setIsCreateCourseDialogOpen(false)}
-        onCreateCourse={handleCreateCourse}
+        onSuccess={handleCourseCreationSuccess}
+        schoolId={schoolId || undefined}
       />
     </>
   );

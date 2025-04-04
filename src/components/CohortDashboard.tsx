@@ -129,7 +129,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
     const learnerCount = cohort?.members?.filter(m => m.role === 'learner').length || 0;
 
     // If no learners, display placeholder
-    if (learnerCount === 0) {
+    if (!isLoadingMetrics && learnerCount === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-20 rounded-lg">
                 <h2 className="text-4xl font-light mb-4">No learners in this cohort yet</h2>
@@ -147,12 +147,20 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
         );
     }
 
+    if (!isLoadingMetrics && (!courseMetrics || Object.keys(courseMetrics).length === 0)) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 rounded-lg">
+                <h2 className="text-4xl font-light mb-4">Empty Course</h2>
+                <p className="text-gray-400 mb-8">Add tasks to this course to view usage data and metrics</p>
+            </div>
+        );
+    }
+
     // Get the active course object
     const activeCourse = cohort?.courses?.find(course => course.id === activeCourseId) || cohort?.courses?.[0];
 
     return (
         <div>
-
             <div className="flex flex-col lg:flex-row gap-8">
                 <div className="lg:w-2/3">
                     {/* Course title - only show if there's just one course */}
@@ -218,7 +226,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                 Try again
                             </button>
                         </div>
-                    ) : courseMetrics ? (
+                    ) : courseMetrics && Object.keys(courseMetrics).length > 0 && (
                         <div className="flex gap-6">
                             {/* Task Completion Rate - 75% width */}
                             <div className="bg-[#111] p-8 rounded-lg w-2/3">
@@ -294,14 +302,11 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                 </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-64 bg-[#111] rounded-lg border border-gray-800">
-                            <p className="text-gray-400">No metrics available for this course</p>
-                        </div>
+
                     )}
 
                     {/* Task Type Metrics - Ultra Simple Direct Cards */}
-                    {courseMetrics && (
+                    {courseMetrics && Object.keys(courseMetrics).length > 0 && (
                         <div className="mt-8">
                             <h3 className="text-gray-400 mb-4 flex items-center pl-2">
                                 <span className="inline-block">Completion by Type</span>
@@ -313,23 +318,23 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                             </h3>
 
                             {/* Empty state */}
-                            {!courseMetrics.task_type_metrics.quiz &&
-                                !courseMetrics.task_type_metrics.learning_material &&
-                                !courseMetrics.task_type_metrics.exam && (
+                            {!courseMetrics.task_type_metrics?.quiz &&
+                                !courseMetrics.task_type_metrics?.learning_material &&
+                                !courseMetrics.task_type_metrics?.exam && (
                                     <div className="text-center text-gray-400 py-16 bg-[#111] rounded-lg">
                                         No task type metrics available
                                     </div>
                                 )}
 
                             {/* Cards Layout */}
-                            {(courseMetrics.task_type_metrics.quiz ||
-                                courseMetrics.task_type_metrics.learning_material ||
-                                courseMetrics.task_type_metrics.exam) && (() => {
+                            {(courseMetrics.task_type_metrics?.quiz ||
+                                courseMetrics.task_type_metrics?.learning_material ||
+                                courseMetrics.task_type_metrics?.exam) && (() => {
                                     // Calculate number of available task types
                                     const availableTypes = [
-                                        courseMetrics.task_type_metrics.quiz,
-                                        courseMetrics.task_type_metrics.learning_material,
-                                        courseMetrics.task_type_metrics.exam
+                                        courseMetrics.task_type_metrics?.quiz,
+                                        courseMetrics.task_type_metrics?.learning_material,
+                                        courseMetrics.task_type_metrics?.exam
                                     ].filter(Boolean).length;
 
                                     // Render with the appropriate grid class based on count
@@ -340,31 +345,31 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                             } gap-4`}>
 
                                             {/* Learning Material Card */}
-                                            {courseMetrics.task_type_metrics.learning_material && (
+                                            {courseMetrics.task_type_metrics?.learning_material && (
                                                 <TaskTypeMetricCard
                                                     title="Learning Material"
-                                                    count={courseMetrics.task_type_metrics.learning_material.count}
-                                                    completionRate={courseMetrics.task_type_metrics.learning_material.completion_rate}
+                                                    count={courseMetrics.task_type_metrics?.learning_material?.count}
+                                                    completionRate={courseMetrics.task_type_metrics?.learning_material?.completion_rate}
                                                     color="purple"
                                                 />
                                             )}
 
                                             {/* Quiz Card */}
-                                            {courseMetrics.task_type_metrics.quiz && (
+                                            {courseMetrics.task_type_metrics?.quiz && (
                                                 <TaskTypeMetricCard
                                                     title="Quiz"
-                                                    count={courseMetrics.task_type_metrics.quiz.count}
-                                                    completionRate={courseMetrics.task_type_metrics.quiz.completion_rate}
+                                                    count={courseMetrics.task_type_metrics?.quiz?.count}
+                                                    completionRate={courseMetrics.task_type_metrics?.quiz?.completion_rate}
                                                     color="indigo"
                                                 />
                                             )}
 
                                             {/* Exam Card */}
-                                            {courseMetrics.task_type_metrics.exam && (
+                                            {courseMetrics.task_type_metrics?.exam && (
                                                 <TaskTypeMetricCard
                                                     title="Exam"
-                                                    count={courseMetrics.task_type_metrics.exam.count}
-                                                    completionRate={courseMetrics.task_type_metrics.exam.completion_rate}
+                                                    count={courseMetrics.task_type_metrics?.exam?.count}
+                                                    completionRate={courseMetrics.task_type_metrics?.exam?.completion_rate}
                                                     color="teal"
                                                 />
                                             )}
@@ -376,7 +381,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                 </div>
 
                 {/* Right side - Leaderboard */}
-                <div className="lg:w-1/2 space-y-6 h-full">
+                {courseMetrics && Object.keys(courseMetrics).length > 0 && (<div className="lg:w-1/2 space-y-6 h-full">
                     {/* Use ClientLeaderboardView */}
                     <ClientLeaderboardView
                         cohortId={cohortId}
@@ -397,11 +402,11 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                             </Link>
                         </div>
                     }
-                </div>
+                </div>)}
             </div>
 
             {/* Student Level Metrics Table */}
-            {courseMetrics && (
+            {courseMetrics && Object.keys(courseMetrics).length > 0 && (
                 <div className="mt-8">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-gray-400 flex items-center pl-2">
@@ -434,16 +439,16 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                             // Get all unique student IDs across all task types
                             const studentIds = new Set<string>();
 
-                            if (courseMetrics.task_type_metrics.learning_material?.completions) {
-                                Object.keys(courseMetrics.task_type_metrics.learning_material.completions).forEach(id =>
+                            if (courseMetrics.task_type_metrics?.learning_material?.completions) {
+                                Object.keys(courseMetrics.task_type_metrics?.learning_material?.completions).forEach(id =>
                                     studentIds.add(id));
                             }
-                            if (courseMetrics.task_type_metrics.quiz?.completions) {
-                                Object.keys(courseMetrics.task_type_metrics.quiz.completions).forEach(id =>
+                            if (courseMetrics.task_type_metrics?.quiz?.completions) {
+                                Object.keys(courseMetrics.task_type_metrics?.quiz?.completions).forEach(id =>
                                     studentIds.add(id));
                             }
-                            if (courseMetrics.task_type_metrics.exam?.completions) {
-                                Object.keys(courseMetrics.task_type_metrics.exam.completions).forEach(id =>
+                            if (courseMetrics.task_type_metrics?.exam?.completions) {
+                                Object.keys(courseMetrics.task_type_metrics?.exam?.completions).forEach(id =>
                                     studentIds.add(id));
                             }
 
@@ -526,7 +531,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                     <thead>
                                         <tr className="border-b border-gray-800">
                                             <th className="text-left text-gray-400 p-4 font-normal">Learner</th>
-                                            {courseMetrics.task_type_metrics.learning_material && (
+                                            {courseMetrics.task_type_metrics?.learning_material && (
                                                 <th
                                                     className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
                                                     onClick={() => handleSort('learning_material')}
@@ -543,7 +548,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                     </div>
                                                 </th>
                                             )}
-                                            {courseMetrics.task_type_metrics.quiz && (
+                                            {courseMetrics.task_type_metrics?.quiz && (
                                                 <th
                                                     className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
                                                     onClick={() => handleSort('quiz')}
@@ -560,7 +565,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                     </div>
                                                 </th>
                                             )}
-                                            {courseMetrics.task_type_metrics.exam && (
+                                            {courseMetrics.task_type_metrics?.exam && (
                                                 <th
                                                     className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
                                                     onClick={() => handleSort('exam')}
@@ -584,19 +589,19 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                             const member = studentIdToMember.get(studentId);
 
                                             // Calculate completion percentages for each task type
-                                            const learningMaterialCompletion = courseMetrics.task_type_metrics.learning_material
-                                                ? (courseMetrics.task_type_metrics.learning_material.completions[studentId] || 0) /
-                                                courseMetrics.task_type_metrics.learning_material.count
+                                            const learningMaterialCompletion = courseMetrics.task_type_metrics?.learning_material
+                                                ? (courseMetrics.task_type_metrics?.learning_material?.completions[studentId] || 0) /
+                                                courseMetrics.task_type_metrics?.learning_material?.count
                                                 : null;
 
-                                            const quizCompletion = courseMetrics.task_type_metrics.quiz
-                                                ? (courseMetrics.task_type_metrics.quiz.completions[studentId] || 0) /
-                                                courseMetrics.task_type_metrics.quiz.count
+                                            const quizCompletion = courseMetrics.task_type_metrics?.quiz
+                                                ? (courseMetrics.task_type_metrics?.quiz?.completions[studentId] || 0) /
+                                                courseMetrics.task_type_metrics?.quiz?.count
                                                 : null;
 
-                                            const examCompletion = courseMetrics.task_type_metrics.exam
-                                                ? (courseMetrics.task_type_metrics.exam.completions[studentId] || 0) /
-                                                courseMetrics.task_type_metrics.exam.count
+                                            const examCompletion = courseMetrics.task_type_metrics?.exam
+                                                ? (courseMetrics.task_type_metrics?.exam?.completions[studentId] || 0) /
+                                                courseMetrics.task_type_metrics?.exam?.count
                                                 : null;
 
                                             // Helper function to get text color class based on completion percentage
@@ -612,21 +617,21 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                     <td className="p-4">
                                                         {member ? member.email : `Learner ${studentId}`}
                                                     </td>
-                                                    {courseMetrics.task_type_metrics.learning_material && (
+                                                    {courseMetrics.task_type_metrics?.learning_material && (
                                                         <td className={`p-4 ${getColorClass(learningMaterialCompletion)}`}>
                                                             {learningMaterialCompletion !== null
                                                                 ? `${Math.round(learningMaterialCompletion * 100)}%`
                                                                 : '-'}
                                                         </td>
                                                     )}
-                                                    {courseMetrics.task_type_metrics.quiz && (
+                                                    {courseMetrics.task_type_metrics?.quiz && (
                                                         <td className={`p-4 ${getColorClass(quizCompletion)}`}>
                                                             {quizCompletion !== null
                                                                 ? `${Math.round(quizCompletion * 100)}%`
                                                                 : '-'}
                                                         </td>
                                                     )}
-                                                    {courseMetrics.task_type_metrics.exam && (
+                                                    {courseMetrics.task_type_metrics?.exam && (
                                                         <td className={`p-4 ${getColorClass(examCompletion)}`}>
                                                             {examCompletion !== null
                                                                 ? `${Math.round(examCompletion * 100)}%`
