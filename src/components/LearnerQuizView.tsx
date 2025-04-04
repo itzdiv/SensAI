@@ -2,7 +2,7 @@
 
 import "@blocknote/core/fonts/inter.css";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical, CheckCircle } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
 import ChatView, { CodeViewState } from './ChatView';
@@ -1734,8 +1734,13 @@ export default function LearnerQuizView({
                                 </button>
                             </div>
 
-                            <div className="bg-[#222222] px-3 py-1 rounded-full text-white text-sm">
-                                Question {currentQuestionIndex + 1} / {validQuestions.length}
+                            <div className="bg-[#222222] px-3 py-1 rounded-full text-white text-sm flex items-center">
+                                <span>Question {currentQuestionIndex + 1} / {validQuestions.length}</span>
+                                {validQuestions[currentQuestionIndex] &&
+                                    completedQuestionIds &&
+                                    completedQuestionIds[validQuestions[currentQuestionIndex].id] && (
+                                        <CheckCircle size={14} className="ml-2 text-green-500 flex-shrink-0" />
+                                    )}
                             </div>
 
                             <div className="w-10 h-10">
