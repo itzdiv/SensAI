@@ -103,14 +103,14 @@ export default function ClientLeaderboardView({
 
     return (
         <div className={`${view === 'admin' ? '' : 'min-h-screen'} bg-black text-white`}>
-            {view === 'learner' && <Header showCreateCourseButton={false} />}
+            {view === 'learner' && <div className="hidden sm:block"><Header showCreateCourseButton={false} /></div>}
 
             <main className={`container mx-auto ${view === 'admin' ? '' : 'px-4 md:py-8'}`}>
                 {/* Back button and page title */}
                 {view === 'learner' && (
                     <>
                         {/* Mobile back button - visible only on small screens */}
-                        <div className="sm:hidden mb-4">
+                        <div className="sm:hidden mb-4 pt-4">
                             <button
                                 onClick={() => router.back()}
                                 className="flex items-center space-x-2 px-3 py-2 bg-gray-800/40 hover:bg-gray-700/60 rounded-full text-sm text-gray-300 transition-colors"

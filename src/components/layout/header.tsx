@@ -274,62 +274,66 @@ export function Header({
 
             {/* Mobile Floating Action Button and Menu */}
             {showCreateCourseButton && (
-                <div className="md:hidden" ref={mobileActionsRef}>
+                <div className="md:hidden">
                     {/* Semi-transparent overlay */}
                     {mobileActionsOpen && (
                         <div
                             className="fixed inset-0 z-10"
                             style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
                             aria-hidden="true"
+                            onClick={() => setMobileActionsOpen(false)}
                         />
                     )}
 
-                    {/* Main FAB button */}
-                    <button
-                        onClick={toggleMobileActions}
-                        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none"
-                        aria-label="Actions menu"
-                    >
-                        {mobileActionsOpen ?
-                            <X className="h-6 w-6" /> :
-                            <Plus className="h-6 w-6" />
-                        }
-                    </button>
+                    {/* Main FAB button and menu contents */}
+                    <div ref={mobileActionsRef}>
+                        {/* Main FAB button */}
+                        <button
+                            onClick={toggleMobileActions}
+                            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none"
+                            aria-label="Actions menu"
+                        >
+                            {mobileActionsOpen ?
+                                <X className="h-6 w-6" /> :
+                                <Plus className="h-6 w-6" />
+                            }
+                        </button>
 
-                    {/* Action buttons that appear when FAB is clicked */}
-                    {mobileActionsOpen && (
-                        <div className="fixed bottom-24 right-6 flex flex-col gap-4 items-end z-20">
-                            {/* Create Course Button */}
-                            <div className="flex items-center gap-3">
-                                <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                    Create a Course
-                                </span>
-                                <button
-                                    onClick={handleCreateCourseButtonClick}
-                                    className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
-                                    aria-label="Create a course"
-                                >
-                                    <Book className="h-6 w-6" />
-                                </button>
-                            </div>
-
-                            {/* Go To School Button - only shown if hasOwnedSchool is true */}
-                            {hasOwnedSchool && (
+                        {/* Action buttons that appear when FAB is clicked */}
+                        {mobileActionsOpen && (
+                            <div className="fixed bottom-24 right-6 flex flex-col gap-4 items-end z-20">
+                                {/* Create Course Button */}
                                 <div className="flex items-center gap-3">
                                     <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                        Go To School
+                                        Create a Course
                                     </span>
                                     <button
-                                        onClick={handleGoToSchoolClick}
+                                        onClick={handleCreateCourseButtonClick}
                                         className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
-                                        aria-label="Go to school"
+                                        aria-label="Create a course"
                                     >
-                                        <School className="h-6 w-6" />
+                                        <Book className="h-6 w-6" />
                                     </button>
                                 </div>
-                            )}
-                        </div>
-                    )}
+
+                                {/* Go To School Button - only shown if hasOwnedSchool is true */}
+                                {hasOwnedSchool && (
+                                    <div className="flex items-center gap-3">
+                                        <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                            Go To School
+                                        </span>
+                                        <button
+                                            onClick={handleGoToSchoolClick}
+                                            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                            aria-label="Go to school"
+                                        >
+                                            <School className="h-6 w-6" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
