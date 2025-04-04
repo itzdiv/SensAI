@@ -1561,11 +1561,6 @@ export default function LearnerQuizView({
         }
     }, [mobileViewMode, codeViewState.isViewingCode]); // Also reapply when code view toggle changes
 
-    // Handler for mobile view mode changes from ChatView component
-    const handleMobileViewChange = useCallback((mode: 'question-full' | 'chat-full' | 'split') => {
-        setMobileViewMode(mode);
-    }, []);
-
     return (
         <div className={`w-full h-full ${className}`}>
             {/* Add the custom styles */}

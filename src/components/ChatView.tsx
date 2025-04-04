@@ -44,7 +44,6 @@ interface ChatViewProps {
     handleRetry?: () => void;
     onCodeStateChange?: (state: CodeViewState) => void;
     initialIsViewingCode?: boolean;
-    onMobileViewChange?: (event: MobileViewChangeEvent) => void;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({
@@ -69,7 +68,6 @@ const ChatView: React.FC<ChatViewProps> = ({
     handleRetry,
     onCodeStateChange,
     initialIsViewingCode = false,
-    onMobileViewChange
 }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -194,13 +192,6 @@ const ChatView: React.FC<ChatViewProps> = ({
             }
         }
     }, [isViewingCode, isRunning, previewContent, output, hasWebLanguages, isCodingQuestion, onCodeStateChange, executionTime]);
-
-    // Toggle between chat and code views
-    const toggleCodeView = () => {
-        setIsViewingCode(prev => !prev);
-        // No need to call onMobileViewChange here
-        // This ensures the mobile view mode stays the same when toggling between code and chat
-    };
 
     // Handle code run
     const handleCodeRun = (newPreviewContent: string, newOutput: string, newExecutionTime?: string, newIsRunning?: boolean) => {
