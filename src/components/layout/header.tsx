@@ -330,10 +330,10 @@ export function Header({
                                 </span>
                                 <button
                                     onClick={handleCreateCourseButtonClick}
-                                    className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                    className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
                                     aria-label="Create a course"
                                 >
-                                    <Book className="h-5 w-5" />
+                                    <Book className="h-6 w-6" />
                                 </button>
                             </div>
 
