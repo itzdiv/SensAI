@@ -1472,6 +1472,51 @@ export default function LearnerQuizView({
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [mobileViewMode, setMobileViewMode] = useState<'question-full' | 'chat-full' | 'split'>('split');
     const mobileMenuRef = useRef<HTMLDivElement>(null);
+    // Track if we should show the pulse animation
+    const [showButtonPulse, setShowButtonPulse] = useState(false);
+    // Track if button has completed entrance animation
+    const [showButtonEntrance, setShowButtonEntrance] = useState(true);
+
+    // Helper function to safely access localStorage
+    const safeLocalStorage = {
+        getItem: (key: string): string | null => {
+            try {
+                return localStorage.getItem(key);
+            } catch (error) {
+                console.warn('Error accessing localStorage:', error);
+                return null;
+            }
+        },
+        setItem: (key: string, value: string): void => {
+            try {
+                localStorage.setItem(key, value);
+            } catch (error) {
+                console.warn('Error writing to localStorage:', error);
+            }
+        }
+    };
+
+    // Effect to start pulsing animation after entrance animation completes
+    useEffect(() => {
+        // Check if user has clicked the FAB before
+        const hasClickedFAB = safeLocalStorage.getItem('hasClickedViewModeButton') === 'true';
+
+        if (hasClickedFAB) {
+            // If user has clicked before, don't show animations
+            setShowButtonPulse(false);
+        } else {
+            // For new users, start with entrance animation
+            setShowButtonEntrance(true);
+
+            // Wait for entrance animation to complete before starting the pulse
+            const entranceTimer = setTimeout(() => {
+                setShowButtonEntrance(false);
+                setShowButtonPulse(true);
+            }, 800); // Match the duration of the entrance animation
+
+            return () => clearTimeout(entranceTimer);
+        }
+    }, []);
 
     // Handle clicks outside the mobile menu to close it
     useEffect(() => {
@@ -1490,6 +1535,13 @@ export default function LearnerQuizView({
     // Toggle mobile menu
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen(prev => !prev);
+        // If the menu is being opened, stop the animation
+        if (!isMobileMenuOpen) {
+            setShowButtonPulse(false);
+
+            // Save to localStorage that user has clicked the button
+            safeLocalStorage.setItem('hasClickedViewModeButton', 'true');
+        }
     };
 
     // Direct handler for changing view mode
@@ -1679,6 +1731,70 @@ export default function LearnerQuizView({
                     margin-right: 8px;
                 }
 
+                /* Pulse animation for the floating action button */
+                @keyframes pulse-ring {
+                    0% {
+                        box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
+                    }
+                    70% {
+                        box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
+                    }
+                    100% {
+                        box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
+                    }
+                }
+
+                /* Animation for the inner pulse */
+                @keyframes pulse-dot {
+                    0% {
+                        transform: scale(0.95);
+                    }
+                    70% {
+                        transform: scale(1.05);
+                    }
+                    100% {
+                        transform: scale(0.95);
+                    }
+                }
+                
+                /* Entrance animation for the button */
+                @keyframes button-entrance {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.5) translateY(20px);
+                    }
+                    60% {
+                        transform: scale(1.1) translateY(-5px);
+                    }
+                    80% {
+                        transform: scale(0.95) translateY(2px);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: scale(1) translateY(0);
+                    }
+                }
+                
+                .button-entrance {
+                    animation: button-entrance 0.8s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+                }
+
+                .button-pulse {
+                    animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+                }
+
+                .button-pulse:after {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    border-radius: 50%;
+                    box-shadow: 0 0 8px 4px rgba(147, 51, 234, 0.5);
+                    animation: pulse-dot 1.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+                }
+
                 @media (max-width: 1024px) {
                     .mobile-view-button {
                         display: flex;
@@ -1852,7 +1968,7 @@ export default function LearnerQuizView({
             {/* Mobile view floating button */}
             <button
                 onClick={toggleMobileMenu}
-                className="fixed right-6 w-14 h-14 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none mobile-view-button"
+                className={`fixed right-6 w-14 h-14 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none mobile-view-button ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
                 style={{ bottom: '160px' }}
                 aria-label="View options"
             >
