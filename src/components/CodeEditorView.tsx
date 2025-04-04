@@ -476,7 +476,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         if (normalizedLanguages.length > 0) {
             setActiveLanguage(normalizedLanguages[0]);
         }
-    }, [normalizedLanguages]);
+    }, [languages]);
 
     // Mobile preview state
     const [showMobilePreview, setShowMobilePreview] = useState<boolean>(false);
