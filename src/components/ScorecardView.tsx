@@ -38,7 +38,7 @@ const ScorecardView: React.FC<ScorecardViewProps> = ({
                                     <h2 className="text-xl font-light text-white mb-2">Your Response</h2>
                                     <audio
                                         controls
-                                        className="w-3/4 mt-2"
+                                        className="w-full sm:w-3/4 mt-2"
                                         src={`data:audio/wav;base64,${lastUserMessage.audioData}`}
                                     />
                                 </div>
