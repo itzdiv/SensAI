@@ -704,14 +704,14 @@ export default function CourseModuleList({
                         {/* Module content - only visible when expanded */}
                         {getIsExpanded(module.id) && (
                             <div className="px-4 pb-4">
-                                <div className="pl-6 border-l border-gray-400 ml-2 space-y-2">
+                                <div className="pl-2 sm:pl-6 border-l border-gray-400 ml-2 space-y-2">
                                     {module.items.map((item, itemIndex) => (
                                         <div
                                             key={item.id}
                                             className={`flex items-center group p-2 rounded-md cursor-pointer transition-all relative mt-2 hover:bg-gray-700/50 ${completedItems[item.id] ? "opacity-60" : ""}`}
                                             onClick={() => onOpenItem && onOpenItem(module.id, item.id)}
                                         >
-                                            <div className={`flex items-center mr-2 ${completedItems[item.id]
+                                            <div className={`flex items-center mr-4 sm:mr-2 ${completedItems[item.id]
                                                 ? "text-gray-400"
                                                 : (item.type === 'quiz' || item.type === 'exam') &&
                                                     completedQuestionIds[item.id] &&
@@ -724,7 +724,7 @@ export default function CourseModuleList({
                                                         <Clipboard size={16} />}
                                             </div>
                                             <div className="flex-1">
-                                                <div className={`text-base font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none ${completedItems[item.id]
+                                                <div className={`text-base font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none mr-2 ${completedItems[item.id]
                                                     ? "line-through"
                                                     : (item.type === 'quiz' || item.type === 'exam') &&
                                                         completedQuestionIds[item.id] &&
@@ -736,7 +736,7 @@ export default function CourseModuleList({
 
                                                     {/* Always display question count for quizzes/exams (except drafts) */}
                                                     {(item.type === 'quiz' || item.type === 'exam') && item.status !== 'draft' && (
-                                                        <span className={`ml-2 text-sm font-normal ${!completedItems[item.id] &&
+                                                        <span className={`inline-block ml-2 text-sm font-normal ${!completedItems[item.id] &&
                                                             completedQuestionIds[item.id] &&
                                                             Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
                                                             ? "text-yellow-500"
