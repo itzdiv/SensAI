@@ -1211,13 +1211,11 @@ export default function LearnerCourseView({
                                         )}
 
                                         {activeItem?.type === 'material' && (
-                                            <div className="pt-6">
-                                                <DynamicLearningMaterialEditor
-                                                    taskId={activeItem.id}
-                                                    readOnly={true}
-                                                    isDarkMode={true}
-                                                />
-                                            </div>
+                                            <DynamicLearningMaterialEditor
+                                                taskId={activeItem.id}
+                                                readOnly={true}
+                                                isDarkMode={true}
+                                            />
                                         )}
                                         {(activeItem?.type === 'quiz' || activeItem?.type === 'exam') && (
                                             <>

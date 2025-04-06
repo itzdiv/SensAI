@@ -581,3 +581,23 @@ div[role="dialog"]>div {
 /* .editor-container:focus-within {
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 } */
+
+/* Media query for small screens - adjust padding for BlockNote editor */
+@media screen and (max-width: 374px) {
+    .bn-editor {
+        padding-inline-end: 32px !important;
+        padding-inline-start: 32px !important;
+        padding-left: 32px !important;
+        padding-right: 32px !important;
+    }
+}
+
+/* Default padding for larger screens */
+@media screen and (min-width: 375px) {
+    .bn-editor {
+        padding-inline-end: 40px !important;
+        padding-inline-start: 40px !important;
+        padding-left: 40px !important;
+        padding-right: 40px !important;
+    }
+}
