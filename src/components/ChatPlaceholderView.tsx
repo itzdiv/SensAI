@@ -6,14 +6,17 @@ interface ChatPlaceholderViewProps {
     isTestMode: boolean;
     inputType?: string;
     viewOnly?: boolean;
+    questionType: string;
 }
 
 const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
     taskType,
     isChatHistoryLoaded,
     isTestMode,
+    questionType,
     inputType = 'text',
-    viewOnly = false
+    viewOnly = false,
+
 }) => {
     return (
         <div className="flex flex-col items-center justify-center h-full w-full">
@@ -37,8 +40,12 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                         {viewOnly
                             ? `There is no chat history for this ${taskType === 'exam' ? 'exam' : 'quiz'}`
                             : taskType === 'exam'
-                                ? `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`
-                                : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`
+                                ? (questionType === 'coding'
+                                    ? `Think through your answer, then write your code in the code editor. You can attempt the question only once. Be careful and confident.`
+                                    : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`)
+                                : (questionType === 'coding'
+                                    ? `Think through your answer, then write your code in the code editor. You can also type your response below if you want to ask or say something that is not code. You will receive instant feedback and support throughout your journey`
+                                    : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`)
                         }
                     </p>
                 </>

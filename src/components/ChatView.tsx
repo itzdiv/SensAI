@@ -333,6 +333,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                             isTestMode={isTestMode}
                             inputType={currentQuestionConfig?.inputType}
                             viewOnly={viewOnly}
+                            questionType={currentQuestionConfig?.questionType}
                         />
                     ) : (
                         <div className="flex-1 overflow-y-auto messages-container">
