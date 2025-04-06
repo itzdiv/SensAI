@@ -100,11 +100,16 @@ const ChatView: React.FC<ChatViewProps> = ({
     useEffect(() => {
         // Don't set viewing code in viewOnly mode
         if (isCodingQuestion && !viewOnly) {
-            setIsViewingCode(true);
+            // For completed exam questions, always show chat view to see the confirmation
+            if (taskType === 'exam' && isQuestionCompleted) {
+                setIsViewingCode(false);
+            } else {
+                setIsViewingCode(true);
+            }
         } else {
             setIsViewingCode(false);
         }
-    }, [currentQuestionConfig, isCodingQuestion, viewOnly]);
+    }, [currentQuestionConfig, isCodingQuestion, viewOnly, taskType, isQuestionCompleted]);
 
     // Extract code from chat history for coding questions
     useEffect(() => {
@@ -563,26 +568,28 @@ const ChatView: React.FC<ChatViewProps> = ({
             `}</style>
 
             {/* Toggle button for coding questions */}
-            {!viewOnly && isCodingQuestion && (
-                <div className="flex justify-end mb-4">
-                    <div className="code-toggle-switch">
-                        <div
-                            className={`code-toggle-option ${!isViewingCode ? 'active' : ''}`}
-                            onClick={() => setIsViewingCode(false)}
-                        >
-                            <MessageCircle size={16} className="mr-1" />
-                            <span>Chat</span>
-                        </div>
-                        <div
-                            className={`code-toggle-option ${isViewingCode ? 'active' : ''}`}
-                            onClick={() => setIsViewingCode(true)}
-                        >
-                            <Code size={16} className="mr-1" />
-                            <span>Code</span>
+            {!viewOnly && isCodingQuestion &&
+                // Hide toggle for exam questions that are completed
+                !(taskType === 'exam' && isQuestionCompleted) && (
+                    <div className="flex justify-end mb-4">
+                        <div className="code-toggle-switch">
+                            <div
+                                className={`code-toggle-option ${!isViewingCode ? 'active' : ''}`}
+                                onClick={() => setIsViewingCode(false)}
+                            >
+                                <MessageCircle size={16} className="mr-1" />
+                                <span>Chat</span>
+                            </div>
+                            <div
+                                className={`code-toggle-option ${isViewingCode ? 'active' : ''}`}
+                                onClick={() => setIsViewingCode(true)}
+                            >
+                                <Code size={16} className="mr-1" />
+                                <span>Code</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
             {/* Main content area with code editor or chat view */}
             {renderMainContent()}
