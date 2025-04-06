@@ -63,8 +63,13 @@ export const extractTextFromBlocks = (blocks: any[]): string => {
             return block.content ? block.content.map((item: any) =>
                 typeof item === 'string' ? item : (item.text || "")
             ).join("") : "";
-        } else if (block.type === "bulletListItem" || block.type === "numberedListItem") {
+        } else if (block.type === "bulletListItem" || block.type === "numberedListItem" || block.type === "checkListItem") {
             // For list items, extract text content
+            return block.content ? block.content.map((item: any) =>
+                typeof item === 'string' ? item : (item.text || "")
+            ).join("") : "";
+        } else if (block.type === "codeBlock") {
+            // For code blocks, extract text content from content array
             return block.content ? block.content.map((item: any) =>
                 typeof item === 'string' ? item : (item.text || "")
             ).join("") : "";
