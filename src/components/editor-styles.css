@@ -591,13 +591,3 @@ div[role="dialog"]>div {
         padding-right: 32px !important;
     }
 }
-
-/* Default padding for larger screens */
-@media screen and (min-width: 375px) {
-    .bn-editor {
-        padding-inline-end: 40px !important;
-        padding-inline-start: 40px !important;
-        padding-left: 40px !important;
-        padding-right: 40px !important;
-    }
-}
