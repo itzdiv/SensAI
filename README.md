@@ -31,5 +31,38 @@ To learn more about making a contribution to SensAI, please see our [Contributin
 
 The app will be available at `http://localhost:3000`.
 
+## Testing
+
+SensAI uses Jest and React Testing Library for testing. The test suite includes unit tests and component tests to ensure code quality and prevent regressions.
+
+### Running Tests
+
+- Run all tests:
+  ```
+  npm test
+  ```
+
+- Run tests in watch mode (ideal for development):
+  ```
+  npm run test:watch
+  ```
+
+- Generate code coverage report:
+  ```
+  npm run test:coverage
+  ```
+
+The coverage report will be available in the `coverage` directory. Open `coverage/lcov-report/index.html` in your browser to view a detailed report.
+
+### Writing Tests
+
+Tests are located in the `src/__tests__` directory, following a structure that mirrors the source code. Component tests are in `src/__tests__/components`.
+
+When writing tests:
+- Use descriptive test names that explain what's being tested
+- Test both success and failure cases
+- Mock external dependencies when needed
+- Aim for high coverage but prioritize meaningful tests over 100% coverage
+
 ## Community
 We are building a community of creators, builders, teachers, learners, parents, entrepreneurs, non-profits and volunteers who are excited about the future of AI and education. If you identify as one and want to be part of it, consider [joining our community](https://chat.whatsapp.com/LmiulDbWpcXIgqNK6fZyxe).
