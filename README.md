@@ -2,6 +2,9 @@
 
 SensAI is an AI-first Learning Management System (LMS) which enables educators to help them teacher smarter and reach further. SensAI coaches your students through questions that develop deeper thinking—just like you would, but for every student and all the time. This repository is the frontend for SensAI. The backend repository can be found [here](https://gitlab.com/hvacademy/sensai-ai).
 
+[![pipeline status](https://gitlab.com/hvacademy/sensai-frontend/badges/main/pipeline.svg)](https://gitlab.com/hvacademy/sensai-frontend/-/commits/main)
+[![coverage report](https://codecov.io/gl/hvacademy/sensai-frontend/branch/main/graph/badge.svg)](https://codecov.io/gl/hvacademy/sensai-frontend)
+
 If you are using SensAI and have any feedback for us or want any help with using SensAI, please consider [joining our community](https://chat.whatsapp.com/LmiulDbWpcXIgqNK6fZyxe) of AI + Education builders and reaching out to us.
 
 If you want to contribute to SensAI, please look at the `Contributing` section [here](https://gitlab.com/hvacademy/sensai-ai/-/blob/main/docs/CONTRIBUTING.md).
@@ -33,7 +36,7 @@ The app will be available at `http://localhost:3000`.
 
 ## Testing
 
-SensAI uses Jest and React Testing Library for testing. The test suite includes unit tests and component tests to ensure code quality and prevent regressions.
+SensAI uses Jest and React Testing Library for testing. The test suite includes unit tests and component tests to ensure code quality and prevent regressions. Codecov is used to track the coverage of the tests.
 
 ### Running Tests
 
@@ -41,28 +44,6 @@ SensAI uses Jest and React Testing Library for testing. The test suite includes 
   ```
   npm test
   ```
-
-- Run tests in watch mode (ideal for development):
-  ```
-  npm run test:watch
-  ```
-
-- Generate code coverage report:
-  ```
-  npm run test:coverage
-  ```
-
-The coverage report will be available in the `coverage` directory. Open `coverage/lcov-report/index.html` in your browser to view a detailed report.
-
-### Writing Tests
-
-Tests are located in the `src/__tests__` directory, following a structure that mirrors the source code. Component tests are in `src/__tests__/components`.
-
-When writing tests:
-- Use descriptive test names that explain what's being tested
-- Test both success and failure cases
-- Mock external dependencies when needed
-- Aim for high coverage but prioritize meaningful tests over 100% coverage
 
 ## Community
 We are building a community of creators, builders, teachers, learners, parents, entrepreneurs, non-profits and volunteers who are excited about the future of AI and education. If you identify as one and want to be part of it, consider [joining our community](https://chat.whatsapp.com/LmiulDbWpcXIgqNK6fZyxe).

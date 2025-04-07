@@ -10,7 +10,7 @@ module.exports = {
     '!**/.next/**',
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['json', 'lcov', 'text', 'clover', 'html'],
+  coverageReporters: ['json', 'lcov', 'text', 'clover', 'html', 'cobertura'],
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testPathIgnorePatterns: [

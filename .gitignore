@@ -44,6 +44,11 @@ next-env.d.ts
 # Jest
 /coverage
 /.jest/
-jest-results.json
+
+# Keep jest results file for CI but don't track changes
+/jest-results.json
 
 test/
+
+# codecov
+/codecov

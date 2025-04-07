@@ -1,0 +1,37 @@
+image: node:20-alpine
+
+# Define stages for the pipeline
+stages:
+  - test
+
+# Cache dependencies to speed up builds
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+# Job for running tests and uploading coverage
+test:
+  stage: test
+  before_script:
+    - apk add --no-cache curl bash git
+    - npm ci
+  script:
+    - npm run test:ci
+    - curl -Os https://uploader.codecov.io/latest/linux/codecov
+    - chmod +x codecov
+    - ./codecov -t ${CODECOV_TOKEN} -f coverage/lcov.info
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    paths:
+      - coverage/
+      - jest-results.json
+    expire_in: 1 week
+  # Run on main branch or when merge request is created/updated to main
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+    - if: $CI_COMMIT_BRANCH == "main" 
