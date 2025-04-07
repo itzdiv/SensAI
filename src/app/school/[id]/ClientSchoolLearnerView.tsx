@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/header";
-import { Building, ChevronDown, ChevronLeft } from "lucide-react";
+import { Building, ChevronDown, ChevronLeft, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CohortCard from "@/components/CohortCard";
 import { useAuth } from "@/lib/auth";
 import LearnerCohortView from "@/components/LearnerCohortView";
 import { Module, ModuleItem } from "@/types/course";
-import { getCompletionData } from "@/lib/api";
+import { getCompletionData, useSchools } from "@/lib/api";
 import { Cohort, Task, Milestone } from "@/types";
 import { transformCourseToModules } from "@/lib/course";
 import MobileDropdown, { DropdownOption } from "@/components/MobileDropdown";
@@ -28,6 +28,7 @@ interface Course {
 export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     const router = useRouter();
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { schools } = useSchools();
     const [school, setSchool] = useState<School | null>(null);
     const [cohorts, setCohorts] = useState<Cohort[]>([]);
     const [activeCohort, setActiveCohort] = useState<Cohort | null>(null);
@@ -38,6 +39,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     const [courseError, setCourseError] = useState<string | null>(null);
     const [courseModules, setCourseModules] = useState<Module[]>([]);
     const [showCohortSelector, setShowCohortSelector] = useState<boolean>(false);
+    const [isAdminOrOwner, setIsAdminOrOwner] = useState<boolean>(false);
 
     // Add state for completion data
     const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, boolean>>({});
@@ -69,12 +71,31 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
 
                 setSchool(transformedSchool);
 
-                // After getting school data, fetch user's cohorts for this school
-                const cohortsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${user.id}/org/${transformedSchool.id}/cohorts`);
-                if (!cohortsResponse.ok) {
-                    throw new Error(`API error: ${cohortsResponse.status}`);
+                // Check if user is admin or owner of this school
+                const isOwnerOrAdmin = schools?.some(s =>
+                    parseInt(s.id) === transformedSchool.id &&
+                    (s.role === 'owner' || s.role === 'admin')
+                );
+
+                setIsAdminOrOwner(Boolean(isOwnerOrAdmin));
+
+                let cohortsData: any[];
+
+                // If user is owner or admin, fetch all cohorts for the school
+                if (isOwnerOrAdmin) {
+                    const allCohortsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=${transformedSchool.id}`);
+                    if (!allCohortsResponse.ok) {
+                        throw new Error(`API error: ${allCohortsResponse.status}`);
+                    }
+                    cohortsData = await allCohortsResponse.json();
+                } else {
+                    // Otherwise, fetch only the cohorts the user is a member of
+                    const userCohortsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${user.id}/org/${transformedSchool.id}/cohorts`);
+                    if (!userCohortsResponse.ok) {
+                        throw new Error(`API error: ${userCohortsResponse.status}`);
+                    }
+                    cohortsData = await userCohortsResponse.json();
                 }
-                const cohortsData = await cohortsResponse.json();
 
                 console.log("cohortsData", cohortsData);
 
@@ -102,7 +123,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         };
 
         fetchSchool();
-    }, [slug, router, user?.id, isAuthenticated, authLoading]);
+    }, [slug, router, user?.id, isAuthenticated, authLoading, schools]);
 
     // Function to fetch cohort courses
     const fetchCohortCourses = async (cohortId: number) => {
@@ -244,6 +265,15 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
 
     return (
         <>
+            {/* Admin/Owner Banner */}
+            {isAdminOrOwner && (
+                <div className="bg-[#111111] border-b border-gray-800 text-white py-3 px-4 text-center shadow-sm">
+                    <p className="font-light text-sm">
+                        You are viewing all the cohorts in this school because you are an admin. Learners only see the cohorts they are enrolled in.
+                    </p>
+                </div>
+            )}
+
             <div className="hidden sm:block">
                 <Header
                     showCreateCourseButton={false}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "@/components/layout/header";
-import { Edit, Save, Users, BookOpen, Layers, Building, ChevronDown, Trash2 } from "lucide-react";
+import { Edit, Save, Users, BookOpen, Layers, Building, ChevronDown, Trash2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CourseCard from "@/components/CourseCard";
@@ -432,7 +432,18 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                 {isEditingName ? <Save size={16} /> : <Edit size={16} />}
                                             </button> */}
                                         </div>
-                                        <p className="text-gray-400">{school.url}</p>
+                                        <div className="flex items-center mt-1">
+                                            <p className="text-gray-400">{school.url}</p>
+                                            <a
+                                                href={school.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="ml-2 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                                aria-label="Open school URL"
+                                            >
+                                                <ExternalLink size={14} />
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
