@@ -66,7 +66,7 @@ function LoginContent() {
                         </h1>
 
                         <p className="text-lg md:text-xl text-gray-300 mt-6 mb-6 max-w-md">
-                            SensAI coaches every learner through questions that develop deeper thinking just like you would so that you can grow your impact without sacrificing quality
+                            SensAI is an AI-powered LMS that coaches every learner by asking questions without giving away the answer and grades their responses like your favourite teaching assistant so that you can maximize your reach without sacrificing quality
                         </p>
                     </div>
 

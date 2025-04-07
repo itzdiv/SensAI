@@ -320,6 +320,65 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         }
     };
 
+    const handleCohortDelete = async (cohortId: number) => {
+        try {
+            // Refresh school data to get updated cohorts list
+            const cohortsResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=${id}`);
+            if (!cohortsResponse.ok) {
+                throw new Error('Failed to fetch updated cohorts');
+            }
+            const cohortsData = await cohortsResponse.json();
+
+            // Update school state with new cohorts
+            setSchool(prev => prev ? {
+                ...prev,
+                cohorts: cohortsData
+            } : null);
+
+            // Show toast notification for successful deletion
+            setToastMessage({
+                title: 'Cohort removed',
+                description: `Cohort has been removed from your school`,
+                emoji: '✓'
+            });
+            setShowToast(true);
+        } catch (error) {
+            console.error('Error refreshing cohorts list:', error);
+            // Here you would typically show an error message to the user
+        }
+    };
+
+    const handleCourseDelete = async (courseId: string | number) => {
+        try {
+            // Refresh school data to get updated courses list
+            const coursesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/?org_id=${id}`);
+            if (!coursesResponse.ok) {
+                throw new Error('Failed to fetch updated courses');
+            }
+            const coursesData = await coursesResponse.json();
+
+            // Update school state with new courses
+            setSchool(prev => prev ? {
+                ...prev,
+                courses: coursesData.map((course: any) => ({
+                    id: course.id,
+                    name: course.name,
+                }))
+            } : null);
+
+            // Show toast notification for successful deletion
+            setToastMessage({
+                title: 'Course removed',
+                description: `Course has been removed from your school`,
+                emoji: '✓'
+            });
+            setShowToast(true);
+        } catch (error) {
+            console.error('Error refreshing courses list:', error);
+            // Here you would typically show an error message to the user
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-black text-white">
@@ -433,7 +492,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                     <CourseCard key={course.id} course={{
                                                         id: course.id,
                                                         title: course.name,
-                                                    }} />
+                                                    }} onDelete={handleCourseDelete} />
                                                 ))}
                                             </div>
                                         </>
@@ -474,6 +533,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                         key={cohort.id}
                                                         cohort={cohort}
                                                         schoolId={school.id}
+                                                        onDelete={handleCohortDelete}
                                                     />
                                                 ))}
                                             </div>
