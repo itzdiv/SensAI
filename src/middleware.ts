@@ -39,9 +39,17 @@ export async function middleware(request: NextRequest) {
   if (!token) {
     // Create login URL with the correct base URL
     const loginUrl = new URL('/login', process.env.NEXT_PUBLIC_APP_URL);
-    // Set the callback URL to the original path the user was trying to access
-    const callbackUrl = new URL(pathname, process.env.NEXT_PUBLIC_APP_URL).toString();
-    loginUrl.searchParams.set('callbackUrl', encodeURI(callbackUrl));
+    
+    // Create callback URL with both pathname and search params from the original request
+    const callbackUrl = new URL(request.nextUrl.pathname, process.env.NEXT_PUBLIC_APP_URL);
+    
+    // Copy all search params from the original request to the callback URL
+    request.nextUrl.searchParams.forEach((value, key) => {
+      callbackUrl.searchParams.set(key, value);
+    });
+    
+    // Set the complete callback URL (with search params) as a parameter in the login URL
+    loginUrl.searchParams.set('callbackUrl', encodeURI(callbackUrl.toString()));
     
     return NextResponse.redirect(loginUrl);
   }
