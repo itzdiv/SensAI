@@ -16,8 +16,6 @@ module.exports = {
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/.next/',
-    '<rootDir>/test/dev/',
-    '<rootDir>/test/prod/',
   ],
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': ['ts-jest', {
