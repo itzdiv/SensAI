@@ -256,7 +256,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                 <div className="container mx-auto">
                     <main>
                         {cohorts.length === 0 && (
-                            <div className="mt-24 px-4">
+                            <div className="pt-24 px-4">
                                 <div className="flex flex-col items-center justify-center py-12 rounded-lg">
                                     <h3 className="text-xl font-light mb-2">No cohorts available</h3>
                                     <p className="text-gray-400">You are not enrolled in any cohorts for this school</p>
