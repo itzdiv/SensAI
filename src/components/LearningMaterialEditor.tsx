@@ -6,6 +6,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react";
 import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
+import { MessageCircle, X, CheckCircle, HelpCircle } from "lucide-react";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -14,6 +15,7 @@ import "./editor-styles.css";
 import BlockNoteEditor from "./BlockNoteEditor";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { TaskData } from "@/types";
+import { safeLocalStorage } from "@/lib/utils/localStorage";
 
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
@@ -27,12 +29,15 @@ interface LearningMaterialEditorProps {
     isDarkMode?: boolean;
     className?: string;
     readOnly?: boolean;
+    isLearnerView?: boolean;
     showPublishConfirmation?: boolean;
     onPublishConfirm?: () => void;
     onPublishCancel?: () => void;
     taskId?: string;
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
+    onAskDoubt?: () => void;
+    onMarkComplete?: () => void;
 }
 
 // Uploads a file and returns the URL to the uploaded file
@@ -64,12 +69,15 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     isDarkMode = true, // Default to dark mode
     className = "",
     readOnly = false,
+    isLearnerView = false,
     showPublishConfirmation = false,
     onPublishConfirm,
     onPublishCancel,
     taskId,
     onPublishSuccess,
     onSaveSuccess,
+    onAskDoubt,
+    onMarkComplete,
 }, ref) => {
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -87,6 +95,17 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
     // Add a ref to store the original data for reverting on cancel
     const originalDataRef = useRef<TaskData | null>(null);
+
+    // Add state for button animation
+    const [showButtonEntrance, setShowButtonEntrance] = useState(true);
+    const [showButtonPulse, setShowButtonPulse] = useState(false);
+
+    // Check if user has clicked the button before
+    const [hasClickedFabButton, setHasClickedFabButton] = useState(false);
+
+    // Add state for mobile menu
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
 
     // Function to set the editor reference
     const setEditorInstance = (editor: any) => {
@@ -674,6 +693,65 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     }));
 
+    // Check localStorage on component mount
+    useEffect(() => {
+        const hasClicked = safeLocalStorage.getItem('hasClickedFabButton') === 'true';
+        setHasClickedFabButton(hasClicked);
+    }, []);
+
+    // Add effect to manage button animation
+    useEffect(() => {
+        if (isLearnerView) {
+            // Start entrance animation
+            setShowButtonEntrance(true);
+
+            // After entrance animation completes, only start pulse if user hasn't clicked before
+            const timer = setTimeout(() => {
+                setShowButtonEntrance(false);
+                // Only show pulse animation if user hasn't clicked the button before
+                if (!hasClickedFabButton) {
+                    setShowButtonPulse(true);
+                }
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isLearnerView, hasClickedFabButton]);
+
+    // Function to toggle mobile menu
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(prev => !prev);
+
+        // If opening the menu, stop pulse animation and save to localStorage
+        if (!isMobileMenuOpen) {
+            setShowButtonPulse(false);
+
+            // If this is the first time clicking, save to localStorage
+            if (!hasClickedFabButton) {
+                setHasClickedFabButton(true);
+                safeLocalStorage.setItem('hasClickedFabButton', 'true');
+            }
+        }
+    };
+
+    // Add effect to handle clicks outside the mobile menu
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (
+                mobileMenuRef.current &&
+                !mobileMenuRef.current.contains(event.target as Node) &&
+                !(event.target as HTMLElement).closest('.mobile-action-toggle-button')
+            ) {
+                setIsMobileMenuOpen(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center">
@@ -700,6 +778,202 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 className="dark-editor"
                 onEditorReady={setEditorInstance}
             />
+
+            {/* Floating button for desktop and mobile with different layouts */}
+            {isLearnerView && (
+                <>
+                    {/* Floating action button - behavior changes based on screen size */}
+                    <button
+                        onClick={() => {
+                            // For desktop view OR mobile view with no onMarkComplete, directly trigger onAskDoubt
+                            if (window.innerWidth > 768 || !onMarkComplete) {
+                                if (onAskDoubt) {
+                                    // For desktop view direct click
+                                    if (!hasClickedFabButton) {
+                                        setHasClickedFabButton(true);
+                                        safeLocalStorage.setItem('hasClickedFabButton', 'true');
+                                    }
+                                    onAskDoubt();
+                                }
+                            } else {
+                                // Only toggle menu in mobile view when onMarkComplete exists
+                                toggleMobileMenu();
+                            }
+                        }}
+                        className={`fixed right-6 bottom-6 mobile-action-toggle-button mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
+                        aria-label={isMobileMenuOpen ? "Close menu" : "Ask a doubt"}
+                    >
+                        {isMobileMenuOpen ? (
+                            <X className="h-6 w-6" />
+                        ) : (
+                            <>
+                                {/* 
+                                  In mobile view:
+                                  - Show MessageCircle directly if onMarkComplete is not defined
+                                  - Show HelpCircle as toggle icon if onMarkComplete exists
+                                */}
+                                <span className="md:hidden">
+                                    {!onMarkComplete ? (
+                                        <MessageCircle className="h-6 w-6" />
+                                    ) : (
+                                        <HelpCircle className="h-6 w-6" strokeWidth={2.5} fill="rgba(147, 51, 234, 0.1)" />
+                                    )}
+                                </span>
+                                <span className="hidden md:flex md:items-center">
+                                    <MessageCircle className="h-5 w-5 mobile-icon" />
+                                    <span className="md:ml-2">Ask a doubt</span>
+                                </span>
+                            </>
+                        )}
+                    </button>
+
+                    {/* Only show mobile menu overlay and options when onMarkComplete exists */}
+                    {isMobileMenuOpen && onMarkComplete && (
+                        <div
+                            className="fixed inset-0 z-10"
+                            style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                            aria-hidden="true"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        />
+                    )}
+
+                    {/* Mobile menu - only shown on smaller screens and when onMarkComplete exists */}
+                    {isMobileMenuOpen && onMarkComplete && (
+                        <div className="md:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '100px' }} ref={mobileMenuRef}>
+                            {/* Ask a doubt button */}
+                            <div className="flex items-center gap-3">
+                                <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                    Ask a doubt
+                                </span>
+                                <button
+                                    onClick={() => {
+                                        setIsMobileMenuOpen(false);
+                                        if (onAskDoubt) onAskDoubt();
+                                    }}
+                                    className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                                    aria-label="Ask a doubt"
+                                >
+                                    <MessageCircle className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            {/* Mark as complete button */}
+                            <div className="flex items-center gap-3">
+                                <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                    Mark as complete
+                                </span>
+                                <button
+                                    onClick={() => {
+                                        setIsMobileMenuOpen(false);
+                                        onMarkComplete();
+                                    }}
+                                    className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                                    aria-label="Mark as complete"
+                                >
+                                    <CheckCircle className="h-6 w-6" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* Add button animations and responsive styles CSS */}
+            <style jsx>{`
+                /* Pulse animation for the floating action button */
+                @keyframes pulse-ring {
+                    0% {
+                        box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
+                    }
+                    70% {
+                        box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
+                    }
+                    100% {
+                        box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
+                    }
+                }
+
+                /* Animation for the inner pulse */
+                @keyframes pulse-dot {
+                    0% {
+                        transform: scale(0.95);
+                    }
+                    70% {
+                        transform: scale(1.05);
+                    }
+                    100% {
+                        transform: scale(0.95);
+                    }
+                }
+                
+                /* Entrance animation for the button */
+                @keyframes button-entrance {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.5) translateY(20px);
+                    }
+                    60% {
+                        transform: scale(1.1) translateY(-5px);
+                    }
+                    80% {
+                        transform: scale(0.95) translateY(2px);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: scale(1) translateY(0);
+                    }
+                }
+                
+                .button-entrance {
+                    animation: button-entrance 0.8s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+                }
+
+                .button-pulse {
+                    animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+                }
+
+                .button-pulse:after {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    border-radius: 50%;
+                    box-shadow: 0 0 8px 4px rgba(147, 51, 234, 0.5);
+                    animation: pulse-dot 1.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+                }
+                
+                /* Responsive styles for the action button */
+                .mobile-action-button {
+                    /* Default mobile styles */
+                    width: 3.5rem;
+                    height: 3.5rem;
+                    border-radius: 50%;
+                    bottom: 1.5rem; /* Keep bottom-6 (1.5rem) for mobile */
+                }
+
+                /* Center the icon in mobile view */
+                .mobile-icon {
+                    margin-right: 0;
+                }
+                
+                @media (min-width: 769px) {
+                    .mobile-action-button {
+                        /* Desktop styles */
+                        padding: 0 1.5rem;
+                        width: auto;
+                        height: 3rem;
+                        border-radius: 1.5rem;
+                        bottom: 6rem; /* Move button higher (from bottom-6 to bottom-12) in desktop view */
+                    }
+                    
+                    /* In desktop view, add margin to the icon */
+                    .mobile-icon {
+                        margin-right: 0.5rem;
+                    }
+                }
+            `}</style>
 
             {/* Publish Confirmation Dialog */}
             <ConfirmationDialog

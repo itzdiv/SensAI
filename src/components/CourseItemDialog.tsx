@@ -699,6 +699,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 onPublishCancel={onPublishCancel}
                                 taskId={activeItem.id}
                                 isDarkMode={true}
+                                isLearnerView={false}
                                 onPublishSuccess={(updatedData?: TaskData) => {
                                     // Handle publish success
                                     if (updatedData) {

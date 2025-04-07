@@ -11,6 +11,7 @@ import ConfirmationDialog from './ConfirmationDialog';
 import { getKnowledgeBaseContent, extractTextFromBlocks } from './QuizEditor';
 import { CodePreview } from './CodeEditorView';
 import isEqual from 'lodash/isEqual';
+import { safeLocalStorage } from "@/lib/utils/localStorage";
 
 // Add interface for mobile view mode
 export interface MobileViewMode {
@@ -1476,25 +1477,6 @@ export default function LearnerQuizView({
     const [showButtonPulse, setShowButtonPulse] = useState(false);
     // Track if button has completed entrance animation
     const [showButtonEntrance, setShowButtonEntrance] = useState(true);
-
-    // Helper function to safely access localStorage
-    const safeLocalStorage = {
-        getItem: (key: string): string | null => {
-            try {
-                return localStorage.getItem(key);
-            } catch (error) {
-                console.warn('Error accessing localStorage:', error);
-                return null;
-            }
-        },
-        setItem: (key: string, value: string): void => {
-            try {
-                localStorage.setItem(key, value);
-            } catch (error) {
-                console.warn('Error writing to localStorage:', error);
-            }
-        }
-    };
 
     // Effect to start pulsing animation after entrance animation completes
     useEffect(() => {

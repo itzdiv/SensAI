@@ -992,7 +992,10 @@ export default function LearnerCourseView({
                                 {/* Close button for mobile sidebar */}
                                 <button
                                     onClick={toggleSidebar}
-                                    className="lg:hidden text-gray-400 hover:text-white"
+                                    className={`lg:hidden mr-3 flex-shrink-0 mt-1 ${completedTasks[activeItem?.id]
+                                        ? "text-white"
+                                        : "text-gray-400 hover:text-white"
+                                        }`}
                                     aria-label="Close sidebar"
                                 >
                                     <ChevronLeft size={20} />
@@ -1101,25 +1104,27 @@ export default function LearnerCourseView({
                         <div className="flex-1 h-full flex flex-col bg-[#1A1A1A]">
                             {/* Dialog Header */}
                             <div
-                                className="flex items-start justify-between p-4 border-b border-gray-800"
-                                style={{ backgroundColor: '#111111' }}
+                                className={`flex items-start justify-between p-4 border-b border-gray-800 ${
+                                    // Add background color for completed tasks on mobile
+                                    (completedTasks[activeItem?.id])
+                                        ? "lg:bg-[#111111] bg-green-700"
+                                        : "bg-[#111111]"
+                                    }`}
                             >
                                 <div className="flex items-start">
                                     {/* Hamburger menu for mobile */}
                                     <button
                                         onClick={toggleSidebar}
-                                        className="lg:hidden text-gray-400 hover:text-white mr-3 flex-shrink-0 mt-1"
+                                        className={`lg:hidden mr-3 flex-shrink-0 mt-1 ${completedTasks[activeItem?.id]
+                                            ? "text-white"
+                                            : "text-gray-400 hover:text-white"
+                                            }`}
                                         aria-label="Toggle sidebar"
                                     >
                                         <Menu size={20} />
                                     </button>
                                     <div className="flex flex-col min-w-0 pr-2">
                                         <div className="flex items-center mb-1">
-                                            {/* Completed icon displays next to title - only on mobile */}
-                                            {((activeItem?.type === 'material' && completedTasks[activeItem?.id]) ||
-                                                (activeItem?.type === 'exam' || activeItem?.type === 'quiz') && completedTasks[activeItem?.id]) && (
-                                                    <CheckCircle size={18} className="text-green-500 mr-2 flex-shrink-0 lg:hidden" />
-                                                )}
                                             <h2
                                                 ref={dialogTitleRef}
                                                 contentEditable={false}
@@ -1133,19 +1138,8 @@ export default function LearnerCourseView({
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 flex-shrink-0 ml-2">
-                                    {/* Show completed status for both quiz and exam questions that have been answered */}
-                                    {((activeItem?.type === 'exam' || activeItem?.type === 'quiz') &&
-                                        completedTasks[activeItem.id]) && (
-                                            <button
-                                                className="hidden lg:flex items-center px-4 py-2 text-sm text-white bg-green-700 rounded-full transition-colors cursor-default"
-                                                disabled
-                                            >
-                                                <CheckCircle size={16} className="mr-2" />
-                                                Completed
-                                            </button>
-                                        )}
-                                    {/* Show "Completed" button for learning materials on desktop */}
-                                    {activeItem?.type === 'material' && completedTasks[activeItem?.id] && (
+                                    {/* Show completed status for learning material/quiz/exam that has been completed */}
+                                    {completedTasks[activeItem.id] && (
                                         <button
                                             className="hidden lg:flex items-center px-4 py-2 text-sm text-white bg-green-700 rounded-full transition-colors cursor-default"
                                             disabled
@@ -1154,7 +1148,8 @@ export default function LearnerCourseView({
                                             Completed
                                         </button>
                                     )}
-                                    {/* Restore the original Mark Complete button for desktop */}
+
+                                    {/* Mark Complete button for desktop */}
                                     {activeItem?.type === 'material' && !completedTasks[activeItem?.id] && !viewOnly && (
                                         <button
                                             onClick={markTaskComplete}
@@ -1176,7 +1171,10 @@ export default function LearnerCourseView({
                                     )}
                                     <button
                                         onClick={closeDialog}
-                                        className="text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer p-1 lg:hidden"
+                                        className={`transition-colors focus:outline-none cursor-pointer p-1 lg:hidden ${completedTasks[activeItem?.id]
+                                            ? "text-white"
+                                            : "text-gray-400 hover:text-white"
+                                            }`}
                                     >
                                         <X size={20} />
                                     </button>
@@ -1194,27 +1192,15 @@ export default function LearnerCourseView({
                                     </div>
                                 ) : (
                                     <>
-                                        {/* Floating Action Button (FAB) for Mark Complete - mobile only */}
-                                        {activeItem?.type === 'material' && !completedTasks[activeItem?.id] && !viewOnly && (
-                                            <button
-                                                onClick={markTaskComplete}
-                                                className={`lg:hidden fixed bottom-20 right-8 z-10 flex items-center justify-center w-14 h-14 text-white bg-green-600 hover:bg-green-700 rounded-full shadow-lg transition-colors ${isMarkingComplete ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
-                                                aria-label="Mark complete"
-                                                disabled={isMarkingComplete}
-                                            >
-                                                {isMarkingComplete ? (
-                                                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                ) : (
-                                                    <CheckCircle size={24} />
-                                                )}
-                                            </button>
-                                        )}
+
 
                                         {activeItem?.type === 'material' && (
                                             <DynamicLearningMaterialEditor
                                                 taskId={activeItem.id}
                                                 readOnly={true}
                                                 isDarkMode={true}
+                                                onMarkComplete={!completedTasks[activeItem?.id] && !viewOnly ? markTaskComplete : undefined}
+                                                isLearnerView={true}
                                             />
                                         )}
                                         {(activeItem?.type === 'quiz' || activeItem?.type === 'exam') && (
