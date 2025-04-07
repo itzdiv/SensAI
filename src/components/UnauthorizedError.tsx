@@ -10,7 +10,7 @@ export default function UnauthorizedError() {
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-4">
             <div className="flex flex-col items-center justify-center max-w-md text-center">
-                <div className="flex items-center justify-center w-16 h-16 bg-purple-600/20 rounded-full mb-6">
+                <div data-testid="error-icon" className="flex items-center justify-center w-16 h-16 bg-purple-600/20 rounded-full mb-6">
                     <EyeOff size={32} className="text-purple-400" />
                 </div>
                 <h1 className="text-3xl font-light mb-4">Peeking where you should not</h1>
