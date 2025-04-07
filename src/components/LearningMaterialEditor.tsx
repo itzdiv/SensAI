@@ -33,7 +33,6 @@ interface LearningMaterialEditorProps {
     taskId?: string;
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
-    isEditMode?: boolean;
 }
 
 // Uploads a file and returns the URL to the uploaded file
@@ -71,7 +70,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     taskId,
     onPublishSuccess,
     onSaveSuccess,
-    isEditMode = false,
 }, ref) => {
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -114,12 +112,16 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
         // If content height is more than half of the visible container height,
         // add extra space equal to half of the viewport height
-        if (contentHeight > containerVisibleHeight / 2) {
-            const newHeight = contentHeight + (viewportHeight / 2);
-            setContainerHeight(`${newHeight}px`);
+        if (!readOnly) {
+            if (contentHeight > containerVisibleHeight / 2) {
+                const newHeight = contentHeight + (viewportHeight / 2);
+                setContainerHeight(`${newHeight}px`);
+            } else {
+                // Ensure minimum height is at least the viewport height
+                setContainerHeight(`${Math.max(viewportHeight, contentHeight + (viewportHeight / 2))}px`);
+            }
         } else {
-            // Ensure minimum height is at least the viewport height
-            setContainerHeight(`${Math.max(viewportHeight, contentHeight + (viewportHeight / 2))}px`);
+            setContainerHeight(`${Math.max(viewportHeight, contentHeight)}px`);
         }
     }, []);
 
