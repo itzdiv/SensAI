@@ -1197,6 +1197,7 @@ export default function LearnerCourseView({
                                         {activeItem?.type === 'material' && (
                                             <DynamicLearningMaterialEditor
                                                 taskId={activeItem.id}
+                                                userId={userId}
                                                 readOnly={true}
                                                 isDarkMode={true}
                                                 onMarkComplete={!completedTasks[activeItem?.id] && !viewOnly ? markTaskComplete : undefined}

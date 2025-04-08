@@ -109,6 +109,7 @@ export interface ChatMessage {
     messageType?: 'text' | 'audio' | 'code';
     audioData?: string; // base64 encoded audio data
     scorecard?: ScorecardItem[]; // Add scorecard field for detailed feedback
+    isError?: boolean;
 }   
 
 

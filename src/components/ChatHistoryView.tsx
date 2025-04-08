@@ -1,5 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, ScorecardItem } from '../types/quiz';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 
 // Code message display component
 const CodeMessageDisplay = ({ code, language }: { code: string, language?: string }) => {
@@ -245,8 +248,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     // Helper to check if a message is an error message
     const isErrorMessage = (message: ChatMessage) => {
         return message.sender === 'ai' &&
-            (message.content.includes('There was an error processing your answer') ||
-                message.content.includes('There was an error processing your audio'));
+            (message.isError);
     };
 
     return (
@@ -290,7 +292,19 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                     />
                                 ) : (
                                     <div>
-                                        <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">{message.content}</pre>
+                                        {message.sender === 'ai' ? (
+                                            <div className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans ">
+                                                <ReactMarkdown
+                                                    rehypePlugins={[rehypeRaw]}
+                                                    remarkPlugins={[remarkGfm]}
+                                                    skipHtml={false}
+                                                >
+                                                    {message.content}
+                                                </ReactMarkdown>
+                                            </div>
+                                        ) : (
+                                            <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">{message.content}</pre>
+                                        )}
                                         {shouldShowViewReport(message) && (
                                             <div className="my-3">
                                                 <button
@@ -372,6 +386,14 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     -webkit-text-fill-color: transparent;
                     animation: highlightText 2s linear infinite;
                     transition: opacity 0.2s ease-in-out;
+                }
+
+                /* Remove padding from unordered lists in AI messages */
+                .text-sm.break-words.whitespace-pre-wrap.break-anywhere.font-sans ul {
+                    padding-top: 0;
+                    padding-bottom: 0;
+                    margin-top: 0;
+                    margin-bottom: 0;
                 }
             `}</style>
         </>

@@ -39,6 +39,7 @@ interface LearningMaterialEditorProps {
     onPublishConfirm?: () => void;
     onPublishCancel?: () => void;
     taskId?: string;
+    userId?: string;
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
     onAskDoubt?: () => void;
@@ -80,6 +81,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     onPublishConfirm,
     onPublishCancel,
     taskId,
+    userId = '',
     onPublishSuccess,
     onSaveSuccess,
     onAskDoubt,
@@ -798,38 +800,189 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         // This is handled by the ChatView component's internal handler
     };
 
+    // Create a handle retry function to resubmit the last user message
+    const handleRetry = () => {
+        // Find the last user message
+        const lastUserMessage = [...chatHistory].reverse().find(msg => msg.sender === 'user');
+        if (lastUserMessage) {
+            // Remove both the error message and the last user message
+            setChatHistory(prev => {
+                // Start by filtering out error messages
+                const withoutErrors = prev.filter(msg => !msg.isError);
+
+                // Then remove the last user message 
+                // (comparing by ID to ensure we only remove the exact last message)
+                return withoutErrors.filter(msg => msg.id !== lastUserMessage.id);
+            });
+
+            // Call handleChatSubmit with the message content directly
+            handleChatSubmit(
+                lastUserMessage.messageType === 'code' ? 'code' : 'text',
+                lastUserMessage.content
+            );
+        }
+    };
+
     // Handle chat submit
-    const handleChatSubmit = (responseType: 'text' | 'code' = 'text') => {
-        if (!currentAnswer.trim()) return;
+    const handleChatSubmit = async (responseType: 'text' | 'code' = 'text', messageOverride?: string) => {
+        // Use messageOverride if provided (for retry), otherwise use currentAnswer
+        const messageContent = messageOverride || currentAnswer;
+
+        if (!messageContent.trim() || !taskId) return;
 
         // Add user message to chat history
         const newMessage: ChatMessage = {
             id: Date.now().toString(),
-            content: currentAnswer,
+            content: messageContent,
             sender: 'user',
             timestamp: new Date(),
             messageType: responseType
         };
 
         setChatHistory(prev => [...prev, newMessage]);
-        setCurrentAnswer('');
 
-        // Simulate AI response
+        // Only clear currentAnswer if we're not using an override
+        if (!messageOverride) {
+            setCurrentAnswer('');
+        }
+
+        // Set AI responding state
         setIsAiResponding(true);
+        setIsSubmitting(true);
 
-        // For demo purposes, add a simulated AI response after a delay
-        setTimeout(() => {
-            const aiResponse: ChatMessage = {
-                id: Date.now().toString(),
-                content: "I'm your AI teaching assistant. How can I help you with this learning material?",
+        try {
+            // Prepare the request body
+            const responseContent = messageContent.trim();
+            const requestBody = {
+                user_response: responseContent,
+                response_type: 'text',
+                task_id: parseInt(taskId),
+                user_id: parseInt(userId),
+                task_type: 'learning_material'
+            };
+
+            let receivedAnyResponse = false;
+
+            // Make the API call
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+
+            // Get the response body as a readable stream
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('ReadableStream not supported');
+            }
+
+            // Create a unique ID for the AI message
+            const aiMessageId = Date.now().toString();
+
+            // Add initial empty AI message to chat history
+            const aiMessage: ChatMessage = {
+                id: aiMessageId,
+                content: '',
                 sender: 'ai',
                 timestamp: new Date(),
                 messageType: 'text'
+            }
+
+            // Process the stream
+            let accumulatedContent = '';
+            const processStream = async () => {
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+
+                        if (done) {
+                            break;
+                        }
+
+                        // Decode the value to text
+                        const text = new TextDecoder().decode(value);
+
+                        // Split the text into chunks (assuming each chunk is a JSON object)
+                        const chunks = text.split('\n').filter(chunk => chunk.trim() !== '');
+
+                        for (const chunk of chunks) {
+                            try {
+                                const data = JSON.parse(chunk);
+
+                                // Process the response field if it exists
+                                if (data.response) {
+                                    // Replace content instead of accumulating it
+                                    accumulatedContent = data.response;
+
+                                    if (!receivedAnyResponse) {
+                                        receivedAnyResponse = true;
+
+                                        // Stop showing the animation
+                                        setIsAiResponding(false);
+
+                                        setChatHistory(prev => [...prev, {
+                                            ...aiMessage,
+                                            content: accumulatedContent
+                                        }]);
+
+                                    } else {
+
+                                        // Update the AI message with the latest content
+                                        setChatHistory(prev =>
+                                            prev.map(msg =>
+                                                msg.id === aiMessageId
+                                                    ? { ...msg, content: accumulatedContent }
+                                                    : msg
+                                            )
+
+                                        );
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('Error parsing JSON chunk:', e);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error reading stream:', error);
+                } finally {
+                    // If we never received any feedback, also reset the AI responding state
+                    if (!receivedAnyResponse) {
+                        setIsAiResponding(false);
+                    }
+
+                    setIsSubmitting(false);
+                }
             };
 
-            setChatHistory(prev => [...prev, aiResponse]);
+            // Start processing the stream
+            await processStream();
+
+        } catch (error) {
+            console.error('Error in chat submission:', error);
+
+            // Add error message to chat history
+            const errorMessage: ChatMessage = {
+                id: Date.now().toString(),
+                content: 'There was an error while processing your response. Please try again.',
+                sender: 'ai',
+                timestamp: new Date(),
+                messageType: 'text',
+                isError: true
+            };
+
+            setChatHistory(prev => [...prev, errorMessage]);
+
+            // Reset states
             setIsAiResponding(false);
-        }, 1500);
+            setIsSubmitting(false);
+        }
     };
 
     // Function to handle audio submission (placeholder)
@@ -1127,6 +1280,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             handleViewScorecard={handleViewScorecard}
                             readOnly={false}
                             completedQuestionIds={{}}
+                            handleRetry={handleRetry}
                         />
                     </div>
                 </div>

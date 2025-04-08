@@ -782,7 +782,8 @@ export default function LearnerQuizView({
                         "scorecard": scorecard,
                         "coding_languages": validQuestions[currentQuestionIndex].config.codingLanguages,
                         "context": getKnowledgeBaseContent(validQuestions[currentQuestionIndex].config as QuizQuestionConfig)
-                    }
+                    },
+                    task_type: taskType
                 };
             } else {
                 // In normal mode, send question_id and user_id
@@ -790,7 +791,8 @@ export default function LearnerQuizView({
                     user_response: responseType === 'audio' ? audioData : responseContent,
                     response_type: responseType,
                     question_id: currentQuestionId,
-                    user_id: userId
+                    user_id: userId,
+                    task_type: taskType
                 };
             }
 
@@ -882,8 +884,6 @@ export default function LearnerQuizView({
                     throw error;
                 }
             }
-
-            console.log(requestBody)
 
             // Call the API with the appropriate request body for streaming response
             fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat`, {
@@ -1125,8 +1125,8 @@ export default function LearnerQuizView({
 
                     // Show error message to the user
                     const errorMessage = responseType === 'audio'
-                        ? "There was an error processing your audio. Please try again."
-                        : "There was an error processing your answer. Please try again.";
+                        ? "There was an error while processing your audio. Please try again."
+                        : "There was an error while processing your answer. Please try again.";
 
                     const errorResponse: ChatMessage = {
                         id: `ai-error-${Date.now()}`,
@@ -1135,7 +1135,8 @@ export default function LearnerQuizView({
                         timestamp: new Date(),
                         messageType: 'text',
                         audioData: undefined,
-                        scorecard: []
+                        scorecard: [],
+                        isError: true
                     };
 
                     // For exam questions, clear the pending status so the user can try again
@@ -1375,33 +1376,31 @@ export default function LearnerQuizView({
         const lastUserMessage = userMessages[userMessages.length - 1];
 
         // If in test mode, first remove the last user message and AI response
-        if (isTestMode) {
-            // Find all AI messages
-            const aiMessages = currentHistory.filter(msg => msg.sender === 'ai');
+        // Find all AI messages
+        const aiMessages = currentHistory.filter(msg => msg.sender === 'ai');
 
-            // If there are AI messages, remove the last user message and last AI message
-            if (aiMessages.length > 0) {
-                setChatHistories(prev => {
-                    const updatedHistory = [...(prev[currentQuestionId] || [])];
-                    // Remove the last two messages (last user message and last AI response)
-                    updatedHistory.splice(updatedHistory.length - 2, 2);
-                    return {
-                        ...prev,
-                        [currentQuestionId]: updatedHistory
-                    };
-                });
-            } else {
-                // If no AI messages (unusual case), just remove the last user message
-                setChatHistories(prev => {
-                    const updatedHistory = [...(prev[currentQuestionId] || [])];
-                    // Remove just the last user message
-                    updatedHistory.pop();
-                    return {
-                        ...prev,
-                        [currentQuestionId]: updatedHistory
-                    };
-                });
-            }
+        // If there are AI messages, remove the last user message and last AI message
+        if (aiMessages.length > 0) {
+            setChatHistories(prev => {
+                const updatedHistory = [...(prev[currentQuestionId] || [])];
+                // Remove the last two messages (last user message and last AI response)
+                updatedHistory.splice(updatedHistory.length - 2, 2);
+                return {
+                    ...prev,
+                    [currentQuestionId]: updatedHistory
+                };
+            });
+        } else {
+            // If no AI messages (unusual case), just remove the last user message
+            setChatHistories(prev => {
+                const updatedHistory = [...(prev[currentQuestionId] || [])];
+                // Remove just the last user message
+                updatedHistory.pop();
+                return {
+                    ...prev,
+                    [currentQuestionId]: updatedHistory
+                };
+            });
         }
 
         // Now process the user response again
