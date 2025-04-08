@@ -226,10 +226,10 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     
     /* Add custom word break for long words */
     .break-anywhere {
-      overflow-wrap: anywhere;
+      overflow-wrap: break-word;
       word-wrap: break-word;
       word-break: break-word;
-      hyphens: auto;
+      hyphens: none;
     }
     `;
 

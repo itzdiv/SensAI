@@ -4,7 +4,7 @@ import ChatPlaceholderView from './ChatPlaceholderView';
 import ChatHistoryView from './ChatHistoryView';
 import AudioInputComponent from './AudioInputComponent';
 import CodeEditorView from './CodeEditorView';
-import { MessageCircle, Code } from 'lucide-react';
+import { MessageCircle, Code, Sparkles } from 'lucide-react';
 import isEqual from 'lodash/isEqual';
 
 // Export interface for code view state to be used by parent components
@@ -311,6 +311,19 @@ const ChatView: React.FC<ChatViewProps> = ({
         }
     };
 
+    // Handle suggestion click
+    const handleSuggestionClick = (suggestion: string) => {
+        // Use the handleInputChange to set the value in the input
+        handleInputChange({
+            target: { value: suggestion }
+        } as React.ChangeEvent<HTMLTextAreaElement>);
+
+        // Focus the textarea after setting the value
+        if (textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    };
+
     // Render the code editor or chat view based on state
     const renderMainContent = () => {
         // If viewing code and not in viewOnly mode, show the code editor
@@ -351,6 +364,36 @@ const ChatView: React.FC<ChatViewProps> = ({
                     {/* Input area with fixed position at bottom */}
                     {!viewOnly && (
                         <div className="pt-2 bg-[#111111] input-container">
+                            {/* Learning Material Suggestions */}
+                            {taskType === 'learning_material' && currentChatHistory.length === 0 && (
+                                <div className="mb-4">
+                                    <div className="text-gray-400 text-sm mb-2 flex items-center">
+                                        <Sparkles size={16} className="mr-2" />
+                                        <span>A few suggestions to get started</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        <button
+                                            className="px-3 py-1.5 bg-[#222222] rounded-full text-sm text-white hover:bg-[#333333] transition-colors cursor-pointer"
+                                            onClick={() => handleSuggestionClick("Explain using an example")}
+                                        >
+                                            Explain using an example
+                                        </button>
+                                        <button
+                                            className="px-3 py-1.5 bg-[#222222] rounded-full text-sm text-white hover:bg-[#333333] transition-colors cursor-pointer"
+                                            onClick={() => handleSuggestionClick("Summarise it with clear takeaways")}
+                                        >
+                                            Summarise it with clear takeaways
+                                        </button>
+                                        <button
+                                            className="px-3 py-1.5 bg-[#222222] rounded-full text-sm text-white hover:bg-[#333333] transition-colors cursor-pointer"
+                                            onClick={() => handleSuggestionClick("Why is this important to understand")}
+                                        >
+                                            Why is this important to understand
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {!(taskType === 'exam' && isQuestionCompleted) && (
                                 /* Input area - conditional render based on input type */
                                 <>
