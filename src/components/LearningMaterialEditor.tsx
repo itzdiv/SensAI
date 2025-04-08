@@ -956,6 +956,26 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         transform: scale(1) translateY(0);
                     }
                 }
+
+                /* Slide up animation for mobile chat */
+                @keyframes slide-up {
+                    0% {
+                        transform: translateY(100%);
+                    }
+                    100% {
+                        transform: translateY(0);
+                    }
+                }
+
+                /* Slide down animation for mobile chat */
+                @keyframes slide-down {
+                    0% {
+                        transform: translateY(0);
+                    }
+                    100% {
+                        transform: translateY(100%);
+                    }
+                }
                 
                 .button-entrance {
                     animation: button-entrance 0.8s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
@@ -1013,30 +1033,51 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         max-height: calc(100% - 80px) !important;
                         overflow: auto !important;
                     }
+
+                    /* Mobile-specific styles for the chat container */
+                    .mobile-chat-container {
+                        position: fixed !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        bottom: 0 !important;
+                        top: 0 !important;
+                        z-index: 50 !important;
+                        background-color: #111111 !important;
+                        animation: slide-up 0.3s ease-out forwards !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        overflow: hidden !important;
+                    }
+
+                    .mobile-chat-container.slide-down {
+                        animation: slide-down 0.3s ease-out forwards !important;
+                    }
                 }
             `}</style>
 
             {showChatView ? (
-                <div className="rounded-md overflow-hidden two-column-grid bg-[#111111] split-view-container">
-                    {/* Left side - Editor */}
-                    <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A] lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container"
-                        style={{ overflow: 'auto' }}
-                        ref={editorContainerRef}
-                    >
-                        <div className={`flex-1`}>
-                            <BlockNoteEditor
-                                initialContent={initialContent}
-                                onChange={handleEditorChange}
-                                isDarkMode={isDarkMode}
-                                readOnly={readOnly}
-                                className="dark-editor"
-                                onEditorReady={setEditorInstance}
-                            />
+                <div className={`two-column-grid bg-[#111111] ${window.innerWidth > 1024 ? 'rounded-md overflow-hidden split-view-container' : ''}`}>
+                    {/* Left side - Editor (only shows in desktop view when chat is open) */}
+                    {window.innerWidth > 1024 && (
+                        <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A] lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container"
+                            style={{ overflow: 'auto' }}
+                            ref={editorContainerRef}
+                        >
+                            <div className={`flex-1`}>
+                                <BlockNoteEditor
+                                    initialContent={initialContent}
+                                    onChange={handleEditorChange}
+                                    isDarkMode={isDarkMode}
+                                    readOnly={readOnly}
+                                    className="dark-editor"
+                                    onEditorReady={setEditorInstance}
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Right side - Chat View (exactly like chat-container in LearnerQuizView) */}
-                    <div className="flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222] chat-container">
+                    {/* Right side - Chat View */}
+                    <div className={`${window.innerWidth <= 1024 ? 'mobile-chat-container' : 'flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222]'} chat-container`}>
                         <div className="chat-header flex justify-between items-center px-4 py-2 border-b border-[#222222]">
                             <h3 className="text-white text-sm font-light">Ask your doubts</h3>
 
