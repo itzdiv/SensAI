@@ -17,6 +17,10 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { TaskData } from "@/types";
 import { safeLocalStorage } from "@/lib/utils/localStorage";
 
+// Add import for ChatView
+import ChatView from "./ChatView";
+import { ChatMessage } from "../types/quiz";
+
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
     save: () => Promise<void>;
@@ -107,6 +111,13 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
 
+    // Add state for chat view
+    const [showChatView, setShowChatView] = useState(false);
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    const [isAiResponding, setIsAiResponding] = useState(false);
+    const [currentAnswer, setCurrentAnswer] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     // Function to set the editor reference
     const setEditorInstance = (editor: any) => {
         editorRef.current = editor;
@@ -142,7 +153,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         } else {
             setContainerHeight(`${Math.max(viewportHeight, contentHeight)}px`);
         }
-    }, []);
+    }, [readOnly]);
 
     // Set up the resize observer to monitor content changes
     useEffect(() => {
@@ -752,6 +763,85 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         };
     }, []);
 
+    // Handle chat input change
+    const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setCurrentAnswer(e.target.value);
+    };
+
+    // Handle chat key press
+    const handleChatKeyPress = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        // This is handled by the ChatView component's internal handler
+    };
+
+    // Handle chat submit
+    const handleChatSubmit = (responseType: 'text' | 'code' = 'text') => {
+        if (!currentAnswer.trim()) return;
+
+        // Add user message to chat history
+        const newMessage: ChatMessage = {
+            id: Date.now().toString(),
+            content: currentAnswer,
+            sender: 'user',
+            timestamp: new Date(),
+            messageType: responseType
+        };
+
+        setChatHistory(prev => [...prev, newMessage]);
+        setCurrentAnswer('');
+
+        // Simulate AI response
+        setIsAiResponding(true);
+
+        // For demo purposes, add a simulated AI response after a delay
+        setTimeout(() => {
+            const aiResponse: ChatMessage = {
+                id: Date.now().toString(),
+                content: "I'm your AI teaching assistant. How can I help you with this learning material?",
+                sender: 'ai',
+                timestamp: new Date(),
+                messageType: 'text'
+            };
+
+            setChatHistory(prev => [...prev, aiResponse]);
+            setIsAiResponding(false);
+        }, 1500);
+    };
+
+    // Function to handle audio submission (placeholder)
+    const handleAudioSubmit = (audioBlob: Blob) => {
+        // Placeholder for audio submission
+        console.log("Audio submission received", audioBlob);
+    };
+
+    // Function to handle viewing scorecard (placeholder)
+    const handleViewScorecard = (scorecard: any[]) => {
+        // Placeholder for viewing scorecard
+        console.log("View scorecard", scorecard);
+    };
+
+    // Update the onAskDoubt handler to toggle the chat view
+    const handleAskDoubt = () => {
+        setShowChatView(prev => !prev);
+
+        // If no messages in chat yet, add initial AI greeting
+        if (chatHistory.length === 0) {
+            const aiGreeting: ChatMessage = {
+                id: Date.now().toString(),
+                content: "Hi there! I'm your AI teaching assistant. How can I help you with this learning material?",
+                sender: 'ai',
+                timestamp: new Date(),
+                messageType: 'text'
+            };
+
+            setChatHistory([aiGreeting]);
+        }
+
+        // Call the original onAskDoubt if provided
+        if (onAskDoubt) {
+            onAskDoubt();
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center">
@@ -761,126 +851,69 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     }
 
     return (
-        <div
-            ref={editorContainerRef}
-            className={`mt-4 dark-editor-container dark-dialog no-bottom-border ${className}`}
-            style={{
-                height: containerHeight,
-                minHeight: '100%',
-                overflowY: 'auto'
-            }}
-        >
-            <BlockNoteEditor
-                initialContent={initialContent}
-                onChange={handleEditorChange}
-                isDarkMode={isDarkMode}
-                readOnly={readOnly}
-                className="dark-editor"
-                onEditorReady={setEditorInstance}
-            />
-
-            {/* Floating button for desktop and mobile with different layouts */}
-            {isLearnerView && (
-                <>
-                    {/* Floating action button - behavior changes based on screen size */}
-                    <button
-                        onClick={() => {
-                            // For desktop view OR mobile view with no onMarkComplete, directly trigger onAskDoubt
-                            if (window.innerWidth > 768 || !onMarkComplete) {
-                                if (onAskDoubt) {
-                                    // For desktop view direct click
-                                    if (!hasClickedFabButton) {
-                                        setHasClickedFabButton(true);
-                                        safeLocalStorage.setItem('hasClickedFabButton', 'true');
-                                    }
-                                    onAskDoubt();
-                                }
-                            } else {
-                                // Only toggle menu in mobile view when onMarkComplete exists
-                                toggleMobileMenu();
-                            }
-                        }}
-                        className={`fixed right-6 bottom-6 mobile-action-toggle-button mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
-                        aria-label={isMobileMenuOpen ? "Close menu" : "Ask a doubt"}
-                    >
-                        {isMobileMenuOpen ? (
-                            <X className="h-6 w-6" />
-                        ) : (
-                            <>
-                                {/* 
-                                  In mobile view:
-                                  - Show MessageCircle directly if onMarkComplete is not defined
-                                  - Show HelpCircle as toggle icon if onMarkComplete exists
-                                */}
-                                <span className="md:hidden">
-                                    {!onMarkComplete ? (
-                                        <MessageCircle className="h-6 w-6" />
-                                    ) : (
-                                        <HelpCircle className="h-6 w-6" strokeWidth={2.5} fill="rgba(147, 51, 234, 0.1)" />
-                                    )}
-                                </span>
-                                <span className="hidden md:flex md:items-center">
-                                    <MessageCircle className="h-5 w-5 mobile-icon" />
-                                    <span className="md:ml-2">Ask a doubt</span>
-                                </span>
-                            </>
-                        )}
-                    </button>
-
-                    {/* Only show mobile menu overlay and options when onMarkComplete exists */}
-                    {isMobileMenuOpen && onMarkComplete && (
-                        <div
-                            className="fixed inset-0 z-10"
-                            style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
-                            aria-hidden="true"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        />
-                    )}
-
-                    {/* Mobile menu - only shown on smaller screens and when onMarkComplete exists */}
-                    {isMobileMenuOpen && onMarkComplete && (
-                        <div className="md:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '100px' }} ref={mobileMenuRef}>
-                            {/* Ask a doubt button */}
-                            <div className="flex items-center gap-3">
-                                <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                    Ask a doubt
-                                </span>
-                                <button
-                                    onClick={() => {
-                                        setIsMobileMenuOpen(false);
-                                        if (onAskDoubt) onAskDoubt();
-                                    }}
-                                    className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
-                                    aria-label="Ask a doubt"
-                                >
-                                    <MessageCircle className="h-6 w-6" />
-                                </button>
-                            </div>
-
-                            {/* Mark as complete button */}
-                            <div className="flex items-center gap-3">
-                                <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                    Mark as complete
-                                </span>
-                                <button
-                                    onClick={() => {
-                                        setIsMobileMenuOpen(false);
-                                        onMarkComplete();
-                                    }}
-                                    className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
-                                    aria-label="Mark as complete"
-                                >
-                                    <CheckCircle className="h-6 w-6" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </>
-            )}
-
-            {/* Add button animations and responsive styles CSS */}
+        <div className={`w-full h-full ${className}`}>
+            {/* Add split view styles EXACTLY copied from LearnerQuizView */}
             <style jsx>{`
-                /* Pulse animation for the floating action button */
+                .two-column-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    height: 100%;
+                    
+                    @media (max-width: 1024px) {
+                        grid-template-columns: 1fr;
+                        grid-template-rows: 50% 50%;
+                        height: 100%;
+                        overflow: hidden;
+                    }
+                }
+                
+                /* Make sure the editor and chat containers properly fit their content */
+                @media (max-width: 1024px) {
+                    .split-view-container {
+                        height: 100% !important;
+                        max-height: 100% !important;
+                        overflow: hidden !important;
+                        display: grid !important;
+                        grid-template-rows: 50% 50% !important;
+                        grid-template-columns: 1fr !important;
+                    }
+                    
+                    .question-container {
+                        height: 100% !important;
+                        max-height: 100% !important;
+                        overflow-y: auto !important;
+                        grid-row: 1 !important;
+                    }
+                    
+                    .chat-container {
+                        height: 100% !important;
+                        max-height: 100% !important;
+                        overflow: hidden !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        grid-row: 2 !important;
+                    }
+                    
+                    /* Ensure the messages area scrolls but input stays fixed */
+                    .chat-container .messages-container {
+                        flex: 1 !important;
+                        overflow-y: auto !important;
+                        min-height: 0 !important;
+                    }
+                    
+                    /* Ensure the input area stays at the bottom and doesn't scroll */
+                    .chat-container .input-container {
+                        flex-shrink: 0 !important;
+                        position: sticky !important;
+                        bottom: 0 !important;
+                        background-color: #111111 !important;
+                        z-index: 10 !important;
+                        padding-top: 0.5rem !important;
+                        border-top: 1px solid #222222 !important;
+                    }
+                }
+
+                /* Mobile view animation styles - EXACTLY copied from LearnerQuizView */
                 @keyframes pulse-ring {
                     0% {
                         box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
@@ -973,7 +1006,185 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         margin-right: 0.5rem;
                     }
                 }
+
+                /* Ensure the editor stays within the question container on mobile */
+                @media (max-width: 1024px) {
+                    .question-container .dark-editor {
+                        max-height: calc(100% - 80px) !important;
+                        overflow: auto !important;
+                    }
+                }
             `}</style>
+
+            {showChatView ? (
+                <div className="rounded-md overflow-hidden two-column-grid bg-[#111111] split-view-container">
+                    {/* Left side - Editor */}
+                    <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A] lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container"
+                        style={{ overflow: 'auto' }}
+                        ref={editorContainerRef}
+                    >
+                        <div className={`flex-1`}>
+                            <BlockNoteEditor
+                                initialContent={initialContent}
+                                onChange={handleEditorChange}
+                                isDarkMode={isDarkMode}
+                                readOnly={readOnly}
+                                className="dark-editor"
+                                onEditorReady={setEditorInstance}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Right side - Chat View (exactly like chat-container in LearnerQuizView) */}
+                    <div className="flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222] chat-container">
+                        <div className="chat-header flex justify-between items-center px-4 py-2 border-b border-[#222222]">
+                            <h3 className="text-white text-sm font-light">Ask your doubts</h3>
+
+                            <button
+                                onClick={handleAskDoubt}
+                                className="text-white hover:bg-[#222222] rounded-full p-1 transition-colors cursor-pointer"
+                                aria-label="Close chat"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <ChatView
+                            currentChatHistory={chatHistory}
+                            isAiResponding={isAiResponding}
+                            showPreparingReport={false}
+                            isChatHistoryLoaded={true}
+                            isTestMode={false}
+                            taskType="quiz"
+                            isSubmitting={isSubmitting}
+                            currentAnswer={currentAnswer}
+                            handleInputChange={handleChatInputChange}
+                            handleKeyPress={handleChatKeyPress}
+                            handleSubmitAnswer={handleChatSubmit}
+                            handleAudioSubmit={handleAudioSubmit}
+                            handleViewScorecard={handleViewScorecard}
+                            readOnly={false}
+                            completedQuestionIds={{}}
+                        />
+                    </div>
+                </div>
+            ) : (
+                <div
+                    className="editor-container mt-4"
+                    ref={editorContainerRef}
+                    style={{
+                        height: containerHeight,
+                        overflowY: 'auto',
+                    }}
+                >
+                    <BlockNoteEditor
+                        initialContent={initialContent}
+                        onChange={handleEditorChange}
+                        isDarkMode={isDarkMode}
+                        readOnly={readOnly}
+                        className="dark-editor"
+                        onEditorReady={setEditorInstance}
+                    />
+                </div>
+            )}
+
+            {/* Floating button for desktop and mobile with different layouts */}
+            {
+                isLearnerView && !showChatView && (
+                    <>
+                        {/* Floating action button - behavior changes based on screen size */}
+                        <button
+                            onClick={() => {
+                                // For desktop view OR mobile view with no onMarkComplete, directly trigger handleAskDoubt
+                                if (window.innerWidth > 768 || !onMarkComplete) {
+                                    // For desktop view direct click
+                                    if (!hasClickedFabButton) {
+                                        setHasClickedFabButton(true);
+                                        safeLocalStorage.setItem('hasClickedFabButton', 'true');
+                                    }
+                                    handleAskDoubt();
+                                } else {
+                                    // Only toggle menu in mobile view when onMarkComplete exists
+                                    toggleMobileMenu();
+                                }
+                            }}
+                            className={`fixed right-6 bottom-6 mobile-action-toggle-button mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
+                            aria-label={isMobileMenuOpen ? "Close menu" : "Ask a doubt"}
+                        >
+                            {isMobileMenuOpen ? (
+                                <X className="h-6 w-6" />
+                            ) : (
+                                <>
+                                    {/* 
+                                  In mobile view:
+                                  - Show MessageCircle directly if onMarkComplete is not defined
+                                  - Show HelpCircle as toggle icon if onMarkComplete exists
+                                */}
+                                    <span className="md:hidden">
+                                        {!onMarkComplete ? (
+                                            <MessageCircle className="h-6 w-6" />
+                                        ) : (
+                                            <HelpCircle className="h-6 w-6" strokeWidth={2.5} fill="rgba(147, 51, 234, 0.1)" />
+                                        )}
+                                    </span>
+                                    <span className="hidden md:flex md:items-center">
+                                        <MessageCircle className="h-5 w-5 mobile-icon" />
+                                        <span className="md:ml-2">Ask a doubt</span>
+                                    </span>
+                                </>
+                            )}
+                        </button>
+
+                        {/* Only show mobile menu overlay and options when onMarkComplete exists */}
+                        {isMobileMenuOpen && onMarkComplete && (
+                            <div
+                                className="fixed inset-0 z-10"
+                                style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+                                aria-hidden="true"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            />
+                        )}
+
+                        {/* Mobile menu - only shown on smaller screens and when onMarkComplete exists */}
+                        {isMobileMenuOpen && onMarkComplete && (
+                            <div className="md:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '100px' }} ref={mobileMenuRef}>
+                                {/* Ask a doubt button */}
+                                <div className="flex items-center gap-3">
+                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                        Ask a doubt
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            setIsMobileMenuOpen(false);
+                                            handleAskDoubt();
+                                        }}
+                                        className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                                        aria-label="Ask a doubt"
+                                    >
+                                        <MessageCircle className="h-6 w-6" />
+                                    </button>
+                                </div>
+
+                                {/* Mark as complete button */}
+                                <div className="flex items-center gap-3">
+                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                        Mark as complete
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            setIsMobileMenuOpen(false);
+                                            onMarkComplete();
+                                        }}
+                                        className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                                        aria-label="Mark as complete"
+                                    >
+                                        <CheckCircle className="h-6 w-6" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )
+            }
 
             {/* Publish Confirmation Dialog */}
             <ConfirmationDialog
