@@ -10,6 +10,7 @@ interface CourseCardProps {
         title: string;
         role?: string;
         org_id?: number;
+        cohort_id?: number;
         org?: {
             slug: string;
         };
@@ -55,9 +56,10 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
 
     // Determine the correct link path
     const getLinkPath = () => {
-        // If this is a learner course (role is not admin), use the school slug path
+        // If this is being viewed by a learner, use the school slug path
         if (course.role && course.role !== 'admin' && course.org?.slug) {
-            return `/school/${course.org.slug}`;
+            // Include course_id and cohort_id as query parameters to help with selection on the school page
+            return `/school/${course.org.slug}?course_id=${course.id}&cohort_id=${course.cohort_id}`;
         }
         // If we have an org_id from the API, use that for the school-specific course path
         else if (course.org_id) {

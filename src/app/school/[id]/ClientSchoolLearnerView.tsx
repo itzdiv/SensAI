@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/header";
 import { Building, ChevronDown, ChevronLeft, Info } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import CohortCard from "@/components/CohortCard";
 import { useAuth } from "@/lib/auth";
 import LearnerCohortView from "@/components/LearnerCohortView";
@@ -27,6 +27,11 @@ interface Course {
 
 export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    // Get course_id and cohort_id from query parameters
+    const defaultCourseId = searchParams.get('course_id');
+    const defaultCohortId = searchParams.get('cohort_id');
+
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
     const { schools } = useSchools();
     const [school, setSchool] = useState<School | null>(null);
@@ -110,9 +115,24 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
 
                 setCohorts(transformedCohorts);
 
-                // Set the active cohort
+                // Set the active cohort based on query parameters if available
                 if (transformedCohorts.length > 0) {
-                    setActiveCohort(transformedCohorts[0]);
+                    if (defaultCohortId) {
+                        // Try to find the cohort that matches the cohort_id from query params
+                        const cohortFromQuery = transformedCohorts.find(
+                            cohort => cohort.id.toString() === defaultCohortId
+                        );
+
+                        if (cohortFromQuery) {
+                            setActiveCohort(cohortFromQuery);
+                        } else {
+                            // If we can't find the cohort, default to the first one
+                            setActiveCohort(transformedCohorts[0]);
+                        }
+                    } else {
+                        // Default behavior - use the first cohort
+                        setActiveCohort(transformedCohorts[0]);
+                    }
                 }
 
                 setLoading(false);
@@ -123,7 +143,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         };
 
         fetchSchool();
-    }, [slug, router, user?.id, isAuthenticated, authLoading, schools]);
+    }, [slug, router, user?.id, isAuthenticated, authLoading, schools, defaultCohortId]);
 
     // Function to fetch cohort courses
     const fetchCohortCourses = async (cohortId: number) => {
@@ -190,17 +210,67 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         }
     }, [activeCohort, user?.id]);
 
+    // Update to handle course selection from query params after courses are loaded
+    useEffect(() => {
+        if (courses.length > 0 && defaultCourseId) {
+            // Find the index of the course that matches the course_id from query params
+            const courseIndex = courses.findIndex(
+                course => course.id.toString() === defaultCourseId
+            );
+
+            if (courseIndex !== -1) {
+                // Set the active course to the one from query params
+                handleCourseSelect(courseIndex);
+            }
+        }
+    }, [courses, defaultCourseId]);
+
     // Handle course tab selection
     const handleCourseSelect = (index: number) => {
+        if (index == activeCourseIndex) {
+            return;
+        }
         setActiveCourseIndex(index);
         const modules = transformCourseToModules(courses[index]);
         setCourseModules(modules);
+
+        // Update URL with course ID
+        if (courses[index]) {
+            const courseId = courses[index].id.toString();
+            const params = new URLSearchParams(window.location.search);
+
+            params.set('course_id', courseId);
+
+            // Replace current URL to avoid adding to browser history stack
+            router.replace(`/school/${slug}?${params.toString()}`, { scroll: false });
+        }
+    };
+
+    // Helper function to update URL query params
+    const updateUrlWithCohortId = (cohortId: number) => {
+        // Create the new URL with updated query parameters
+        const params = new URLSearchParams();
+
+        if (cohortId.toString() == params.get('cohort_id')) {
+            return;
+        }
+
+        // Set cohort id in query params
+        params.set('cohort_id', cohortId.toString());
+
+        // will later set course id defaults in the query param after course cohorts have loaded
+        params.delete('course_id');
+
+        // Replace current URL to avoid adding to browser history stack
+        router.replace(`/school/${slug}?${params.toString()}`, { scroll: false });
     };
 
     // Keep the original handleCohortSelect function for the Header component
     const handleCohortSelect = (cohort: Cohort) => {
         setActiveCohort(cohort);
         setShowCohortSelector(false);
+        // Update URL with cohort ID
+        updateUrlWithCohortId(cohort.id);
     };
 
     // Transform cohorts to dropdown options
@@ -214,6 +284,8 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
     const handleCohortOptionSelect = (option: DropdownOption<Cohort>) => {
         setActiveCohort(option.value);
         setShowCohortSelector(false);
+        // Update URL with cohort ID
+        updateUrlWithCohortId(option.value.id);
     };
 
     // Handle back button click
@@ -354,7 +426,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                                         />
 
                                         {courses.length === 0 ? (
-                                            <div className="mt-12 text-center px-4">
+                                            <div className="pt-12 text-center px-4">
                                                 <h3 className="text-xl font-light mb-2">No courses available</h3>
                                                 <p className="text-gray-400">There are no courses in this cohort yet</p>
                                             </div>

@@ -68,9 +68,8 @@ export function useCourses() {
         const formattedCourses: Course[] = data.map((course: any) => ({
           id: course.id,
           title: course.name,
-          description: course.description,
-          moduleCount: course.moduleCount || 0,
           role: course.role,
+          cohort_id: course.cohort_id,
           org: course.org,
           org_id: course.org?.id,
           coverImage: course.coverImage,
