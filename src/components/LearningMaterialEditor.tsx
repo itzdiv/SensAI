@@ -853,11 +853,19 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         try {
             // Prepare the request body
             const responseContent = messageContent.trim();
+
+            const formattedChatHistory = (chatHistory || []).map(msg => ({
+                role: msg.sender === 'user' ? 'user' : 'assistant',
+                content: msg.content,
+                response_type: msg.messageType,
+            }));
+
+
             const requestBody = {
                 user_response: responseContent,
                 response_type: 'text',
                 task_id: parseInt(taskId),
-                user_id: parseInt(userId),
+                chat_history: formattedChatHistory,
                 task_type: 'learning_material'
             };
 

@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ChatMessage, ScorecardItem } from '../types/quiz';
-import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
+import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 // Code message display component
@@ -293,14 +292,12 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                 ) : (
                                     <div>
                                         {message.sender === 'ai' ? (
-                                            <div className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans ">
-                                                <ReactMarkdown
-                                                    rehypePlugins={[rehypeRaw]}
+                                            <div className="text-sm font-sans break-words break-anywhere markdown-content">
+                                                <Markdown
                                                     remarkPlugins={[remarkGfm]}
-                                                    skipHtml={false}
                                                 >
                                                     {message.content}
-                                                </ReactMarkdown>
+                                                </Markdown>
                                             </div>
                                         ) : (
                                             <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">{message.content}</pre>
@@ -388,16 +385,136 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                     transition: opacity 0.2s ease-in-out;
                 }
 
-                /* Remove padding from unordered lists in AI messages */
-                .text-sm.break-words.whitespace-pre-wrap.break-anywhere.font-sans ul {
-                    padding-top: 0;
-                    padding-bottom: 0;
-                    margin-top: 0;
-                    margin-bottom: 0;
+                /* Markdown content styling */
+                .markdown-content {
+                    /* General spacing */
+                    line-height: 1.6;
+                    
+                    /* Headings */
+                    & h1, & h2, & h3, & h4, & h5, & h6 {
+                        margin-top: 1.5em;
+                        margin-bottom: 0.75em;
+                        line-height: 1.3;
+                        font-weight: 400;
+                    }
+                    
+                    & h1 {
+                        font-size: 1.5rem;
+                    }
+                    
+                    & h2 {
+                        font-size: 1.3rem;
+                    }
+                    
+                    & h3 {
+                        font-size: 1.2rem;
+                    }
+                    
+                    & h4, & h5, & h6 {
+                        font-size: 1.1rem;
+                    }
+                    
+                    /* Paragraphs */
+                    & p {
+                        margin-bottom: 1em;
+                    }
+                    
+                    /* Lists */
+                    & ul, & ol {
+                        margin-top: 0.5em;
+                        margin-bottom: 1em;
+                        padding-left: 1.5em;
+                    }
+                    
+                    & li {
+                        margin-bottom: 0.3em;
+                    }
+                    
+                    & li > ul, & li > ol {
+                        margin-top: 0.3em;
+                        margin-bottom: 0.5em;
+                    }
+                    
+                    /* Blockquotes */
+                    & blockquote {
+                        border-left: 3px solid #444;
+                        padding-left: 1em;
+                        margin-left: 0;
+                        margin-right: 0;
+                        margin-top: 1em;
+                        margin-bottom: 1em;
+                        color: #bbb;
+                    }
+                    
+                    /* Code blocks */
+                    & pre {
+                        margin-top: 0.8em;
+                        margin-bottom: 1em;
+                        padding: 0.8em;
+                        background-color: #282828;
+                        border-radius: 4px;
+                        overflow-x: auto;
+                    }
+                    
+                    & code {
+                        background-color: rgba(40, 40, 40, 0.6);
+                        border-radius: 3px;
+                        padding: 0.2em 0.4em;
+                        font-size: 0.9em;
+                    }
+                    
+                    & pre > code {
+                        background-color: transparent;
+                        padding: 0;
+                        border-radius: 0;
+                    }
+                    
+                    /* Tables */
+                    & table {
+                        margin-top: 1em;
+                        margin-bottom: 1em;
+                        border-collapse: collapse;
+                        width: 100%;
+                    }
+                    
+                    & th, & td {
+                        border: 1px solid #444;
+                        padding: 0.5em 0.8em;
+                        text-align: left;
+                    }
+                    
+                    & th {
+                        background-color: #2d2d2d;
+                    }
+                    
+                    /* Horizontal rule */
+                    & hr {
+                        margin-top: 1.5em;
+                        margin-bottom: 1.5em;
+                        border: 0;
+                        border-top: 1px solid #444;
+                    }
+                    
+                    /* Images */
+                    & img {
+                        max-width: 100%;
+                        margin-top: 0.8em;
+                        margin-bottom: 0.8em;
+                    }
+                    
+                    /* Links */
+                    & a {
+                        color: #5e9eff;
+                        text-decoration: none;
+                    }
+                    
+                    & a:hover {
+                        text-decoration: underline;
+                    }
                 }
             `}</style>
         </>
     );
 };
 
-export default ChatHistoryView; 
+export default ChatHistoryView;
