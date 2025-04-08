@@ -120,6 +120,11 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [currentAnswer, setCurrentAnswer] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Add state to track viewport size
+    const [isMobileView, setIsMobileView] = useState(false);
+    // Add state for chat exit animation
+    const [isChatClosing, setIsChatClosing] = useState(false);
+
     // Function to set the editor reference
     const setEditorInstance = (editor: any) => {
         editorRef.current = editor;
@@ -765,6 +770,24 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         };
     }, []);
 
+    // Add effect to handle viewport size changes
+    useEffect(() => {
+        const checkMobileView = () => {
+            setIsMobileView(window.innerWidth <= 1024);
+        };
+
+        // Initial check
+        checkMobileView();
+
+        // Set up event listener for window resize
+        window.addEventListener('resize', checkMobileView);
+
+        // Clean up event listener
+        return () => {
+            window.removeEventListener('resize', checkMobileView);
+        };
+    }, []);
+
     // Handle chat input change
     const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setCurrentAnswer(e.target.value);
@@ -823,7 +846,17 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
     // Update the onAskDoubt handler to toggle the chat view
     const handleAskDoubt = () => {
-        setShowChatView(prev => !prev);
+        if (showChatView && isMobileView) {
+            // For mobile view, start closing animation first
+            setIsChatClosing(true);
+            // Wait for animation to complete before hiding chat
+            setTimeout(() => {
+                setShowChatView(false);
+                setIsChatClosing(false);
+            }, 300); // Match this with animation duration
+        } else {
+            setShowChatView(prev => !prev);
+        }
 
         // Call the original onAskDoubt if provided
         if (onAskDoubt) {
@@ -1045,9 +1078,9 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             `}</style>
 
             {showChatView ? (
-                <div className={`two-column-grid bg-[#111111] ${window.innerWidth > 1024 ? 'rounded-md overflow-hidden split-view-container' : ''}`}>
+                <div className={`two-column-grid bg-[#111111] ${!isMobileView ? 'rounded-md overflow-hidden split-view-container' : ''}`}>
                     {/* Left side - Editor (only shows in desktop view when chat is open) */}
-                    {window.innerWidth > 1024 && (
+                    {!isMobileView && (
                         <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A] lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container"
                             style={{ overflow: 'auto' }}
                             ref={editorContainerRef}
@@ -1066,7 +1099,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     )}
 
                     {/* Right side - Chat View */}
-                    <div className={`${window.innerWidth <= 1024 ? 'mobile-chat-container' : 'flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222]'} chat-container`}>
+                    <div className={`${isMobileView ? `mobile-chat-container ${isChatClosing ? 'slide-down' : ''}` : 'flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222]'} chat-container`}>
                         <div className="chat-header flex justify-between items-center px-4 py-2 border-b border-[#222222]">
                             <h3 className="text-white text-sm font-light">Ask your doubts</h3>
 
@@ -1125,7 +1158,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         <button
                             onClick={() => {
                                 // For desktop view OR mobile view with no onMarkComplete, directly trigger handleAskDoubt
-                                if (window.innerWidth > 768 || !onMarkComplete) {
+                                if (!isMobileView || !onMarkComplete) {
                                     // For desktop view direct click
                                     if (!hasClickedFabButton) {
                                         setHasClickedFabButton(true);
@@ -1149,16 +1182,16 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                                   - Show MessageCircle directly if onMarkComplete is not defined
                                   - Show HelpCircle as toggle icon if onMarkComplete exists
                                 */}
-                                    <span className="md:hidden">
+                                    <span className="lg:hidden">
                                         {!onMarkComplete ? (
                                             <MessageCircle className="h-6 w-6" />
                                         ) : (
                                             <HelpCircle className="h-6 w-6" strokeWidth={2.5} fill="rgba(147, 51, 234, 0.1)" />
                                         )}
                                     </span>
-                                    <span className="hidden md:flex md:items-center">
+                                    <span className="hidden lg:flex lg:items-center">
                                         <MessageCircle className="h-5 w-5 mobile-icon" />
-                                        <span className="md:ml-2">Ask a doubt</span>
+                                        <span className="lg:ml-2">Ask a doubt</span>
                                     </span>
                                 </>
                             )}
@@ -1176,7 +1209,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
                         {/* Mobile menu - only shown on smaller screens and when onMarkComplete exists */}
                         {isMobileMenuOpen && onMarkComplete && (
-                            <div className="md:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '100px' }} ref={mobileMenuRef}>
+                            <div className="lg:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '100px' }} ref={mobileMenuRef}>
                                 {/* Ask a doubt button */}
                                 <div className="flex items-center gap-3">
                                     <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
