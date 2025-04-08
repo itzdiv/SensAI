@@ -1201,6 +1201,7 @@ export default function LearnerCourseView({
                                                 isDarkMode={true}
                                                 onMarkComplete={!completedTasks[activeItem?.id] && !viewOnly ? markTaskComplete : undefined}
                                                 isLearnerView={true}
+                                                viewOnly={viewOnly}
                                             />
                                         )}
                                         {(activeItem?.type === 'quiz' || activeItem?.type === 'exam') && (

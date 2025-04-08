@@ -76,7 +76,7 @@ export default async function AdminLearnerViewPage({
                     </p>
                 </div>
 
-                <div className="px-8 py-12 flex-1 flex flex-col h-[calc(100vh-48px)]">
+                <div className="px-8 py-12 flex-1 flex flex-col h-full">
                     <div className="max-w-5xl mx-auto w-full flex flex-col flex-1">
                         <Suspense fallback={<div>Loading...</div>}>
                             {modules.length > 0 ? (

@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ChatPlaceholderViewProps {
-    taskType: 'quiz' | 'exam';
+    taskType: 'quiz' | 'exam' | 'learning_material';
     isChatHistoryLoaded: boolean;
     isTestMode: boolean;
     inputType?: string;
@@ -33,19 +33,23 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                             ? 'No activity yet'
                             : taskType === 'exam'
                                 ? 'Ready to test your knowledge?'
-                                : 'Ready for a challenge?'
+                                : taskType === 'learning_material'
+                                    ? 'Have a question?'
+                                    : 'Ready for a challenge?'
                         }
                     </h2>
-                    <p className="text-gray-400 text-center max-w-md mx-auto mb-8">
+                    <p className="text-gray-400 text-center max-w-md mx-6 sm:mx-auto mb-8">
                         {viewOnly
                             ? `There is no chat history for this ${taskType === 'exam' ? 'exam' : 'quiz'}`
-                            : taskType === 'exam'
-                                ? (questionType === 'coding'
-                                    ? `Think through your answer, then write your code in the code editor. You can attempt the question only once. Be careful and confident.`
-                                    : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`)
-                                : (questionType === 'coding'
-                                    ? `Think through your answer, then write your code in the code editor. You can also type your response below if you want to ask or say something that is not code. You will receive instant feedback and support throughout your journey`
-                                    : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`)
+                            : taskType === 'learning_material'
+                                ? `Ask your doubt here and AI will help you understand the material better`
+                                : taskType === 'exam'
+                                    ? (questionType === 'coding'
+                                        ? `Think through your answer, then write your code in the code editor. You can attempt the question only once. Be careful and confident.`
+                                        : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`)
+                                    : (questionType === 'coding'
+                                        ? `Think through your answer, then write your code in the code editor. You can also type your response below if you want to ask or say something that is not code. You will receive instant feedback and support throughout your journey`
+                                        : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`)
                         }
                     </p>
                 </>

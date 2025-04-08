@@ -28,7 +28,7 @@ interface ChatViewProps {
     showPreparingReport: boolean;
     isChatHistoryLoaded: boolean;
     isTestMode: boolean;
-    taskType: 'quiz' | 'exam';
+    taskType: 'quiz' | 'exam' | 'learning_material';
     currentQuestionConfig?: any;
     isSubmitting: boolean;
     currentAnswer: string;
@@ -370,7 +370,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                                                     <textarea
                                                         id="no-border-textarea"
                                                         ref={textareaRef}
-                                                        placeholder="Type your answer here"
+                                                        placeholder={taskType === 'quiz' ? "Type your question here" : "Type your answer here"}
                                                         className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
                                                         value={currentAnswer}
                                                         onChange={handleInputChange as any}

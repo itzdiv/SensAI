@@ -33,6 +33,7 @@ interface LearningMaterialEditorProps {
     isDarkMode?: boolean;
     className?: string;
     readOnly?: boolean;
+    viewOnly?: boolean;
     isLearnerView?: boolean;
     showPublishConfirmation?: boolean;
     onPublishConfirm?: () => void;
@@ -73,6 +74,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     isDarkMode = true, // Default to dark mode
     className = "",
     readOnly = false,
+    viewOnly = false,
     isLearnerView = false,
     showPublishConfirmation = false,
     onPublishConfirm,
@@ -823,19 +825,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const handleAskDoubt = () => {
         setShowChatView(prev => !prev);
 
-        // If no messages in chat yet, add initial AI greeting
-        if (chatHistory.length === 0) {
-            const aiGreeting: ChatMessage = {
-                id: Date.now().toString(),
-                content: "Hi there! I'm your AI teaching assistant. How can I help you with this learning material?",
-                sender: 'ai',
-                timestamp: new Date(),
-                messageType: 'text'
-            };
-
-            setChatHistory([aiGreeting]);
-        }
-
         // Call the original onAskDoubt if provided
         if (onAskDoubt) {
             onAskDoubt();
@@ -1095,7 +1084,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             showPreparingReport={false}
                             isChatHistoryLoaded={true}
                             isTestMode={false}
-                            taskType="quiz"
+                            taskType="learning_material"
                             isSubmitting={isSubmitting}
                             currentAnswer={currentAnswer}
                             handleInputChange={handleChatInputChange}
@@ -1130,7 +1119,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
             {/* Floating button for desktop and mobile with different layouts */}
             {
-                isLearnerView && !showChatView && (
+                isLearnerView && !showChatView && !viewOnly && (
                     <>
                         {/* Floating action button - behavior changes based on screen size */}
                         <button
