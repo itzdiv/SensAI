@@ -24,6 +24,7 @@ interface CohortMemberManagementProps {
     cohort: Cohort;
     role: 'learner' | 'mentor';
     cohortId: string;
+    schoolId: string;
     onShowToast: (title: string, description: string, emoji: string) => void;
     updateCohort: (updatedMembers: CohortMember[]) => void;
     openInviteDialog?: boolean;
@@ -243,6 +244,7 @@ export default function CohortMemberManagement({
     cohort,
     role,
     cohortId,
+    schoolId,
     onShowToast,
     updateCohort,
     openInviteDialog,
@@ -364,6 +366,7 @@ export default function CohortMemberManagement({
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
+                    org_id: schoolId,
                     emails,
                     roles,
                 }),

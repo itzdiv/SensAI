@@ -696,6 +696,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                 cohort={cohort}
                                 role="learner"
                                 cohortId={cohortId}
+                                schoolId={schoolId}
                                 openInviteDialog={openLearnerInviteDialog}
                                 onInviteDialogClose={handleCloseLearnerInviteDialog}
                                 onShowToast={(title, description, emoji) => {
@@ -718,6 +719,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                 cohort={cohort}
                                 role="mentor"
                                 cohortId={cohortId}
+                                schoolId={schoolId}
                                 onShowToast={(title, description, emoji) => {
                                     setToastTitle(title);
                                     setToastDescription(description);
