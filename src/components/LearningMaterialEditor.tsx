@@ -805,28 +805,27 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         // Find the last user message
         const lastUserMessage = [...chatHistory].reverse().find(msg => msg.sender === 'user');
         if (lastUserMessage) {
-            // Remove both the error message and the last user message
-            setChatHistory(prev => {
-                // Start by filtering out error messages
-                const withoutErrors = prev.filter(msg => !msg.isError);
+            // Store the message content and type before modifying chat history
+            const messageContent = lastUserMessage.content;
+            const messageType = lastUserMessage.messageType === 'code' ? 'code' : 'text';
 
-                // Then remove the last user message 
-                // (comparing by ID to ensure we only remove the exact last message)
-                return withoutErrors.filter(msg => msg.id !== lastUserMessage.id);
-            });
+            // Filter the chat history to remove error messages and the last user message
+            const filteredChatHistory = chatHistory
+                .filter(msg => !msg.isError)
+                .filter(msg => msg.id !== lastUserMessage.id);
 
-            // Call handleChatSubmit with the message content directly
-            handleChatSubmit(
-                lastUserMessage.messageType === 'code' ? 'code' : 'text',
-                lastUserMessage.content
-            );
+            // Update the chat history state
+            setChatHistory(filteredChatHistory);
+
+            // Call handleChatSubmit with the filtered history
+            handleChatSubmit(messageType, messageContent, filteredChatHistory);
         }
     };
 
     // Handle chat submit
-    const handleChatSubmit = async (responseType: 'text' | 'code' = 'text', messageOverride?: string) => {
-        // Use messageOverride if provided (for retry), otherwise use currentAnswer
-        const messageContent = messageOverride || currentAnswer;
+    const handleChatSubmit = async (responseType: 'text' | 'code' = 'text', currentResponse?: string, currentChatHistory?: ChatMessage[]) => {
+        // Use currentResponse if provided (for retry), otherwise use currentAnswer
+        const messageContent = currentResponse || currentAnswer;
 
         if (!messageContent.trim() || !taskId) return;
 
@@ -839,10 +838,19 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             messageType: responseType
         };
 
+        const chatHistoryToUse = currentChatHistory ? currentChatHistory : chatHistory;
+
+        // Use the updated chat history instead of relying on the chatHistory state
+        const formattedChatHistory = chatHistoryToUse.map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.content,
+            response_type: msg.messageType,
+        }));
+
         setChatHistory(prev => [...prev, newMessage]);
 
         // Only clear currentAnswer if we're not using an override
-        if (!messageOverride) {
+        if (!currentResponse) {
             setCurrentAnswer('');
         }
 
@@ -853,13 +861,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         try {
             // Prepare the request body
             const responseContent = messageContent.trim();
-
-            const formattedChatHistory = (chatHistory || []).map(msg => ({
-                role: msg.sender === 'user' ? 'user' : 'assistant',
-                content: msg.content,
-                response_type: msg.messageType,
-            }));
-
 
             const requestBody = {
                 user_response: responseContent,
