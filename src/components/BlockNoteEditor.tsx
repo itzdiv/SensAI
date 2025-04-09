@@ -18,12 +18,12 @@ interface BlockNoteEditorProps {
     readOnly?: boolean;
     placeholder?: string;
     onEditorReady?: (editor: any) => void;
-    allowImages?: boolean;
+    allowMedia?: boolean;
 }
 
 // Uploads a file and returns the URL to the uploaded file
 async function uploadFile(file: File) {
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/') && !file.type.startsWith('audio/') && !file.type.startsWith('video/')) {
         return ''
     }
 
@@ -39,7 +39,6 @@ async function uploadFile(file: File) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                file_type: "image",
                 content_type: file.type
             })
         });
@@ -61,14 +60,12 @@ async function uploadFile(file: File) {
 
     // Upload the file to S3 using the presigned URL
     try {
-        // Upload the file directly without base64 conversion
-        // since we're handling an file, not audio
-        const imageBlob = new Blob([file], { type: file.type });
+        let fileBlob = new Blob([file], { type: file.type });
 
         // Upload to S3 using the presigned URL with WAV content type
         const uploadResponse = await fetch(presigned_url, {
             method: 'PUT',
-            body: imageBlob,
+            body: fileBlob,
             headers: {
                 'Content-Type': file.type
             }
@@ -83,21 +80,22 @@ async function uploadFile(file: File) {
         // Update the request body with the file information
         return uploadResponse.url
     } catch (error) {
-        console.error('Error uploading audio to S3:', error);
+        console.error('Error uploading file to S3:', error);
         throw error;
     }
 }
 
 async function resolveFileUrl(url: string) {
-    if (!url) {
-        return '';
+    if (!url || !url.includes("?X-Amz-Algorithm=AWS4-HMAC-SHA256")) {
+        return url;
     }
 
     let uuid = url.split('/').pop()?.split('.')[0] || '';
+    let fileType = url.split('.').pop()?.split('?')[0] || '';
 
     try {
         // Get presigned URL
-        const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${uuid}&file_type=image`, {
+        const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${uuid}&file_extension=${fileType}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -105,7 +103,7 @@ async function resolveFileUrl(url: string) {
         });
 
         if (!presignedResponse.ok) {
-            throw new Error('Failed to get presigned URL for audio file');
+            throw new Error('Failed to get presigned URL for file');
         }
 
         console.log('Presigned url for fetch generated');
@@ -126,7 +124,7 @@ export default function BlockNoteEditor({
     readOnly = false,
     placeholder = "Enter text or type '/' for commands",
     onEditorReady,
-    allowImages = true,
+    allowMedia = true,
 }: BlockNoteEditorProps) {
     const locale = locales["en"];
 
@@ -140,12 +138,12 @@ export default function BlockNoteEditor({
 
     // Extract blocks we don't want based on configuration
     let enabledBlocks;
-    if (allowImages) {
-        // If images are allowed, exclude only these blocks
-        const { table, video, audio, file, ...allowedBlockSpecs } = defaultBlockSpecs;
+    if (allowMedia) {
+        // If media is allowed, exclude only these blocks
+        const { table, file, ...allowedBlockSpecs } = defaultBlockSpecs;
         enabledBlocks = allowedBlockSpecs;
     } else {
-        // If images are not allowed, also exclude image blocks
+        // If media is not allowed, also exclude all media blocks
         const { table, video, audio, file, image, ...allowedBlockSpecs } = defaultBlockSpecs;
         enabledBlocks = allowedBlockSpecs;
     }

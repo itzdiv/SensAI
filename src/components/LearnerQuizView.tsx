@@ -8,7 +8,7 @@ import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfi
 import ChatView, { CodeViewState } from './ChatView';
 import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
-import { getKnowledgeBaseContent, extractTextFromBlocks } from './QuizEditor';
+import { getKnowledgeBaseContent } from './QuizEditor';
 import { CodePreview } from './CodeEditorView';
 import isEqual from 'lodash/isEqual';
 import { safeLocalStorage } from "@/lib/utils/localStorage";
@@ -322,7 +322,7 @@ export default function LearnerQuizView({
                         try {
                             // Get presigned URL
                             const file_uuid = message.content;
-                            const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${file_uuid}&file_type=audio`, {
+                            const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${file_uuid}&file_extension=wav`, {
                                 method: 'GET',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -829,7 +829,6 @@ export default function LearnerQuizView({
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            file_type: "audio",
                             content_type: "audio/wav"
                         })
                     });

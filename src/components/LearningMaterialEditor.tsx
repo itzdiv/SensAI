@@ -106,6 +106,93 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         editorRef.current = editor;
     };
 
+    // Function to adjust file block wrapper styling when in readonly mode
+    const adjustFileBlockWrapperWidth = useCallback(() => {
+        if (!readOnly || !editorRef.current || !taskData?.blocks) return;
+
+        // Get current screen width
+        const screenWidth = window.innerWidth;
+
+        // Get current editor container width
+        const editorWidth = editorContainerRef.current?.clientWidth || screenWidth - 40;
+
+        // Target all file block content wrappers
+        const fileBlockWrappers = document.querySelectorAll('.bn-file-block-content-wrapper');
+
+        fileBlockWrappers.forEach((wrapper: Element) => {
+            // Find the associated media element
+            const mediaElement = wrapper.querySelector('img, video, audio');
+            if (!mediaElement) {
+                // For non-media blocks, use default behavior
+                (wrapper as HTMLElement).style.maxWidth = `${editorWidth}px`;
+                return;
+            }
+
+            // Remove any explicit width if set
+            (wrapper as HTMLElement).style.width = '';
+
+            try {
+                // Try to get the block id from DOM structure
+                const blockElement = wrapper.closest('[data-id]');
+                const blockId = blockElement?.getAttribute('data-id');
+
+                if (blockId && editorRef.current) {
+                    // Use editor API to get the block data
+                    const blockData = taskData?.blocks.find((block: any) => block.id === blockId);
+
+                    console.log(blockData);
+
+                    if (blockData && blockData.props) {
+                        const maxWidth = blockData.props.maxWidth;
+                        const previewWidth = blockData.props.previewWidth;
+
+                        if (previewWidth && maxWidth) {
+                            // Calculate appropriate max width based on dimensions
+                            const widthRatio = previewWidth / maxWidth;
+                            const calculatedWidth = Math.min(editorWidth * widthRatio, editorWidth);
+                            (wrapper as HTMLElement).style.maxWidth = `${calculatedWidth}px`;
+                            return;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error setting media element width:', error);
+                // Fallback to screen width
+                (wrapper as HTMLElement).style.maxWidth = `${editorWidth}px`;
+            }
+        });
+    }, [readOnly, editorContainerRef]);
+
+    // Update processMediaBlockWidths function to add data attributes for width information
+    const processMediaBlockWidths = (content: any[]) => {
+        // Get current container width to use as reference
+        const containerWidth = editorContainerRef.current?.clientWidth || window.innerWidth - 80;
+
+        // Deep clone the content to avoid mutating the original
+        const processedContent = JSON.parse(JSON.stringify(content));
+
+        // Process blocks to add width information to media elements
+        const processBlocks = (blocks: any[]) => {
+            if (!blocks || !Array.isArray(blocks)) return blocks;
+
+            return blocks.map(block => {
+                // Process the current block
+                const newBlock = { ...block };
+
+                // Handle file blocks (images, videos, audio)
+                if (newBlock.type === 'image' || newBlock.type === 'video' || newBlock.type === 'audio') {
+                    // Set max-width to container width
+                    if (!newBlock.props) newBlock.props = {};
+                    newBlock.props.maxWidth = containerWidth;
+                }
+
+                return newBlock;
+            });
+        };
+
+        return processBlocks(processedContent);
+    };
+
     // Function to adjust the height of the editor container
     const adjustEditorHeight = useCallback(() => {
         if (!editorContainerRef.current) return;
@@ -137,6 +224,42 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             setContainerHeight(`${Math.max(viewportHeight, contentHeight)}px`);
         }
     }, [readOnly]);
+
+    // Add media load event listeners to media elements
+    const addMediaLoadListeners = useCallback(() => {
+        if (!editorContainerRef.current) return;
+
+        // Find all media elements in the editor
+        const mediaElements = editorContainerRef.current.querySelectorAll('img, video, audio');
+
+        // Add load/loadeddata event listeners to each media element
+        mediaElements.forEach(element => {
+            const isImage = element.tagName.toLowerCase() === 'img';
+            const eventName = isImage ? 'load' : 'loadeddata';
+
+            // Clean up any existing event listeners first (to prevent duplicates)
+            element.removeEventListener(eventName, adjustEditorHeight);
+
+            // Add the new event listener
+            element.addEventListener(eventName, () => {
+                adjustEditorHeight();
+                // Also adjust file block wrappers if in readonly mode
+                if (readOnly) {
+                    adjustFileBlockWrapperWidth();
+                }
+            });
+
+            // If the element is already loaded, trigger adjustEditorHeight
+            if ((isImage && (element as HTMLImageElement).complete) ||
+                (!isImage && (element as HTMLMediaElement).readyState >= 2)) {
+                adjustEditorHeight();
+                // Also adjust file block wrappers if in readonly mode
+                if (readOnly) {
+                    adjustFileBlockWrapperWidth();
+                }
+            }
+        });
+    }, [adjustEditorHeight, readOnly, adjustFileBlockWrapperWidth]);
 
     // Set up the resize observer to monitor content changes
     useEffect(() => {
@@ -181,10 +304,52 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         // Add a small delay to ensure the content has been rendered
         const timer = setTimeout(() => {
             adjustEditorHeight();
+            // Add media load listeners after content has been initially rendered
+            addMediaLoadListeners();
         }, 100);
 
         return () => clearTimeout(timer);
-    }, [editorContent, adjustEditorHeight]);
+    }, [editorContent, adjustEditorHeight, addMediaLoadListeners]);
+
+    // Add a MutationObserver to detect dynamically added media elements
+    useEffect(() => {
+        if (!editorContainerRef.current) return;
+
+        // Create a MutationObserver to watch for newly added media elements
+        const observer = new MutationObserver((mutations) => {
+            let hasNewMedia = false;
+
+            // Check if any of the mutations added media elements
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList') {
+                    const mediaNodes = Array.from(mutation.addedNodes).filter(node => {
+                        if (node.nodeType !== Node.ELEMENT_NODE) return false;
+                        const element = node as Element;
+                        const tagName = element.tagName.toLowerCase();
+                        return tagName === 'img' || tagName === 'video' || tagName === 'audio';
+                    });
+
+                    if (mediaNodes.length > 0) {
+                        hasNewMedia = true;
+                    }
+                }
+            });
+
+            // If new media elements were added, add load listeners to them
+            if (hasNewMedia) {
+                addMediaLoadListeners();
+            }
+        });
+
+        // Start observing the editor container for added nodes
+        observer.observe(editorContainerRef.current, {
+            childList: true,
+            subtree: true
+        });
+
+        // Clean up the observer when component unmounts
+        return () => observer.disconnect();
+    }, [addMediaLoadListeners]);
 
     // Handle editor changes and trigger height adjustment
     const handleEditorChange = (content: any[]) => {
@@ -474,7 +639,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Use the current editor content
             const currentContent = editorContent.length > 0 ? editorContent : (taskData?.blocks || []);
 
-            console.log("currentContent", currentContent);
+            // Process the content to set width for media blocks
+            const processedContent = processMediaBlockWidths(currentContent);
+
+            console.log("currentContent", processedContent);
 
             // Make POST request to publish the learning material content
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
@@ -484,7 +652,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 },
                 body: JSON.stringify({
                     title: currentTitle,
-                    blocks: currentContent
+                    blocks: processedContent
                 }),
             });
 
@@ -553,6 +721,9 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Use the current editor content
             const currentContent = editorContent.length > 0 ? editorContent : (taskData?.blocks || []);
 
+            // Process the content to set width for media blocks - using same logic as in publish
+            const processedContent = processMediaBlockWidths(currentContent);
+
             // Make POST request to update the learning material content, keeping the same status
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
                 method: 'POST',
@@ -561,7 +732,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 },
                 body: JSON.stringify({
                     title: currentTitle,
-                    blocks: currentContent
+                    blocks: processedContent
                 }),
             });
 
@@ -964,6 +1135,54 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
+    // Apply styling adjustments for readonly mode and when window resizes
+    useEffect(() => {
+        if (!readOnly) return;
+
+        // Initial adjustment
+        adjustFileBlockWrapperWidth();
+
+        // Set up resize listener
+        window.addEventListener('resize', adjustFileBlockWrapperWidth);
+
+        // Clean up
+        return () => {
+            window.removeEventListener('resize', adjustFileBlockWrapperWidth);
+        };
+    }, [readOnly, adjustFileBlockWrapperWidth]);
+
+    // Re-adjust file block wrappers when content changes
+    useEffect(() => {
+        if (!readOnly) return;
+
+        // Add a small delay to ensure content is rendered
+        const timer = setTimeout(() => {
+            adjustFileBlockWrapperWidth();
+        }, 150);
+
+        return () => clearTimeout(timer);
+    }, [editorContent, readOnly, adjustFileBlockWrapperWidth]);
+
+    // Monitor DOM changes to catch dynamically added file blocks
+    useEffect(() => {
+        if (!readOnly || !editorContainerRef.current) return;
+
+        // Create a MutationObserver to watch for changes
+        const observer = new MutationObserver(() => {
+            adjustFileBlockWrapperWidth();
+        });
+
+        // Start observing the editor container
+        observer.observe(editorContainerRef.current, {
+            childList: true,
+            subtree: true,
+            attributes: true
+        });
+
+        // Clean up
+        return () => observer.disconnect();
+    }, [readOnly, adjustFileBlockWrapperWidth]);
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center">
@@ -1124,7 +1343,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     /* Default mobile styles */
                     width: 3.5rem;
                     height: 3.5rem;
-                    border-radius: 50%;
                     bottom: 1.5rem; /* Keep bottom-6 (1.5rem) for mobile */
                 }
 
@@ -1133,13 +1351,12 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                     margin-right: 0;
                 }
                 
-                @media (min-width: 769px) {
+                @media (min-width: 1025px) {
                     .mobile-action-button {
                         /* Desktop styles */
                         padding: 0 1.5rem;
                         width: auto;
                         height: 3rem;
-                        border-radius: 1.5rem;
                         bottom: 6rem; /* Move button higher (from bottom-6 to bottom-12) in desktop view */
                     }
                     

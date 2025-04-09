@@ -464,15 +464,27 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     /**
      * Validates if question content is non-empty
      * @param content The content blocks to validate
-     * @returns True if content has non-empty text, false otherwise
+     * @returns True if content has non-empty text or contains media blocks, false otherwise
      */
     const validateQuestionContent = useCallback((content: any[]) => {
         if (!content || content.length === 0) {
             return false;
         }
 
+        // Check for text content
         const textContent = extractTextFromBlocks(content);
-        return textContent.trim().length > 0;
+        if (textContent.trim().length > 0) {
+            return true;
+        }
+
+        // If no text content, check if there are any media blocks (image, audio, video)
+        const hasMediaBlocks = content.some(block =>
+            block.type === 'image' ||
+            block.type === 'audio' ||
+            block.type === 'video'
+        );
+
+        return hasMediaBlocks;
     }, []);
 
     /**
@@ -2260,7 +2272,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 onEditorReady={setCorrectAnswerEditorInstance}
                                                 className="correct-answer-editor"
                                                 placeholder="Enter the correct answer here"
-                                                allowImages={false}
+                                                allowMedia={false}
                                             />
                                         </div>
                                     ) : activeEditorTab === 'knowledge' ? (
@@ -2364,7 +2376,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                                 onEditorReady={setKnowledgeBaseEditorInstance}
                                                                 className="knowledge-base-editor"
                                                                 placeholder="Link existing materials using the button above or add new material here"
-                                                                allowImages={false}
+                                                                allowMedia={false}
                                                             />
                                                         </div>
                                                     </div>
