@@ -18,6 +18,7 @@ interface BlockNoteEditorProps {
     readOnly?: boolean;
     placeholder?: string;
     onEditorReady?: (editor: any) => void;
+    allowImages?: boolean;
 }
 
 // Uploads a file and returns the URL to the uploaded file
@@ -125,6 +126,7 @@ export default function BlockNoteEditor({
     readOnly = false,
     placeholder = "Enter text or type '/' for commands",
     onEditorReady,
+    allowImages = true,
 }: BlockNoteEditorProps) {
     const locale = locales["en"];
 
@@ -136,13 +138,21 @@ export default function BlockNoteEditor({
     // Store the editor instance in a ref
     const editorRef = useRef<any>(null);
 
-    // Remove the advanced blocks from the schema
-    // Extract only the blocks we don't want
-    const { table, video, audio, file, ...basicBlockSpecs } = defaultBlockSpecs;
+    // Extract blocks we don't want based on configuration
+    let enabledBlocks;
+    if (allowImages) {
+        // If images are allowed, exclude only these blocks
+        const { table, video, audio, file, ...allowedBlockSpecs } = defaultBlockSpecs;
+        enabledBlocks = allowedBlockSpecs;
+    } else {
+        // If images are not allowed, also exclude image blocks
+        const { table, video, audio, file, image, ...allowedBlockSpecs } = defaultBlockSpecs;
+        enabledBlocks = allowedBlockSpecs;
+    }
 
-    // Create a schema with only the basic blocks
+    // Create a schema with only the allowed blocks
     const schema = BlockNoteSchema.create({
-        blockSpecs: basicBlockSpecs,
+        blockSpecs: enabledBlocks,
     });
 
     // Creates a new editor instance with the custom schema

@@ -2260,6 +2260,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 onEditorReady={setCorrectAnswerEditorInstance}
                                                 className="correct-answer-editor"
                                                 placeholder="Enter the correct answer here"
+                                                allowImages={false}
                                             />
                                         </div>
                                     ) : activeEditorTab === 'knowledge' ? (
@@ -2363,6 +2364,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                                 onEditorReady={setKnowledgeBaseEditorInstance}
                                                                 className="knowledge-base-editor"
                                                                 placeholder="Link existing materials using the button above or add new material here"
+                                                                allowImages={false}
                                                             />
                                                         </div>
                                                     </div>
