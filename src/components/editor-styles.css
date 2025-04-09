@@ -583,7 +583,7 @@ div[role="dialog"]>div {
 } */
 
 /* Media query for small screens - adjust padding for BlockNote editor */
-@media screen and (max-width: 374px) {
+@media screen and (max-width: 499px) {
     .bn-editor {
         padding-inline-end: 32px !important;
         padding-inline-start: 32px !important;

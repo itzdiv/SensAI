@@ -31,7 +31,6 @@ interface LearningMaterialEditorProps {
     className?: string;
     readOnly?: boolean;
     viewOnly?: boolean;
-    isLearnerView?: boolean;
     showPublishConfirmation?: boolean;
     onPublishConfirm?: () => void;
     onPublishCancel?: () => void;
@@ -39,8 +38,6 @@ interface LearningMaterialEditorProps {
     userId?: string;
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
-    onAskDoubt?: () => void;
-    onMarkComplete?: () => void;
 }
 
 // Use forwardRef to pass the ref from parent to this component
@@ -50,7 +47,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     className = "",
     readOnly = false,
     viewOnly = false,
-    isLearnerView = false,
     showPublishConfirmation = false,
     onPublishConfirm,
     onPublishCancel,
@@ -58,8 +54,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     userId = '',
     onPublishSuccess,
     onSaveSuccess,
-    onAskDoubt,
-    onMarkComplete,
 }, ref) => {
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -67,291 +61,19 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
-    const [containerHeight, setContainerHeight] = useState<string>("auto");
 
     // Reference to the editor instance
     const editorRef = useRef<any>(null);
 
-    // Reference for the ResizeObserver
-    const resizeObserverRef = useRef<ResizeObserver | null>(null);
-
     // Add a ref to store the original data for reverting on cancel
     const originalDataRef = useRef<TaskData | null>(null);
-
-    // Add state for button animation
-    const [showButtonEntrance, setShowButtonEntrance] = useState(true);
-    const [showButtonPulse, setShowButtonPulse] = useState(false);
-
-    // Check if user has clicked the button before
-    const [hasClickedFabButton, setHasClickedFabButton] = useState(false);
-
-    // Add state for mobile menu
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const mobileMenuRef = useRef<HTMLDivElement>(null);
-
-    // Add state for chat view
-    const [showChatView, setShowChatView] = useState(false);
-    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-    const [isAiResponding, setIsAiResponding] = useState(false);
-    const [currentAnswer, setCurrentAnswer] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // Add state to track viewport size
-    const [isMobileView, setIsMobileView] = useState(false);
-    // Add state for chat exit animation
-    const [isChatClosing, setIsChatClosing] = useState(false);
 
     // Function to set the editor reference
     const setEditorInstance = (editor: any) => {
         editorRef.current = editor;
     };
 
-    // Function to adjust file block wrapper styling when in readonly mode
-    const adjustFileBlockWrapperWidth = useCallback(() => {
-        if (!readOnly || !editorRef.current || !taskData?.blocks) return;
-
-        // Get current screen width
-        const screenWidth = window.innerWidth;
-
-        // Get current editor container width
-        const editorWidth = editorContainerRef.current?.clientWidth || screenWidth - 40;
-
-        // Target all file block content wrappers
-        const fileBlockWrappers = document.querySelectorAll('.bn-file-block-content-wrapper');
-
-        fileBlockWrappers.forEach((wrapper: Element) => {
-            // Find the associated media element
-            const mediaElement = wrapper.querySelector('img, video, audio');
-            if (!mediaElement) {
-                // For non-media blocks, use default behavior
-                (wrapper as HTMLElement).style.maxWidth = `${editorWidth}px`;
-                return;
-            }
-
-            // Remove any explicit width if set
-            (wrapper as HTMLElement).style.width = '';
-
-            try {
-                // Try to get the block id from DOM structure
-                const blockElement = wrapper.closest('[data-id]');
-                const blockId = blockElement?.getAttribute('data-id');
-
-                if (blockId && editorRef.current) {
-                    // Use editor API to get the block data
-                    const blockData = taskData?.blocks.find((block: any) => block.id === blockId);
-
-                    console.log(blockData);
-
-                    if (blockData && blockData.props) {
-                        const maxWidth = blockData.props.maxWidth;
-                        const previewWidth = blockData.props.previewWidth;
-
-                        if (previewWidth && maxWidth) {
-                            // Calculate appropriate max width based on dimensions
-                            const widthRatio = previewWidth / maxWidth;
-                            const calculatedWidth = Math.min(editorWidth * widthRatio, editorWidth);
-                            (wrapper as HTMLElement).style.maxWidth = `${calculatedWidth}px`;
-                            return;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error setting media element width:', error);
-                // Fallback to screen width
-                (wrapper as HTMLElement).style.maxWidth = `${editorWidth}px`;
-            }
-        });
-    }, [readOnly, editorContainerRef]);
-
-    // Update processMediaBlockWidths function to add data attributes for width information
-    const processMediaBlockWidths = (content: any[]) => {
-        // Get current container width to use as reference
-        const containerWidth = editorContainerRef.current?.clientWidth || window.innerWidth - 80;
-
-        // Deep clone the content to avoid mutating the original
-        const processedContent = JSON.parse(JSON.stringify(content));
-
-        // Process blocks to add width information to media elements
-        const processBlocks = (blocks: any[]) => {
-            if (!blocks || !Array.isArray(blocks)) return blocks;
-
-            return blocks.map(block => {
-                // Process the current block
-                const newBlock = { ...block };
-
-                // Handle file blocks (images, videos, audio)
-                if (newBlock.type === 'image' || newBlock.type === 'video' || newBlock.type === 'audio') {
-                    // Set max-width to container width
-                    if (!newBlock.props) newBlock.props = {};
-                    newBlock.props.maxWidth = containerWidth;
-                }
-
-                return newBlock;
-            });
-        };
-
-        return processBlocks(processedContent);
-    };
-
-    // Function to adjust the height of the editor container
-    const adjustEditorHeight = useCallback(() => {
-        if (!editorContainerRef.current) return;
-
-        // Find the content element within the editor
-        const editorElement = editorContainerRef.current.querySelector('.bn-container');
-        if (!editorElement) return;
-
-        // Get the current viewport height
-        const viewportHeight = window.innerHeight;
-
-        // Get the current content height
-        const contentHeight = editorElement.scrollHeight;
-
-        // Get the current visible height of the container
-        const containerVisibleHeight = editorContainerRef.current.clientHeight;
-
-        // If content height is more than half of the visible container height,
-        // add extra space equal to half of the viewport height
-        if (!readOnly) {
-            if (contentHeight > containerVisibleHeight / 2) {
-                const newHeight = contentHeight + (viewportHeight / 2);
-                setContainerHeight(`${newHeight}px`);
-            } else {
-                // Ensure minimum height is at least the viewport height
-                setContainerHeight(`${Math.max(viewportHeight, contentHeight + (viewportHeight / 2))}px`);
-            }
-        } else {
-            setContainerHeight(`${Math.max(viewportHeight, contentHeight)}px`);
-        }
-    }, [readOnly]);
-
-    // Add media load event listeners to media elements
-    const addMediaLoadListeners = useCallback(() => {
-        if (!editorContainerRef.current) return;
-
-        // Find all media elements in the editor
-        const mediaElements = editorContainerRef.current.querySelectorAll('img, video, audio');
-
-        // Add load/loadeddata event listeners to each media element
-        mediaElements.forEach(element => {
-            const isImage = element.tagName.toLowerCase() === 'img';
-            const eventName = isImage ? 'load' : 'loadeddata';
-
-            // Clean up any existing event listeners first (to prevent duplicates)
-            element.removeEventListener(eventName, adjustEditorHeight);
-
-            // Add the new event listener
-            element.addEventListener(eventName, () => {
-                adjustEditorHeight();
-                // Also adjust file block wrappers if in readonly mode
-                if (readOnly) {
-                    adjustFileBlockWrapperWidth();
-                }
-            });
-
-            // If the element is already loaded, trigger adjustEditorHeight
-            if ((isImage && (element as HTMLImageElement).complete) ||
-                (!isImage && (element as HTMLMediaElement).readyState >= 2)) {
-                adjustEditorHeight();
-                // Also adjust file block wrappers if in readonly mode
-                if (readOnly) {
-                    adjustFileBlockWrapperWidth();
-                }
-            }
-        });
-    }, [adjustEditorHeight, readOnly, adjustFileBlockWrapperWidth]);
-
-    // Set up the resize observer to monitor content changes
-    useEffect(() => {
-        // Clean up previous observer if it exists
-        if (resizeObserverRef.current) {
-            resizeObserverRef.current.disconnect();
-        }
-
-        if (editorContainerRef.current) {
-            // Initial height adjustment
-            adjustEditorHeight();
-
-            // Create new ResizeObserver
-            resizeObserverRef.current = new ResizeObserver(() => {
-                adjustEditorHeight();
-            });
-
-            // Observe the editor container
-            resizeObserverRef.current.observe(editorContainerRef.current);
-
-            // Also observe editor content if we can find it
-            const editorElement = editorContainerRef.current.querySelector('.bn-container');
-            if (editorElement) {
-                resizeObserverRef.current.observe(editorElement);
-            }
-        }
-
-        // Handle window resize events
-        window.addEventListener('resize', adjustEditorHeight);
-
-        return () => {
-            // Clean up the observer when component unmounts
-            if (resizeObserverRef.current) {
-                resizeObserverRef.current.disconnect();
-            }
-            window.removeEventListener('resize', adjustEditorHeight);
-        };
-    }, [adjustEditorHeight]);
-
-    // Re-adjust height when content changes
-    useEffect(() => {
-        // Add a small delay to ensure the content has been rendered
-        const timer = setTimeout(() => {
-            adjustEditorHeight();
-            // Add media load listeners after content has been initially rendered
-            addMediaLoadListeners();
-        }, 100);
-
-        return () => clearTimeout(timer);
-    }, [editorContent, adjustEditorHeight, addMediaLoadListeners]);
-
-    // Add a MutationObserver to detect dynamically added media elements
-    useEffect(() => {
-        if (!editorContainerRef.current) return;
-
-        // Create a MutationObserver to watch for newly added media elements
-        const observer = new MutationObserver((mutations) => {
-            let hasNewMedia = false;
-
-            // Check if any of the mutations added media elements
-            mutations.forEach(mutation => {
-                if (mutation.type === 'childList') {
-                    const mediaNodes = Array.from(mutation.addedNodes).filter(node => {
-                        if (node.nodeType !== Node.ELEMENT_NODE) return false;
-                        const element = node as Element;
-                        const tagName = element.tagName.toLowerCase();
-                        return tagName === 'img' || tagName === 'video' || tagName === 'audio';
-                    });
-
-                    if (mediaNodes.length > 0) {
-                        hasNewMedia = true;
-                    }
-                }
-            });
-
-            // If new media elements were added, add load listeners to them
-            if (hasNewMedia) {
-                addMediaLoadListeners();
-            }
-        });
-
-        // Start observing the editor container for added nodes
-        observer.observe(editorContainerRef.current, {
-            childList: true,
-            subtree: true
-        });
-
-        // Clean up the observer when component unmounts
-        return () => observer.disconnect();
-    }, [addMediaLoadListeners]);
-
-    // Handle editor changes and trigger height adjustment
+    // Handle editor changes
     const handleEditorChange = (content: any[]) => {
         // Avoid unnecessary state updates if content hasn't changed
         if (JSON.stringify(content) !== JSON.stringify(editorContent)) {
@@ -359,8 +81,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             if (onChange && !isPublishing) {
                 onChange(content);
             }
-            // Trigger height adjustment after content change
-            setTimeout(adjustEditorHeight, 0);
         }
     };
 
@@ -631,18 +351,13 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
         try {
             // Get the current title from the dialog - it may have been edited
-            // We'll use the dialog title element ref which is passed from CourseItemDialog
-            // This allows us to capture any title changes made in the dialog
             const dialogTitleElement = document.querySelector('.dialog-content-editor')?.parentElement?.querySelector('h2');
             const currentTitle = dialogTitleElement?.textContent || taskData?.title || "";
 
             // Use the current editor content
             const currentContent = editorContent.length > 0 ? editorContent : (taskData?.blocks || []);
 
-            // Process the content to set width for media blocks
-            const processedContent = processMediaBlockWidths(currentContent);
-
-            console.log("currentContent", processedContent);
+            console.log("currentContent", currentContent);
 
             // Make POST request to publish the learning material content
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
@@ -652,7 +367,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 },
                 body: JSON.stringify({
                     title: currentTitle,
-                    blocks: processedContent
+                    blocks: currentContent
                 }),
             });
 
@@ -684,8 +399,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             }
 
             // Call the onPublishSuccess callback if provided
-            // This is where we emit the updated title and content to parent components
-            // This should be the last operation as it might trigger UI changes
             if (onPublishSuccess) {
                 // Use setTimeout to break the current render cycle
                 setTimeout(() => {
@@ -721,9 +434,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Use the current editor content
             const currentContent = editorContent.length > 0 ? editorContent : (taskData?.blocks || []);
 
-            // Process the content to set width for media blocks - using same logic as in publish
-            const processedContent = processMediaBlockWidths(currentContent);
-
             // Make POST request to update the learning material content, keeping the same status
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
                 method: 'POST',
@@ -732,7 +442,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 },
                 body: JSON.stringify({
                     title: currentTitle,
-                    blocks: processedContent
+                    blocks: currentContent
                 }),
             });
 
@@ -755,7 +465,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             console.log("Learning material saved successfully");
 
             // Call the onSaveSuccess callback if provided
-            // This is where we emit the updated title and content to parent components
             if (onSaveSuccess) {
                 // Use setTimeout to break the current render cycle
                 setTimeout(() => {
@@ -813,7 +522,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             }
 
             // If editorContent is empty but we have taskData, check that as a fallback
-            // This helps when the editor just loaded and editorContent hasn't updated yet
             if (taskData?.blocks) {
                 return checkContent(taskData.blocks);
             }
@@ -821,367 +529,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             return false;
         }
     }));
-
-    // Check localStorage on component mount
-    useEffect(() => {
-        const hasClicked = safeLocalStorage.getItem('hasClickedFabButton') === 'true';
-        setHasClickedFabButton(hasClicked);
-    }, []);
-
-    // Add effect to manage button animation
-    useEffect(() => {
-        if (isLearnerView) {
-            // Start entrance animation
-            setShowButtonEntrance(true);
-
-            // After entrance animation completes, only start pulse if user hasn't clicked before
-            const timer = setTimeout(() => {
-                setShowButtonEntrance(false);
-                // Only show pulse animation if user hasn't clicked the button before
-                if (!hasClickedFabButton) {
-                    setShowButtonPulse(true);
-                }
-            }, 1000);
-
-            return () => clearTimeout(timer);
-        }
-    }, [isLearnerView, hasClickedFabButton]);
-
-    // Function to toggle mobile menu
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(prev => !prev);
-
-        // If opening the menu, stop pulse animation and save to localStorage
-        if (!isMobileMenuOpen) {
-            setShowButtonPulse(false);
-
-            // If this is the first time clicking, save to localStorage
-            if (!hasClickedFabButton) {
-                setHasClickedFabButton(true);
-                safeLocalStorage.setItem('hasClickedFabButton', 'true');
-            }
-        }
-    };
-
-    // Add effect to handle clicks outside the mobile menu
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (
-                mobileMenuRef.current &&
-                !mobileMenuRef.current.contains(event.target as Node) &&
-                !(event.target as HTMLElement).closest('.mobile-action-toggle-button')
-            ) {
-                setIsMobileMenuOpen(false);
-            }
-        }
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    // Add effect to handle viewport size changes
-    useEffect(() => {
-        const checkMobileView = () => {
-            setIsMobileView(window.innerWidth <= 1024);
-        };
-
-        // Initial check
-        checkMobileView();
-
-        // Set up event listener for window resize
-        window.addEventListener('resize', checkMobileView);
-
-        // Clean up event listener
-        return () => {
-            window.removeEventListener('resize', checkMobileView);
-        };
-    }, []);
-
-    // Handle chat input change
-    const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setCurrentAnswer(e.target.value);
-    };
-
-    // Handle chat key press
-    const handleChatKeyPress = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        // This is handled by the ChatView component's internal handler
-    };
-
-    // Create a handle retry function to resubmit the last user message
-    const handleRetry = () => {
-        // Find the last user message
-        const lastUserMessage = [...chatHistory].reverse().find(msg => msg.sender === 'user');
-        if (lastUserMessage) {
-            // Store the message content and type before modifying chat history
-            const messageContent = lastUserMessage.content;
-            const messageType = lastUserMessage.messageType === 'code' ? 'code' : 'text';
-
-            // Filter the chat history to remove error messages and the last user message
-            const filteredChatHistory = chatHistory
-                .filter(msg => !msg.isError)
-                .filter(msg => msg.id !== lastUserMessage.id);
-
-            // Update the chat history state
-            setChatHistory(filteredChatHistory);
-
-            // Call handleChatSubmit with the filtered history
-            handleChatSubmit(messageType, messageContent, filteredChatHistory);
-        }
-    };
-
-    // Handle chat submit
-    const handleChatSubmit = async (responseType: 'text' | 'code' = 'text', currentResponse?: string, currentChatHistory?: ChatMessage[]) => {
-        // Use currentResponse if provided (for retry), otherwise use currentAnswer
-        const messageContent = currentResponse || currentAnswer;
-
-        if (!messageContent.trim() || !taskId) return;
-
-        // Add user message to chat history
-        const newMessage: ChatMessage = {
-            id: Date.now().toString(),
-            content: messageContent,
-            sender: 'user',
-            timestamp: new Date(),
-            messageType: responseType
-        };
-
-        const chatHistoryToUse = currentChatHistory ? currentChatHistory : chatHistory;
-
-        // Use the updated chat history instead of relying on the chatHistory state
-        const formattedChatHistory = chatHistoryToUse.map(msg => ({
-            role: msg.sender === 'user' ? 'user' : 'assistant',
-            content: msg.content,
-            response_type: msg.messageType,
-        }));
-
-        setChatHistory(prev => [...prev, newMessage]);
-
-        // Only clear currentAnswer if we're not using an override
-        if (!currentResponse) {
-            setCurrentAnswer('');
-        }
-
-        // Set AI responding state
-        setIsAiResponding(true);
-        setIsSubmitting(true);
-
-        try {
-            // Prepare the request body
-            const responseContent = messageContent.trim();
-
-            const requestBody = {
-                user_response: responseContent,
-                response_type: 'text',
-                task_id: parseInt(taskId),
-                chat_history: formattedChatHistory,
-                task_type: 'learning_material'
-            };
-
-            let receivedAnyResponse = false;
-
-            // Make the API call
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            });
-
-            if (!response.ok) {
-                throw new Error(`API request failed with status ${response.status}`);
-            }
-
-            // Get the response body as a readable stream
-            const reader = response.body?.getReader();
-            if (!reader) {
-                throw new Error('ReadableStream not supported');
-            }
-
-            // Create a unique ID for the AI message
-            const aiMessageId = Date.now().toString();
-
-            // Add initial empty AI message to chat history
-            const aiMessage: ChatMessage = {
-                id: aiMessageId,
-                content: '',
-                sender: 'ai',
-                timestamp: new Date(),
-                messageType: 'text'
-            }
-
-            // Process the stream
-            let accumulatedContent = '';
-            const processStream = async () => {
-                try {
-                    while (true) {
-                        const { done, value } = await reader.read();
-
-                        if (done) {
-                            break;
-                        }
-
-                        // Decode the value to text
-                        const text = new TextDecoder().decode(value);
-
-                        // Split the text into chunks (assuming each chunk is a JSON object)
-                        const chunks = text.split('\n').filter(chunk => chunk.trim() !== '');
-
-                        for (const chunk of chunks) {
-                            try {
-                                const data = JSON.parse(chunk);
-
-                                // Process the response field if it exists
-                                if (data.response) {
-                                    // Replace content instead of accumulating it
-                                    accumulatedContent = data.response;
-
-                                    if (!receivedAnyResponse) {
-                                        receivedAnyResponse = true;
-
-                                        // Stop showing the animation
-                                        setIsAiResponding(false);
-
-                                        setChatHistory(prev => [...prev, {
-                                            ...aiMessage,
-                                            content: accumulatedContent
-                                        }]);
-
-                                    } else {
-
-                                        // Update the AI message with the latest content
-                                        setChatHistory(prev =>
-                                            prev.map(msg =>
-                                                msg.id === aiMessageId
-                                                    ? { ...msg, content: accumulatedContent }
-                                                    : msg
-                                            )
-
-                                        );
-                                    }
-                                }
-                            } catch (e) {
-                                console.error('Error parsing JSON chunk:', e);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error reading stream:', error);
-                } finally {
-                    // If we never received any feedback, also reset the AI responding state
-                    if (!receivedAnyResponse) {
-                        setIsAiResponding(false);
-                    }
-
-                    setIsSubmitting(false);
-                }
-            };
-
-            // Start processing the stream
-            await processStream();
-
-        } catch (error) {
-            console.error('Error in chat submission:', error);
-
-            // Add error message to chat history
-            const errorMessage: ChatMessage = {
-                id: Date.now().toString(),
-                content: 'There was an error while processing your response. Please try again.',
-                sender: 'ai',
-                timestamp: new Date(),
-                messageType: 'text',
-                isError: true
-            };
-
-            setChatHistory(prev => [...prev, errorMessage]);
-
-            // Reset states
-            setIsAiResponding(false);
-            setIsSubmitting(false);
-        }
-    };
-
-    // Function to handle audio submission (placeholder)
-    const handleAudioSubmit = (audioBlob: Blob) => {
-        // Placeholder for audio submission
-        console.log("Audio submission received", audioBlob);
-    };
-
-    // Function to handle viewing scorecard (placeholder)
-    const handleViewScorecard = (scorecard: any[]) => {
-        // Placeholder for viewing scorecard
-        console.log("View scorecard", scorecard);
-    };
-
-    // Update the onAskDoubt handler to toggle the chat view
-    const handleAskDoubt = () => {
-        if (showChatView && isMobileView) {
-            // For mobile view, start closing animation first
-            setIsChatClosing(true);
-            // Wait for animation to complete before hiding chat
-            setTimeout(() => {
-                setShowChatView(false);
-                setIsChatClosing(false);
-            }, 300); // Match this with animation duration
-        } else {
-            setShowChatView(prev => !prev);
-        }
-
-        // Call the original onAskDoubt if provided
-        if (onAskDoubt) {
-            onAskDoubt();
-        }
-    };
-
-    // Apply styling adjustments for readonly mode and when window resizes
-    useEffect(() => {
-        if (!readOnly) return;
-
-        // Initial adjustment
-        adjustFileBlockWrapperWidth();
-
-        // Set up resize listener
-        window.addEventListener('resize', adjustFileBlockWrapperWidth);
-
-        // Clean up
-        return () => {
-            window.removeEventListener('resize', adjustFileBlockWrapperWidth);
-        };
-    }, [readOnly, adjustFileBlockWrapperWidth]);
-
-    // Re-adjust file block wrappers when content changes
-    useEffect(() => {
-        if (!readOnly) return;
-
-        // Add a small delay to ensure content is rendered
-        const timer = setTimeout(() => {
-            adjustFileBlockWrapperWidth();
-        }, 150);
-
-        return () => clearTimeout(timer);
-    }, [editorContent, readOnly, adjustFileBlockWrapperWidth]);
-
-    // Monitor DOM changes to catch dynamically added file blocks
-    useEffect(() => {
-        if (!readOnly || !editorContainerRef.current) return;
-
-        // Create a MutationObserver to watch for changes
-        const observer = new MutationObserver(() => {
-            adjustFileBlockWrapperWidth();
-        });
-
-        // Start observing the editor container
-        observer.observe(editorContainerRef.current, {
-            childList: true,
-            subtree: true,
-            attributes: true
-        });
-
-        // Clean up
-        return () => observer.disconnect();
-    }, [readOnly, adjustFileBlockWrapperWidth]);
 
     if (isLoading) {
         return (
@@ -1193,379 +540,18 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
     return (
         <div className={`w-full h-full ${className}`}>
-            {/* Add split view styles EXACTLY copied from LearnerQuizView */}
-            <style jsx>{`
-                .two-column-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    height: 100%;
-                    
-                    @media (max-width: 1024px) {
-                        grid-template-columns: 1fr;
-                        grid-template-rows: 50% 50%;
-                        height: 100%;
-                        overflow: hidden;
-                    }
-                }
-                
-                /* Make sure the editor and chat containers properly fit their content */
-                @media (max-width: 1024px) {
-                    .split-view-container {
-                        height: 100% !important;
-                        max-height: 100% !important;
-                        overflow: hidden !important;
-                        display: grid !important;
-                        grid-template-rows: 50% 50% !important;
-                        grid-template-columns: 1fr !important;
-                    }
-                    
-                    .question-container {
-                        height: 100% !important;
-                        max-height: 100% !important;
-                        overflow-y: auto !important;
-                        grid-row: 1 !important;
-                    }
-                    
-                    .chat-container {
-                        height: 100% !important;
-                        max-height: 100% !important;
-                        overflow: hidden !important;
-                        display: flex !important;
-                        flex-direction: column !important;
-                        grid-row: 2 !important;
-                    }
-                    
-                    /* Ensure the messages area scrolls but input stays fixed */
-                    .chat-container .messages-container {
-                        flex: 1 !important;
-                        overflow-y: auto !important;
-                        min-height: 0 !important;
-                    }
-                    
-                    /* Ensure the input area stays at the bottom and doesn't scroll */
-                    .chat-container .input-container {
-                        flex-shrink: 0 !important;
-                        position: sticky !important;
-                        bottom: 0 !important;
-                        background-color: #111111 !important;
-                        z-index: 10 !important;
-                        padding-top: 0.5rem !important;
-                        border-top: 1px solid #222222 !important;
-                    }
-                }
-
-                /* Mobile view animation styles - EXACTLY copied from LearnerQuizView */
-                @keyframes pulse-ring {
-                    0% {
-                        box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
-                    }
-                    70% {
-                        box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
-                    }
-                    100% {
-                        box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
-                    }
-                }
-
-                /* Animation for the inner pulse */
-                @keyframes pulse-dot {
-                    0% {
-                        transform: scale(0.95);
-                    }
-                    70% {
-                        transform: scale(1.05);
-                    }
-                    100% {
-                        transform: scale(0.95);
-                    }
-                }
-                
-                /* Entrance animation for the button */
-                @keyframes button-entrance {
-                    0% {
-                        opacity: 0;
-                        transform: scale(0.5) translateY(20px);
-                    }
-                    60% {
-                        transform: scale(1.1) translateY(-5px);
-                    }
-                    80% {
-                        transform: scale(0.95) translateY(2px);
-                    }
-                    100% {
-                        opacity: 1;
-                        transform: scale(1) translateY(0);
-                    }
-                }
-
-                /* Slide up animation for mobile chat */
-                @keyframes slide-up {
-                    0% {
-                        transform: translateY(100%);
-                    }
-                    100% {
-                        transform: translateY(0);
-                    }
-                }
-
-                /* Slide down animation for mobile chat */
-                @keyframes slide-down {
-                    0% {
-                        transform: translateY(0);
-                    }
-                    100% {
-                        transform: translateY(100%);
-                    }
-                }
-                
-                .button-entrance {
-                    animation: button-entrance 0.8s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
-                }
-
-                .button-pulse {
-                    animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-                }
-
-                .button-pulse:after {
-                    content: '';
-                    position: absolute;
-                    left: 0;
-                    right: 0;
-                    top: 0;
-                    bottom: 0;
-                    border-radius: 50%;
-                    box-shadow: 0 0 8px 4px rgba(147, 51, 234, 0.5);
-                    animation: pulse-dot 1.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
-                }
-                
-                /* Responsive styles for the action button */
-                .mobile-action-button {
-                    /* Default mobile styles */
-                    width: 3.5rem;
-                    height: 3.5rem;
-                    bottom: 1.5rem; /* Keep bottom-6 (1.5rem) for mobile */
-                }
-
-                /* Center the icon in mobile view */
-                .mobile-icon {
-                    margin-right: 0;
-                }
-                
-                @media (min-width: 1025px) {
-                    .mobile-action-button {
-                        /* Desktop styles */
-                        padding: 0 1.5rem;
-                        width: auto;
-                        height: 3rem;
-                        bottom: 6rem; /* Move button higher (from bottom-6 to bottom-12) in desktop view */
-                    }
-                    
-                    /* In desktop view, add margin to the icon */
-                    .mobile-icon {
-                        margin-right: 0.5rem;
-                    }
-                }
-
-                /* Ensure the editor stays within the question container on mobile */
-                @media (max-width: 1024px) {
-                    .question-container .dark-editor {
-                        max-height: calc(100% - 80px) !important;
-                        overflow: auto !important;
-                    }
-
-                    /* Mobile-specific styles for the chat container */
-                    .mobile-chat-container {
-                        position: fixed !important;
-                        left: 0 !important;
-                        right: 0 !important;
-                        bottom: 0 !important;
-                        top: 0 !important;
-                        z-index: 50 !important;
-                        background-color: #111111 !important;
-                        animation: slide-up 0.3s ease-out forwards !important;
-                        display: flex !important;
-                        flex-direction: column !important;
-                        overflow: hidden !important;
-                    }
-
-                    .mobile-chat-container.slide-down {
-                        animation: slide-down 0.3s ease-out forwards !important;
-                    }
-                }
-            `}</style>
-
-            {showChatView ? (
-                <div className={`two-column-grid bg-[#111111] ${!isMobileView ? 'rounded-md overflow-hidden split-view-container' : ''}`}>
-                    {/* Left side - Editor (only shows in desktop view when chat is open) */}
-                    {!isMobileView && (
-                        <div className="p-6 border-r border-[#222222] flex flex-col bg-[#1A1A1A] lg:border-r lg:border-b-0 sm:border-b sm:border-r-0 question-container"
-                            style={{ overflow: 'auto' }}
-                            ref={editorContainerRef}
-                        >
-                            <div className={`flex-1`}>
-                                <BlockNoteEditor
-                                    initialContent={initialContent}
-                                    onChange={handleEditorChange}
-                                    isDarkMode={isDarkMode}
-                                    readOnly={readOnly}
-                                    className="dark-editor"
-                                    onEditorReady={setEditorInstance}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Right side - Chat View */}
-                    <div className={`${isMobileView ? `mobile-chat-container ${isChatClosing ? 'slide-down' : ''}` : 'flex flex-col bg-[#111111] h-full overflow-hidden lg:border-l lg:border-t-0 sm:border-t sm:border-l-0 border-[#222222]'} chat-container`}>
-                        <div className="chat-header flex justify-between items-center px-4 py-2 border-b border-[#222222]">
-                            <h3 className="text-white text-sm font-light">Ask your doubts</h3>
-
-                            <button
-                                onClick={handleAskDoubt}
-                                className="text-white hover:bg-[#222222] rounded-full p-1 transition-colors cursor-pointer"
-                                aria-label="Close chat"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <ChatView
-                            currentChatHistory={chatHistory}
-                            isAiResponding={isAiResponding}
-                            showPreparingReport={false}
-                            isChatHistoryLoaded={true}
-                            isTestMode={false}
-                            taskType="learning_material"
-                            isSubmitting={isSubmitting}
-                            currentAnswer={currentAnswer}
-                            handleInputChange={handleChatInputChange}
-                            handleKeyPress={handleChatKeyPress}
-                            handleSubmitAnswer={handleChatSubmit}
-                            handleAudioSubmit={handleAudioSubmit}
-                            handleViewScorecard={handleViewScorecard}
-                            readOnly={false}
-                            completedQuestionIds={{}}
-                            handleRetry={handleRetry}
-                        />
-                    </div>
-                </div>
-            ) : (
-                <div
-                    className="editor-container mt-4"
-                    ref={editorContainerRef}
-                    style={{
-                        height: containerHeight,
-                        overflowY: 'auto',
-                    }}
-                >
+            <div className="w-full flex flex-col my-4">
+                <div className={`editor-container h-[600px] overflow-y-auto overflow-hidden relative z-0`}>
                     <BlockNoteEditor
                         initialContent={initialContent}
                         onChange={handleEditorChange}
                         isDarkMode={isDarkMode}
                         readOnly={readOnly}
-                        className="dark-editor"
+                        className="quiz-editor"
                         onEditorReady={setEditorInstance}
                     />
                 </div>
-            )}
-
-            {/* Floating button for desktop and mobile with different layouts */}
-            {
-                isLearnerView && !showChatView && !viewOnly && (
-                    <>
-                        {/* Floating action button - behavior changes based on screen size */}
-                        <button
-                            onClick={() => {
-                                // For desktop view OR mobile view with no onMarkComplete, directly trigger handleAskDoubt
-                                if (!isMobileView || !onMarkComplete) {
-                                    // For desktop view direct click
-                                    if (!hasClickedFabButton) {
-                                        setHasClickedFabButton(true);
-                                        safeLocalStorage.setItem('hasClickedFabButton', 'true');
-                                    }
-                                    handleAskDoubt();
-                                } else {
-                                    // Only toggle menu in mobile view when onMarkComplete exists
-                                    toggleMobileMenu();
-                                }
-                            }}
-                            className={`fixed right-6 bottom-6 mobile-action-toggle-button mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
-                            aria-label={isMobileMenuOpen ? "Close menu" : "Ask a doubt"}
-                        >
-                            {isMobileMenuOpen ? (
-                                <X className="h-6 w-6" />
-                            ) : (
-                                <>
-                                    {/* 
-                                  In mobile view:
-                                  - Show MessageCircle directly if onMarkComplete is not defined
-                                  - Show HelpCircle as toggle icon if onMarkComplete exists
-                                */}
-                                    <span className="lg:hidden">
-                                        {!onMarkComplete ? (
-                                            <MessageCircle className="h-6 w-6" />
-                                        ) : (
-                                            <HelpCircle className="h-6 w-6" strokeWidth={2.5} fill="rgba(147, 51, 234, 0.1)" />
-                                        )}
-                                    </span>
-                                    <span className="hidden lg:flex lg:items-center">
-                                        <MessageCircle className="h-5 w-5 mobile-icon" />
-                                        <span className="lg:ml-2">Ask a doubt</span>
-                                    </span>
-                                </>
-                            )}
-                        </button>
-
-                        {/* Only show mobile menu overlay and options when onMarkComplete exists */}
-                        {isMobileMenuOpen && onMarkComplete && (
-                            <div
-                                className="fixed inset-0 z-10"
-                                style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
-                                aria-hidden="true"
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            />
-                        )}
-
-                        {/* Mobile menu - only shown on smaller screens and when onMarkComplete exists */}
-                        {isMobileMenuOpen && onMarkComplete && (
-                            <div className="lg:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '100px' }} ref={mobileMenuRef}>
-                                {/* Ask a doubt button */}
-                                <div className="flex items-center gap-3">
-                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                        Ask a doubt
-                                    </span>
-                                    <button
-                                        onClick={() => {
-                                            setIsMobileMenuOpen(false);
-                                            handleAskDoubt();
-                                        }}
-                                        className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
-                                        aria-label="Ask a doubt"
-                                    >
-                                        <MessageCircle className="h-6 w-6" />
-                                    </button>
-                                </div>
-
-                                {/* Mark as complete button */}
-                                <div className="flex items-center gap-3">
-                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                        Mark as complete
-                                    </span>
-                                    <button
-                                        onClick={() => {
-                                            setIsMobileMenuOpen(false);
-                                            onMarkComplete();
-                                        }}
-                                        className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
-                                        aria-label="Mark as complete"
-                                    >
-                                        <CheckCircle className="h-6 w-6" />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )
-            }
+            </div>
 
             {/* Publish Confirmation Dialog */}
             <ConfirmationDialog
