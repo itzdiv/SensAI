@@ -322,7 +322,7 @@ export default function LearnerQuizView({
                         try {
                             // Get presigned URL
                             const file_uuid = message.content;
-                            const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${file_uuid}`, {
+                            const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${file_uuid}&file_type=audio`, {
                                 method: 'GET',
                                 headers: {
                                     'Content-Type': 'application/json',
@@ -829,7 +829,7 @@ export default function LearnerQuizView({
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            file_type: "wav",
+                            file_type: "audio",
                             content_type: "audio/wav"
                         })
                     });
@@ -861,7 +861,6 @@ export default function LearnerQuizView({
                     // The browser's recorded format (likely webm) will be treated as WAV format
                     const audioBlob = new Blob([uint8Array], { type: 'audio/wav' });
 
-                    console.log(presigned_url);
                     // Upload to S3 using the presigned URL with WAV content type
                     const uploadResponse = await fetch(presigned_url, {
                         method: 'PUT',

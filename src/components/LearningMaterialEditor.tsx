@@ -1,11 +1,8 @@
 "use client";
 
 import "@blocknote/core/fonts/inter.css";
-import { useCreateBlockNote } from "@blocknote/react";
-import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react";
-import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
 import { MessageCircle, X, CheckCircle, HelpCircle } from "lucide-react";
 
 // Add custom styles for dark mode
@@ -44,29 +41,6 @@ interface LearningMaterialEditorProps {
     onSaveSuccess?: (updatedData?: TaskData) => void;
     onAskDoubt?: () => void;
     onMarkComplete?: () => void;
-}
-
-// Uploads a file and returns the URL to the uploaded file
-// You can replace this with your own implementation that uploads to your server or cloud storage
-async function uploadFile(file: File) {
-    // This is a simple example using a temporary file hosting service
-    // For production, you should use your own server or a service like AWS S3
-    const body = new FormData();
-    body.append("file", file);
-
-    try {
-        const response = await fetch("https://tmpfiles.org/api/v1/upload", {
-            method: "POST",
-            body: body,
-        });
-
-        const data = await response.json();
-        // Transform the URL to directly access the file
-        return data.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/");
-    } catch (error) {
-        console.error("Error uploading file:", error);
-        throw error;
-    }
 }
 
 // Use forwardRef to pass the ref from parent to this component
@@ -212,29 +186,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         return () => clearTimeout(timer);
     }, [editorContent, adjustEditorHeight]);
 
-    // Function to open the slash menu
-    const openSlashMenu = () => {
-        // Function intentionally left empty - we're not programmatically opening the slash menu
-    };
-
-    // Remove the advanced blocks from the schema
-    // Extract only the blocks we don't want
-    const { image, table, video, audio, file, ...basicBlockSpecs } = defaultBlockSpecs;
-
-    // Create a schema with only the basic blocks
-    const schema = BlockNoteSchema.create({
-        blockSpecs: basicBlockSpecs,
-    });
-
-    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks : undefined;
-
-    // Creates a new editor instance with the custom schema
-    const editor = useCreateBlockNote({
-        initialContent,
-        uploadFile,
-        schema, // Use our custom schema with limited blocks
-    });
-
     // Handle editor changes and trigger height adjustment
     const handleEditorChange = (content: any[]) => {
         // Avoid unnecessary state updates if content hasn't changed
@@ -247,6 +198,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             setTimeout(adjustEditorHeight, 0);
         }
     };
+
+    const initialContent = taskData?.blocks && taskData.blocks.length > 0 ? taskData.blocks : undefined;
 
     // Fetch task data when taskId changes
     useEffect(() => {
@@ -486,21 +439,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             };
         }
     }, [taskId]);
-
-    useEffect(() => {
-        if (editor && taskData && taskData.blocks && taskData.blocks.length > 0) {
-            // Optionally use setTimeout to delay update until editor is fully ready
-            setTimeout(() => {
-                try {
-                    editor.replaceBlocks(editor.document, taskData.blocks);
-                    // Also update the editorContent state to ensure hasContent works correctly
-                    setEditorContent(taskData.blocks);
-                } catch (error) {
-                    console.error("Error updating editor content:", error);
-                }
-            }, 0);
-        }
-    }, [editor, taskData]);
 
     // Handle cancel in edit mode - revert to original data
     const handleCancel = () => {

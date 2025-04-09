@@ -22,23 +22,98 @@ interface BlockNoteEditorProps {
 
 // Uploads a file and returns the URL to the uploaded file
 async function uploadFile(file: File) {
-    // This is a simple example using a temporary file hosting service
-    // For production, you should use your own server or a service like AWS S3
-    const body = new FormData();
-    body.append("file", file);
+    if (!file.type.startsWith('image/')) {
+        return ''
+    }
+
+    let presigned_url = '';
+    let file_key = '';
+    let file_uuid = '';
 
     try {
-        const response = await fetch("https://tmpfiles.org/api/v1/upload", {
-            method: "POST",
-            body: body,
+        // First, get a presigned URL for the file
+        const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                file_type: "image",
+                content_type: file.type
+            })
         });
 
-        const data = await response.json();
-        // Transform the URL to directly access the file
-        return data.data.url.replace("tmpfiles.org/", "tmpfiles.org/dl/");
+        if (!presignedUrlResponse.ok) {
+            throw new Error('Failed to get presigned URL');
+        }
+
+        const presignedData = await presignedUrlResponse.json();
+
+        console.log('Presigned url generated');
+        presigned_url = presignedData.presigned_url;
+        file_key = presignedData.file_key;
+        file_uuid = presignedData.file_uuid;
     } catch (error) {
-        console.error("Error uploading file:", error);
+        console.error("Error getting presigned URL for file:", error);
         throw error;
+    }
+
+    // Upload the file to S3 using the presigned URL
+    try {
+        // Upload the file directly without base64 conversion
+        // since we're handling an file, not audio
+        const imageBlob = new Blob([file], { type: file.type });
+
+        // Upload to S3 using the presigned URL with WAV content type
+        const uploadResponse = await fetch(presigned_url, {
+            method: 'PUT',
+            body: imageBlob,
+            headers: {
+                'Content-Type': file.type
+            }
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
+        }
+
+        console.log('File uploaded successfully to S3');
+        console.log(uploadResponse);
+        // Update the request body with the file information
+        return uploadResponse.url
+    } catch (error) {
+        console.error('Error uploading audio to S3:', error);
+        throw error;
+    }
+}
+
+async function resolveFileUrl(url: string) {
+    if (!url) {
+        return '';
+    }
+
+    let uuid = url.split('/').pop()?.split('.')[0] || '';
+
+    try {
+        // Get presigned URL
+        const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${uuid}&file_type=image`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!presignedResponse.ok) {
+            throw new Error('Failed to get presigned URL for audio file');
+        }
+
+        console.log('Presigned url for fetch generated');
+
+        const { url } = await presignedResponse.json();
+
+        return url;
+    } catch (error) {
+        console.error('Error fetching file:', error);
     }
 }
 
@@ -63,7 +138,7 @@ export default function BlockNoteEditor({
 
     // Remove the advanced blocks from the schema
     // Extract only the blocks we don't want
-    const { image, table, video, audio, file, ...basicBlockSpecs } = defaultBlockSpecs;
+    const { table, video, audio, file, ...basicBlockSpecs } = defaultBlockSpecs;
 
     // Create a schema with only the basic blocks
     const schema = BlockNoteSchema.create({
@@ -74,6 +149,7 @@ export default function BlockNoteEditor({
     const editor = useCreateBlockNote({
         initialContent: initialContent.length > 0 ? initialContent : undefined,
         uploadFile,
+        resolveFileUrl,
         schema, // Use our custom schema with limited blocks
         dictionary: {
             ...locale,
