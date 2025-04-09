@@ -10,9 +10,9 @@ import SuccessSound from "./SuccessSound";
 import ModuleCompletionSound from "./ModuleCompletionSound";
 import ConfirmationDialog from "./ConfirmationDialog";
 
-// Dynamically import editor components to avoid SSR issues
-const DynamicLearningMaterialEditor = dynamic(
-    () => import("./LearningMaterialEditor"),
+// Dynamically import viewer components to avoid SSR issues
+const DynamicLearningMaterialViewer = dynamic(
+    () => import("./LearningMaterialViewer"),
     { ssr: false }
 );
 
@@ -1192,16 +1192,13 @@ export default function LearnerCourseView({
                                     </div>
                                 ) : (
                                     <>
-
-
                                         {activeItem?.type === 'material' && (
-                                            <DynamicLearningMaterialEditor
+                                            <DynamicLearningMaterialViewer
                                                 taskId={activeItem.id}
                                                 userId={userId}
                                                 readOnly={true}
                                                 isDarkMode={true}
                                                 onMarkComplete={!completedTasks[activeItem?.id] && !viewOnly ? markTaskComplete : undefined}
-                                                isLearnerView={true}
                                                 viewOnly={viewOnly}
                                             />
                                         )}
