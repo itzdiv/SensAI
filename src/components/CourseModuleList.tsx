@@ -5,6 +5,7 @@ import { QuizQuestion } from "@/types/quiz"; // Import from types instead
 import CourseItemDialog from "@/components/CourseItemDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Tooltip from "@/components/Tooltip"; // Import the Tooltip component
+import { formatScheduleDate } from "@/lib/utils/dateFormat"; // Import the utility function
 
 
 interface CourseModuleListProps {
@@ -761,7 +762,7 @@ export default function CourseModuleList({
                                                         </span>
                                                     )}
                                                     {item.status === 'published' && item.scheduled_publish_at && (
-                                                        <Tooltip content={`Scheduled for ${new Date(item.scheduled_publish_at).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`} position="top">
+                                                        <Tooltip content={`Scheduled for ${formatScheduleDate(new Date(item.scheduled_publish_at))}`} position="top">
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-600 text-white mr-2">
                                                                 SCHEDULED
                                                             </span>

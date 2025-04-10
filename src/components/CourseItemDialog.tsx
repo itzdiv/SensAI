@@ -12,6 +12,7 @@ import { TaskData } from "@/types";
 import Tooltip from "./Tooltip";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { formatScheduleDate } from "@/lib/utils/dateFormat";
 
 // Dynamically import the editor components
 const DynamicLearningMaterialEditor = dynamic(
@@ -293,36 +294,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showSchedulePicker]);
-
-    // Format the scheduled date for display
-    const formatScheduleDate = (date: Date | null) => {
-        if (!date) return "";
-
-        // If the date is today, show "Today at [time]"
-        const today = new Date();
-        if (date.getDate() === today.getDate() &&
-            date.getMonth() === today.getMonth() &&
-            date.getFullYear() === today.getFullYear()) {
-            return `Today at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
-        }
-
-        // If the date is tomorrow, show "Tomorrow at [time]"
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        if (date.getDate() === tomorrow.getDate() &&
-            date.getMonth() === tomorrow.getMonth() &&
-            date.getFullYear() === tomorrow.getFullYear()) {
-            return `Tomorrow at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
-        }
-
-        // Otherwise, show the full date
-        return date.toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
 
     // Bail early if dialog isn't open or there's no active item
     if (!isOpen || !activeItem) return null;
@@ -783,7 +754,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                             ) : activeItem?.status === 'published' && !isEditMode && !quizPreviewMode && (
                                 <>
                                     {activeItem.scheduled_publish_at && (
-                                        <Tooltip content={`Scheduled for ${new Date(activeItem.scheduled_publish_at).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`} position="top">
+                                        <Tooltip content={`Scheduled for ${formatScheduleDate(new Date(activeItem.scheduled_publish_at))}`} position="top">
                                             <button
                                                 className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-yellow-600 hover:bg-[#222222] focus:border-yellow-600 active:border-yellow-600 rounded-full transition-colors"
                                                 aria-label="Scheduled publishing information"
