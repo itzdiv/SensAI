@@ -278,25 +278,35 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                         </span>
                                     </Tooltip>
                                 </h3>
-                                <div className="flex items-end gap-4">
+                                <div className="flex items-end">
                                     {/* Calculate the percentage of active learners */}
                                     {(() => {
                                         const totalLearners = cohort?.members?.filter(m => m.role === 'learner').length || 0;
                                         const activePercentage = totalLearners > 0 ?
                                             (courseMetrics.num_active_learners / totalLearners) : 0;
 
+                                        // Determine font size based on digit count
+                                        const activeLearnerDigits = courseMetrics.num_active_learners.toString().length;
+                                        const totalLearnerDigits = totalLearners.toString().length;
+                                        const largeNumberClass =
+                                            (activeLearnerDigits >= 4 || totalLearnerDigits >= 4)
+                                                ? "text-4xl"
+                                                : (activeLearnerDigits >= 3 || totalLearnerDigits >= 3)
+                                                    ? "text-5xl"
+                                                    : "text-6xl";
+
                                         return (
-                                            <span className="text-6xl font-light">
-                                                <span className={`${activePercentage < 0.3 ? 'text-red-400' :
+                                            <div className="w-full flex items-baseline">
+                                                <span className={`${largeNumberClass} font-light whitespace-nowrap ${activePercentage < 0.3 ? 'text-red-400' :
                                                     activePercentage < 0.7 ? 'text-amber-400' :
                                                         'text-green-400'
                                                     }`}>
                                                     {courseMetrics.num_active_learners}
                                                 </span>
-                                                <span className="text-sm text-gray-400 ml-2">
+                                                <span className="text-sm text-gray-400 ml-2 whitespace-nowrap">
                                                     out of {totalLearners}
                                                 </span>
-                                            </span>
+                                            </div>
                                         );
                                     })()}
                                 </div>
