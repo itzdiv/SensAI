@@ -9,6 +9,9 @@ import type { QuizEditorHandle } from "../types";
 import Toast from "./Toast";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { TaskData } from "@/types";
+import Tooltip from "./Tooltip";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // Dynamically import the editor components
 const DynamicLearningMaterialEditor = dynamic(
@@ -92,6 +95,10 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // State to track preview mode for quizzes
     const [quizPreviewMode, setQuizPreviewMode] = useState(false);
 
+    // State for scheduled date
+    const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+    const [showSchedulePicker, setShowSchedulePicker] = useState(false);
+
     // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastTitle, setToastTitle] = useState("Published");
@@ -109,6 +116,33 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // State to track if quiz/exam has questions (for publish/preview button visibility)
     const [hasQuizQuestions, setHasQuizQuestions] = useState(false);
+
+    // Add a ref for the date picker container
+    const datePickerRef = useRef<HTMLDivElement>(null);
+
+    // Initialize scheduledDate when activeItem changes
+    useEffect(() => {
+        if (activeItem && activeItem.scheduled_publish_at) {
+            setScheduledDate(new Date(activeItem.scheduled_publish_at));
+        } else {
+            setScheduledDate(null);
+        }
+    }, [activeItem]);
+
+    // Function to validate scheduled date
+    const verifyScheduledDateAndSchedule = (date: Date | null) => {
+        if (!date) {
+            return;
+        }
+
+        if (date < new Date()) {
+            // Show error toast for dates in the past
+            displayToast("Invalid Date", "Scheduled date cannot be in the past", "⚠️");
+            return;
+        }
+
+        setScheduledDate(date);
+    }
 
     // Reset quiz preview mode when dialog is closed
     useEffect(() => {
@@ -242,6 +276,53 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             }
         };
     }, []);
+
+    // Handle clicking outside of the date picker
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+                setShowSchedulePicker(false);
+            }
+        };
+
+        if (showSchedulePicker) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showSchedulePicker]);
+
+    // Format the scheduled date for display
+    const formatScheduleDate = (date: Date | null) => {
+        if (!date) return "";
+
+        // If the date is today, show "Today at [time]"
+        const today = new Date();
+        if (date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()) {
+            return `Today at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        // If the date is tomorrow, show "Tomorrow at [time]"
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        if (date.getDate() === tomorrow.getDate() &&
+            date.getMonth() === tomorrow.getMonth() &&
+            date.getFullYear() === tomorrow.getFullYear()) {
+            return `Tomorrow at ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        // Otherwise, show the full date
+        return date.toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
 
     // Bail early if dialog isn't open or there's no active item
     if (!isOpen || !activeItem) return null;
@@ -470,6 +551,11 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     const handleConfirmSave = () => {
         setShowSaveConfirmation(false);
 
+        // Close the schedule picker if it's open
+        if (showSchedulePicker) {
+            setShowSchedulePicker(false);
+        }
+
         // Execute the actual save action based on item type
         if (activeItem?.type === 'material') {
             // Use the ref to call save directly
@@ -636,6 +722,47 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                             {activeItem?.status === 'published' && isEditMode ? (
                                 <>
+                                    {scheduledDate && (
+                                        <div className="flex items-center mr-3">
+                                            <button
+                                                onClick={() => setShowSchedulePicker(!showSchedulePicker)}
+                                                className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-yellow-600 hover:bg-[#222222] focus:border-yellow-600 active:border-yellow-600 rounded-full transition-colors cursor-pointer"
+                                                aria-label="Set scheduled publication date"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                                </svg>
+                                                {formatScheduleDate(scheduledDate)}
+                                            </button>
+                                            {showSchedulePicker && (
+                                                <div ref={datePickerRef} className="absolute mt-2 top-16 z-50 bg-[#242424] p-3 border border-gray-700 rounded-lg shadow-lg">
+                                                    <DatePicker
+                                                        selected={scheduledDate}
+                                                        onChange={(date) => verifyScheduledDateAndSchedule(date)}
+                                                        showTimeSelect
+                                                        timeFormat="HH:mm"
+                                                        timeIntervals={15}
+                                                        dateFormat="MMMM d, yyyy h:mm aa"
+                                                        timeCaption="Time"
+                                                        minDate={new Date()} // Can't schedule in the past
+                                                        className="bg-[#333333] rounded-md p-2 px-4 w-full text-white cursor-pointer"
+                                                        wrapperClassName="w-full"
+                                                        calendarClassName="bg-[#242424] text-white border border-gray-700 rounded-lg shadow-lg cursor-pointer"
+                                                        inline
+                                                    />
+                                                    <div className="mt-2 flex justify-end">
+                                                        <button
+                                                            onClick={() => setShowSchedulePicker(false)}
+                                                            className="px-3 py-1 text-xs text-white bg-[#444444] hover:bg-[#555555] rounded-md"
+                                                        >
+                                                            Close
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     <button
                                         onClick={handleSaveClick}
                                         className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
@@ -654,14 +781,30 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     </button>
                                 </>
                             ) : activeItem?.status === 'published' && !isEditMode && !quizPreviewMode && (
-                                <button
-                                    onClick={onEnableEditMode}
-                                    className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-violet-600 hover:bg-[#222222] focus:border-violet-600 active:border-violet-600 rounded-full transition-colors cursor-pointer"
-                                    aria-label="Edit item"
-                                >
-                                    <Pencil size={16} className="mr-2" />
-                                    Edit
-                                </button>
+                                <>
+                                    {activeItem.scheduled_publish_at && (
+                                        <Tooltip content={`Scheduled for ${new Date(activeItem.scheduled_publish_at).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`} position="top">
+                                            <button
+                                                className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-yellow-600 hover:bg-[#222222] focus:border-yellow-600 active:border-yellow-600 rounded-full transition-colors"
+                                                aria-label="Scheduled publishing information"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                                </svg>
+                                                Scheduled
+                                            </button>
+                                        </Tooltip>
+                                    )}
+                                    <button
+                                        onClick={onEnableEditMode}
+                                        className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-violet-600 hover:bg-[#222222] focus:border-violet-600 active:border-violet-600 rounded-full transition-colors cursor-pointer"
+                                        aria-label="Edit item"
+                                    >
+                                        <Pencil size={16} className="mr-2" />
+                                        Edit
+                                    </button>
+                                </>
                             )}
                         </div>
 
@@ -699,6 +842,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 onPublishCancel={onPublishCancel}
                                 taskId={activeItem.id}
                                 isDarkMode={true}
+                                scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
                                 onPublishSuccess={(updatedData?: TaskData) => {
                                     // Handle publish success
                                     if (updatedData) {
@@ -707,6 +851,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         if (activeItem && updatedData.status === 'published') {
                                             activeItem.status = 'published';
                                             activeItem.title = updatedData.title;
+                                            // Add the scheduled_publish_at value from updatedData to activeItem
+                                            activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
 
                                             if (updatedData.blocks) {
                                                 // @ts-ignore - types may not perfectly match
@@ -718,7 +864,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         onPublishConfirm();
 
                                         // Show toast notification
-                                        displayToast("Published", `Your learning material has been published`);
+                                        const publishMessage = updatedData.scheduled_publish_at ? "Your learning material has been scheduled for publishing" : "Your learning material has been published";
+                                        displayToast("Published", publishMessage);
                                     }
                                     // Hide the publish confirmation dialog
                                     onSetShowPublishConfirmation(false);
@@ -729,6 +876,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         // Update the activeItem with new title and content
                                         if (activeItem) {
                                             activeItem.title = updatedData.title;
+                                            // Add the scheduled_publish_at value when saving
+                                            activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
+
+                                            // Update the scheduledDate state to match the response
+                                            if (updatedData.scheduled_publish_at) {
+                                                setScheduledDate(new Date(updatedData.scheduled_publish_at));
+                                            } else {
+                                                setScheduledDate(null);
+                                            }
 
                                             if (updatedData.blocks) {
                                                 // @ts-ignore - types may not perfectly match
@@ -740,7 +896,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         onSaveItem();
 
                                         // Show toast notification for save success
-                                        displayToast("Saved", `Your learning material has been updated`);
+                                        const saveMessage = updatedData.scheduled_publish_at ? "Your learning material has been scheduled for publishing" : "Your learning material has been published";
+                                        displayToast("Saved", saveMessage);
                                     }
                                 }}
                             />
@@ -782,6 +939,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         // Update the activeItem with the updated title and questions
                                         if (activeItem) {
                                             activeItem.title = updatedData.title;
+                                            // Add the scheduled_publish_at value when saving
+                                            activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
 
                                             if (updatedData.questions) {
                                                 activeItem.questions = updatedData.questions;
@@ -805,6 +964,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         if (activeItem && updatedData.status === 'published') {
                                             activeItem.status = 'published';
                                             activeItem.title = updatedData.title;
+                                            // Add the scheduled_publish_at value from updatedData to activeItem
+                                            activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
 
                                             if (updatedData.questions) {
                                                 activeItem.questions = updatedData.questions;

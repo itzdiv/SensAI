@@ -288,7 +288,8 @@ export default function CreateCourse() {
                     milestone_id: parseInt(moduleId),
                     type: "learning_material",
                     title: "New Learning Material",
-                    status: "draft" // Add status to API request
+                    status: "draft",
+                    scheduled_publish_at: null
                 }),
             });
 
@@ -309,7 +310,8 @@ export default function CreateCourse() {
                         position: module.items.length,
                         type: 'material',
                         content: [], // Empty content, the editor will initialize with default content
-                        status: 'draft' // Create as draft instead of published
+                        status: 'draft',
+                        scheduled_publish_at: null
                     };
 
                     setActiveItem(newItem);
@@ -367,7 +369,8 @@ export default function CreateCourse() {
                             content: [],
                             config: { ...defaultQuestionConfig }
                         }],
-                        status: 'draft'
+                        status: 'draft',
+                        scheduled_publish_at: null
                     };
 
                     setActiveItem(newItem);
@@ -421,7 +424,8 @@ export default function CreateCourse() {
                         position: module.items.length,
                         type: 'exam',
                         questions: [],
-                        status: 'draft'
+                        status: 'draft',
+                        scheduled_publish_at: null
                     };
 
                     setActiveItem(newItem);
@@ -674,22 +678,24 @@ export default function CreateCourse() {
         }
 
         console.log("handleConfirmPublish called with activeItem:", activeItem);
+        console.log("Scheduled publish date from activeItem:", activeItem.scheduled_publish_at);
 
         // For learning materials and quizzes, the API call is now handled in their respective components
         // We need to update the modules list to reflect the status change
         // The title update is handled in the CourseItemDialog's onPublishSuccess callback
 
         // Update the module item in the modules list with the updated status and title
-        updateModuleItemStatusAndTitle(activeModuleId, activeItem.id, 'published', activeItem.title);
+        updateModuleItemAfterPublish(activeModuleId, activeItem.id, 'published', activeItem.title, activeItem.scheduled_publish_at);
 
         console.log("Module item updated with status 'published' and title:", activeItem.title);
+        console.log("Module item updated with scheduled_publish_at:", activeItem.scheduled_publish_at);
 
         // Hide the confirmation dialog
         setShowPublishConfirmation(false);
     };
 
     // Add a function to update a module item's status and title
-    const updateModuleItemStatusAndTitle = (moduleId: string, itemId: string, status: string, title: string) => {
+    const updateModuleItemAfterPublish = (moduleId: string, itemId: string, status: string, title: string, scheduled_publish_at: string | null) => {
         setModules(prevModules =>
             prevModules.map(module => {
                 if (module.id === moduleId) {
@@ -707,6 +713,7 @@ export default function CreateCourse() {
                                     ...item,
                                     status,
                                     title,
+                                    scheduled_publish_at,
                                     ...(numQuestions !== undefined && (item.type === 'quiz' || item.type === 'exam') ? { numQuestions } : {})
                                 };
                             }

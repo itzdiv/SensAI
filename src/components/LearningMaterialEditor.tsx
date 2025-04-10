@@ -3,7 +3,10 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from "react";
-import { MessageCircle, X, CheckCircle, HelpCircle } from "lucide-react";
+
+// Add import for date picker
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -38,6 +41,7 @@ interface LearningMaterialEditorProps {
     userId?: string;
     onPublishSuccess?: (updatedData?: TaskData) => void;
     onSaveSuccess?: (updatedData?: TaskData) => void;
+    scheduledPublishAt?: string | null;
 }
 
 // Use forwardRef to pass the ref from parent to this component
@@ -54,6 +58,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     userId = '',
     onPublishSuccess,
     onSaveSuccess,
+    scheduledPublishAt = null,
 }, ref) => {
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const [isPublishing, setIsPublishing] = useState(false);
@@ -61,6 +66,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
+
+    // New state variables for scheduling
+    const [scheduleForLater, setScheduleForLater] = useState(false);
+    const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
 
     // Reference to the editor instance
     const editorRef = useRef<any>(null);
@@ -311,6 +320,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         setEditorContent(data.blocks);
                     }
 
+                    console.log("data", data);
+
                     setIsLoading(false);
                 })
                 .catch(error => {
@@ -363,16 +374,27 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
             console.log("currentContent", currentContent);
 
+            // Add scheduled publishing data if selected
+            const publishData: any = {
+                title: currentTitle,
+                blocks: currentContent,
+                scheduled_publish_at: null
+            };
+
+            // Add scheduled_publish_at if schedule for later is selected
+            if (scheduleForLater && scheduledDate) {
+                publishData.scheduled_publish_at = scheduledDate.toISOString();
+            }
+
+            console.log("publishData", publishData);
+
             // Make POST request to publish the learning material content
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    title: currentTitle,
-                    blocks: currentContent
-                }),
+                body: JSON.stringify(publishData),
             });
 
             if (!response.ok) {
@@ -382,17 +404,22 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Get the updated task data from the response
             const updatedTaskData = await response.json();
 
-            // Ensure the status is set to 'published' and use the title we just set
+            // Ensure the status is set correctly based on scheduled status
             const publishedTaskData = {
                 ...updatedTaskData,
-                status: 'published',  // Force status to 'published' to ensure UI update
-                title: currentTitle   // Use the current title from the dialog
+                status: 'published',
+                title: currentTitle,   // Use the current title from the dialog
+                scheduled_publish_at: scheduleForLater ? scheduledDate?.toISOString() : null // Include scheduled date and ensure it's always included in response
             };
+
+            // Log to verify the scheduled_publish_at value
+            console.log("Publishing task with data:", publishedTaskData);
+            console.log("Scheduled publish at:", publishedTaskData.scheduled_publish_at);
 
             // Update our local state with the data from the API
             setTaskData(publishedTaskData);
 
-            console.log("Learning material published successfully");
+            console.log(scheduleForLater ? "Learning material scheduled for publishing" : "Learning material published successfully");
 
             // First set publishing to false to avoid state updates during callbacks
             setIsPublishing(false);
@@ -418,9 +445,76 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
     const handleCancelPublish = () => {
         setPublishError(null);
+        setScheduleForLater(false);
+        setScheduledDate(null);
         if (onPublishCancel) {
             onPublishCancel();
         }
+    };
+
+    const verifyScheduledDateAndSchedulePublish = (date: Date | null) => {
+        if (!date) {
+            return;
+        }
+
+        if (date < new Date()) {
+            return;
+        }
+
+        setScheduledDate(date);
+    }
+
+    // Reset scheduling state when dialog is closed
+    useEffect(() => {
+        if (!showPublishConfirmation) {
+            setScheduleForLater(false);
+            setScheduledDate(null);
+        }
+    }, [showPublishConfirmation]);
+
+    // Generate the scheduler UI to pass to the ConfirmationDialog as children
+    const renderScheduleOptions = () => {
+        return (
+            <div className="mt-4">
+                <div className={`flex items-center ${scheduleForLater ? 'mb-3' : ''}`}>
+                    <input
+                        type="checkbox"
+                        id="schedule-for-later"
+                        checked={scheduleForLater}
+                        onChange={(e) => {
+                            setScheduleForLater(e.target.checked);
+                            // Set default scheduled date to tomorrow at same time if nothing is set
+                            if (e.target.checked && !scheduledDate) {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setScheduledDate(tomorrow);
+                            }
+                        }}
+                        className="mr-2 h-4 w-4 cursor-pointer"
+                    />
+                    <label htmlFor="schedule-for-later" className="text-white cursor-pointer flex items-center">
+                        Schedule time to publish
+                    </label>
+                </div>
+
+                {scheduleForLater && (
+                    <DatePicker
+                        selected={scheduledDate}
+                        onChange={(date) => verifyScheduledDateAndSchedulePublish(date)}
+                        showTimeSelect
+                        timeFormat="HH:mm"
+                        timeIntervals={15}
+                        dateFormat="MMMM d, yyyy h:mm aa"
+                        timeCaption="Time"
+                        minDate={new Date()} // Can't schedule in the past
+                        className="bg-[#333333] rounded-md p-2 px-4 w-full text-white cursor-pointer"
+                        wrapperClassName="w-full"
+                        calendarClassName="bg-[#242424] text-white border border-gray-700 rounded-lg shadow-lg cursor-pointer"
+                    />
+
+                )}
+            </div>
+        );
     };
 
     // Handle saving changes when in edit mode
@@ -438,6 +532,11 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Use the current editor content
             const currentContent = editorContent.length > 0 ? editorContent : (taskData?.blocks || []);
 
+            // Use the scheduledPublishAt prop instead of taskData.scheduled_publish_at
+            const currentScheduledPublishAt = scheduledPublishAt !== undefined ? scheduledPublishAt : (taskData?.scheduled_publish_at || null);
+
+            console.log("Saving with scheduled_publish_at:", currentScheduledPublishAt);
+
             // Make POST request to update the learning material content, keeping the same status
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
                 method: 'POST',
@@ -446,7 +545,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 },
                 body: JSON.stringify({
                     title: currentTitle,
-                    blocks: currentContent
+                    blocks: currentContent,
+                    scheduled_publish_at: currentScheduledPublishAt
                 }),
             });
 
@@ -462,6 +562,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 ...updatedTaskData,
                 title: currentTitle // Use the current title from the dialog
             };
+
+            console.log(updatedData)
 
             // Update our local state with the data from the API
             setTaskData(updatedData);
@@ -567,7 +669,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 isLoading={isPublishing}
                 errorMessage={publishError}
                 type="publish"
-            />
+                confirmButtonText={scheduleForLater ? "Schedule" : "Publish Now"}
+            >
+                {renderScheduleOptions()}
+            </ConfirmationDialog>
         </div>
     );
 });
