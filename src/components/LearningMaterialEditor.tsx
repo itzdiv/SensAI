@@ -171,6 +171,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             },
                             {
                                 type: "paragraph",
+                                content: [{ "text": "Insert images/videos/audio clips by clicking the + icon on the left and selecting Image/Video/Audio", "type": "text", styles: {} }]
+                            },
+                            {
+                                type: "paragraph",
                                 content: [{ "text": "", "type": "text", styles: {} }]
                             },
                             {
