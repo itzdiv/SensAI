@@ -56,6 +56,7 @@ interface ChatHistoryViewProps {
     showPreparingReport: boolean;
     currentQuestionConfig?: any;
     onRetry?: () => void;
+    taskType: string;
 }
 
 const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
@@ -64,6 +65,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     isAiResponding,
     showPreparingReport,
     currentQuestionConfig,
+    taskType,
     onRetry
 }) => {
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -82,23 +84,32 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     const initialMessageSetRef = useRef(false);
 
     // Preset list of thinking messages for the AI typing animation
-    const thinkingMessages = [
-        "Analyzing your response",
-        "Thinking",
-        "Processing your answer",
-        "Considering different angles",
-        "Evaluating your submission",
-        "Looking at your approach",
-        "Checking against criteria",
-        "Formulating feedback",
-        "Preparing a thoughtful response",
-        "Finding the best way to help",
-        "Reflecting on your answer",
-        "Connecting the dots",
-        "Crafting personalized feedback",
-        "Examining your reasoning",
-        "Assessing key concepts"
-    ];
+    const thinkingMessages = taskType === 'learning_material'
+        ? [
+            "Thinking",
+            "Preparing a response",
+            "Gathering relevant details",
+            "Crafting a clear explanation",
+            "Finding the best way to help",
+            "Putting together a helpful answer",
+        ]
+        : [
+            "Analyzing your response",
+            "Thinking",
+            "Processing your answer",
+            "Considering different angles",
+            "Evaluating your submission",
+            "Looking at your approach",
+            "Checking against criteria",
+            "Formulating feedback",
+            "Preparing a thoughtful response",
+            "Finding the best way to help",
+            "Reflecting on your answer",
+            "Connecting the dots",
+            "Crafting personalized feedback",
+            "Examining your reasoning",
+            "Assessing key concepts"
+        ];
 
     // Update the ref when the state changes
     useEffect(() => {

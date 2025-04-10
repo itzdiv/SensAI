@@ -357,6 +357,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                                 showPreparingReport={showPreparingReport}
                                 currentQuestionConfig={currentQuestionConfig}
                                 onRetry={handleRetry}
+                                taskType={taskType}
                             />
                         </div>
                     )}
