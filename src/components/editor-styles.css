@@ -591,3 +591,80 @@ div[role="dialog"]>div {
         padding-right: 32px !important;
     }
 }
+
+/* DatePicker Dark Theme customization */
+.react-datepicker {
+    font-family: inherit;
+    background-color: #242424 !important;
+    color: white !important;
+    border-color: #444 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.react-datepicker__header {
+    background-color: #1a1a1a !important;
+    border-bottom-color: #444 !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name,
+.react-datepicker-time__header {
+    color: white !important;
+}
+
+.react-datepicker__day {
+    color: #ddd !important;
+}
+
+.react-datepicker__day:hover {
+    background-color: #333 !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+    background-color: #666 !important;
+    color: white !important;
+}
+
+.react-datepicker__time-container {
+    border-left-color: #444 !important;
+}
+
+.react-datepicker__time-container .react-datepicker__time {
+    background-color: #1a1a1a !important;
+}
+
+.react-datepicker__time-container .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
+    color: #ddd !important;
+}
+
+.react-datepicker__time-container .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
+    background-color: #333 !important;
+}
+
+.react-datepicker__time-container .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
+    background-color: #555 !important;
+}
+
+.react-datepicker__triangle {
+    border-bottom-color: #1a1a1a !important;
+}
+
+.react-datepicker__triangle::before {
+    border-bottom-color: #444 !important;
+}
+
+.react-datepicker__navigation-icon::before,
+.react-datepicker__year-read-view--down-arrow {
+    border-color: #888 !important;
+}
+
+.react-datepicker__navigation:hover *::before {
+    border-color: #ccc !important;
+}
+
+/* DatePicker input styling */
+.react-datepicker-wrapper input:focus {
+    outline: none;
+    border-color: #666;
+}

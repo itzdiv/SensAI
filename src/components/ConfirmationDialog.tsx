@@ -26,6 +26,9 @@ interface ConfirmationDialogProps {
 
     // Type props for styling
     type?: 'publish' | 'delete' | 'custom';
+
+    // Custom content to be rendered between message and buttons
+    children?: React.ReactNode;
 }
 
 export default function ConfirmationDialog({
@@ -50,7 +53,10 @@ export default function ConfirmationDialog({
     errorMessage = null,
 
     // Type with default
-    type = 'delete'
+    type = 'delete',
+
+    // Custom content
+    children
 }: ConfirmationDialogProps) {
     // Handle both 'open' and 'show' props for backward compatibility
     const isVisible = open !== undefined ? open : (show !== undefined ? show : false);
@@ -92,6 +98,13 @@ export default function ConfirmationDialog({
                     <p className="text-gray-300">{displayMessage}</p>
                     {errorMessage && (
                         <p className="mt-4 text-red-400 text-sm">{errorMessage}</p>
+                    )}
+
+                    {/* Render custom content if provided */}
+                    {children && (
+                        <div className="mt-6">
+                            {children}
+                        </div>
                     )}
                 </div>
                 <div className="flex justify-end gap-4 p-6">

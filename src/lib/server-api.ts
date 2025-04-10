@@ -7,11 +7,11 @@ import { transformMilestonesToModules } from "./course";
  * @param baseUrl - The base URL for the API request
  * @returns Object containing the course data and transformed modules
  */
-export const getCourseModules = async (courseId: string): Promise<{
+export const getPublishedCourseModules = async (courseId: string): Promise<{
   courseData: any,
   modules: any[]
 }> => {
-  const response = await fetch(`${process.env.BACKEND_URL}/courses/${courseId}`, {
+  const response = await fetch(`${process.env.BACKEND_URL}/courses/${courseId}?published=true`, {
     cache: 'no-store'
   });
 

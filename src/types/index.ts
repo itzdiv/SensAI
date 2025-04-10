@@ -4,6 +4,7 @@ export interface TaskData {
     title: string;
     blocks: any[];
     status: string;
+    scheduled_publish_at?: string;
 }
 
 export interface Member {
@@ -46,6 +47,7 @@ export interface Task {
     content?: any[]; // Content for learning materials
     num_questions?: number;
     questions?: any[]; // Questions for quizzes and exams
+    scheduled_publish_at: string;
 }
 
 export interface Milestone {

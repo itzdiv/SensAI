@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import ClientPreviewWrapper from './ClientPreviewWrapper';
-import { getCourseModules } from '@/lib/server-api';
+import { getPublishedCourseModules } from '@/lib/server-api';
 
 export async function generateMetadata(
     { params }: { params: { id: string, courseId: string } }
@@ -38,8 +38,8 @@ export default async function PreviewPage({ params }: { params: { id: string, co
     const courseId = params.courseId;
 
     try {
-        // Use the new getCourseModules function to fetch and transform course data
-        const { courseData, modules } = await getCourseModules(courseId);
+        // Use the new getPublishedCourseModules function to fetch and transform course data
+        const { courseData, modules } = await getPublishedCourseModules(courseId);
 
         return (
             <div className="min-h-screen bg-black">

@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import ClientLearnerViewWrapper from './ClientLearnerViewWrapper';
-import { getCourseModules } from '@/lib/server-api';
+import { getPublishedCourseModules } from '@/lib/server-api';
 
 
 export async function generateMetadata(
@@ -52,8 +52,8 @@ export default async function AdminLearnerViewPage({
     const { cohortId } = searchParams || {};
 
     try {
-        // Use the new getCourseModules function to fetch and transform course data
-        const { courseData, modules } = await getCourseModules(courseId);
+        // Use the new getPublishedCourseModules function to fetch and transform course data
+        const { courseData, modules } = await getPublishedCourseModules(courseId);
 
         // Fetch learner data
         const learnerResponse = await fetch(`${process.env.BACKEND_URL}/users/${learnerId}`, {
