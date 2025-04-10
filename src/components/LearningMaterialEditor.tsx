@@ -21,6 +21,9 @@ import { safeLocalStorage } from "@/lib/utils/localStorage";
 import ChatView from "./ChatView";
 import { ChatMessage } from "../types/quiz";
 
+// Add import for PublishConfirmationDialog
+import PublishConfirmationDialog from "./PublishConfirmationDialog";
+
 // Define the editor handle with methods that can be called by parent components
 export interface LearningMaterialEditorHandle {
     save: () => Promise<void>;
@@ -66,10 +69,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     const [taskData, setTaskData] = useState<TaskData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [editorContent, setEditorContent] = useState<any[]>([]);
-
-    // New state variables for scheduling
-    const [scheduleForLater, setScheduleForLater] = useState(false);
-    const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
 
     // Reference to the editor instance
     const editorRef = useRef<any>(null);
@@ -354,7 +353,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         }
     };
 
-    const handleConfirmPublish = async () => {
+    const handleConfirmPublish = async (scheduledPublishAt: string | null) => {
         if (!taskId) {
             console.error("Cannot publish: taskId is not provided");
             setPublishError("Cannot publish: Task ID is missing");
@@ -378,13 +377,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             const publishData: any = {
                 title: currentTitle,
                 blocks: currentContent,
-                scheduled_publish_at: null
+                scheduled_publish_at: scheduledPublishAt
             };
-
-            // Add scheduled_publish_at if schedule for later is selected
-            if (scheduleForLater && scheduledDate) {
-                publishData.scheduled_publish_at = scheduledDate.toISOString();
-            }
 
             console.log("publishData", publishData);
 
@@ -409,7 +403,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 ...updatedTaskData,
                 status: 'published',
                 title: currentTitle,   // Use the current title from the dialog
-                scheduled_publish_at: scheduleForLater ? scheduledDate?.toISOString() : null // Include scheduled date and ensure it's always included in response
+                scheduled_publish_at: scheduledPublishAt // Include scheduled date
             };
 
             // Log to verify the scheduled_publish_at value
@@ -419,7 +413,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Update our local state with the data from the API
             setTaskData(publishedTaskData);
 
-            console.log(scheduleForLater ? "Learning material scheduled for publishing" : "Learning material published successfully");
+            console.log(scheduledPublishAt ? "Learning material scheduled for publishing" : "Learning material published successfully");
 
             // First set publishing to false to avoid state updates during callbacks
             setIsPublishing(false);
@@ -445,76 +439,9 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
     const handleCancelPublish = () => {
         setPublishError(null);
-        setScheduleForLater(false);
-        setScheduledDate(null);
         if (onPublishCancel) {
             onPublishCancel();
         }
-    };
-
-    const verifyScheduledDateAndSchedulePublish = (date: Date | null) => {
-        if (!date) {
-            return;
-        }
-
-        if (date < new Date()) {
-            return;
-        }
-
-        setScheduledDate(date);
-    }
-
-    // Reset scheduling state when dialog is closed
-    useEffect(() => {
-        if (!showPublishConfirmation) {
-            setScheduleForLater(false);
-            setScheduledDate(null);
-        }
-    }, [showPublishConfirmation]);
-
-    // Generate the scheduler UI to pass to the ConfirmationDialog as children
-    const renderScheduleOptions = () => {
-        return (
-            <div className="mt-4">
-                <div className={`flex items-center ${scheduleForLater ? 'mb-3' : ''}`}>
-                    <input
-                        type="checkbox"
-                        id="schedule-for-later"
-                        checked={scheduleForLater}
-                        onChange={(e) => {
-                            setScheduleForLater(e.target.checked);
-                            // Set default scheduled date to tomorrow at same time if nothing is set
-                            if (e.target.checked && !scheduledDate) {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                setScheduledDate(tomorrow);
-                            }
-                        }}
-                        className="mr-2 h-4 w-4 cursor-pointer"
-                    />
-                    <label htmlFor="schedule-for-later" className="text-white cursor-pointer flex items-center">
-                        Schedule time to publish
-                    </label>
-                </div>
-
-                {scheduleForLater && (
-                    <DatePicker
-                        selected={scheduledDate}
-                        onChange={(date) => verifyScheduledDateAndSchedulePublish(date)}
-                        showTimeSelect
-                        timeFormat="HH:mm"
-                        timeIntervals={15}
-                        dateFormat="MMMM d, yyyy h:mm aa"
-                        timeCaption="Time"
-                        minDate={new Date()} // Can't schedule in the past
-                        className="bg-[#333333] rounded-md p-2 px-4 w-full text-white cursor-pointer"
-                        wrapperClassName="w-full"
-                        calendarClassName="bg-[#242424] text-white border border-gray-700 rounded-lg shadow-lg cursor-pointer"
-                    />
-
-                )}
-            </div>
-        );
     };
 
     // Handle saving changes when in edit mode
@@ -659,8 +586,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 </div>
             </div>
 
-            {/* Publish Confirmation Dialog */}
-            <ConfirmationDialog
+            {/* Replace the ConfirmationDialog with PublishConfirmationDialog */}
+            <PublishConfirmationDialog
                 show={showPublishConfirmation}
                 title="Ready to publish?"
                 message="Make sure your content is complete and reviewed for errors before publishing"
@@ -668,11 +595,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 onCancel={handleCancelPublish}
                 isLoading={isPublishing}
                 errorMessage={publishError}
-                type="publish"
-                confirmButtonText={scheduleForLater ? "Schedule" : "Publish Now"}
-            >
-                {renderScheduleOptions()}
-            </ConfirmationDialog>
+            />
         </div>
     );
 });

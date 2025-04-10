@@ -63,6 +63,7 @@ export interface QuizEditorProps {
     schoolId?: string; // ID of the school for fetching school-specific scorecards
     onValidationError?: (message: string, description: string) => void; // Function to handle validation errors
     courseId?: string; // ID of the course for fetching learning materials
+    scheduledPublishAt?: string | null;
 }
 
 export interface ScorecardCriterion {

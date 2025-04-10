@@ -879,13 +879,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                             // Add the scheduled_publish_at value when saving
                                             activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
 
-                                            // Update the scheduledDate state to match the response
-                                            if (updatedData.scheduled_publish_at) {
-                                                setScheduledDate(new Date(updatedData.scheduled_publish_at));
-                                            } else {
-                                                setScheduledDate(null);
-                                            }
-
                                             if (updatedData.blocks) {
                                                 // @ts-ignore - types may not perfectly match
                                                 activeItem.content = updatedData.blocks;
@@ -896,8 +889,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         onSaveItem();
 
                                         // Show toast notification for save success
-                                        const saveMessage = updatedData.scheduled_publish_at ? "Your learning material has been scheduled for publishing" : "Your learning material has been published";
-                                        displayToast("Saved", saveMessage);
+                                        displayToast("Saved", 'Your learning material has been updated');
                                     }
                                 }}
                             />
@@ -905,6 +897,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                             <DynamicQuizEditor
                                 ref={quizEditorRef}
                                 key={`quiz-${activeItem.id}-${isEditMode}`}
+                                scheduledPublishAt={scheduledDate ? scheduledDate.toISOString() : null}
                                 onChange={(questions) => {
                                     // Track if there are questions for publish/preview button visibility
                                     setHasQuizQuestions(questions.length > 0);
@@ -942,6 +935,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                             // Add the scheduled_publish_at value when saving
                                             activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
 
+                                            console.log("Updated activeItem:", activeItem);
+
                                             if (updatedData.questions) {
                                                 activeItem.questions = updatedData.questions;
                                             }
@@ -978,10 +973,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                                         // Show toast notification
                                         const itemTypeName = activeItem.type === 'quiz' ? 'quiz' : 'exam';
-                                        displayToast("Published", `Your ${itemTypeName} has been published`);
-
-                                        // Log the updated state for debugging
-                                        console.log("Quiz published successfully, updated activeItem:", activeItem);
+                                        const publishMessage = updatedData.scheduled_publish_at ? `Your ${itemTypeName} has been scheduled for publishing` : `Your ${itemTypeName} has been published`;
+                                        displayToast("Published", publishMessage);
                                     }
 
                                     // Hide the publish confirmation dialog

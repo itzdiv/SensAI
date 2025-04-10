@@ -946,31 +946,37 @@ export default function CreateCourse() {
                         ...module,
                         items: module.items.map(item => {
                             if (item.id === activeItem.id) {
+                                // Common properties to update for all item types
+                                const commonUpdates = {
+                                    title: activeItem.title,
+                                    scheduled_publish_at: activeItem.scheduled_publish_at
+                                };
+
                                 // Create updated items based on type with proper type assertions
                                 if (item.type === 'material' && activeItem.type === 'material') {
                                     return {
                                         ...item,
-                                        title: activeItem.title,
+                                        ...commonUpdates,
                                         content: activeItem.content
                                     };
                                 } else if (item.type === 'quiz' && activeItem.type === 'quiz') {
                                     return {
                                         ...item,
-                                        title: activeItem.title,
+                                        ...commonUpdates,
                                         questions: activeItem.questions
                                     };
                                 } else if (item.type === 'exam' && activeItem.type === 'exam') {
                                     return {
                                         ...item,
-                                        title: activeItem.title,
+                                        ...commonUpdates,
                                         questions: activeItem.questions
                                     };
                                 }
 
-                                // Default case - just update the title
+                                // Default case - update common properties
                                 return {
                                     ...item,
-                                    title: activeItem.title
+                                    ...commonUpdates
                                 };
                             }
                             return item;

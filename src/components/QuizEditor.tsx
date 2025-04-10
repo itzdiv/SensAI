@@ -29,6 +29,8 @@ import LearningMaterialLinker from "./LearningMaterialLinker";
 import Toast from "./Toast";
 // Import Tooltip component
 import Tooltip from "./Tooltip";
+// Import the PublishConfirmationDialog component
+import PublishConfirmationDialog from './PublishConfirmationDialog';
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -135,6 +137,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     schoolId, // Add schoolId prop to access school scorecards
     onValidationError,
     courseId,
+    scheduledPublishAt = null,
 }, ref) => {
     // For published quizzes/exams: data is always fetched from the API
     // For draft quizzes/exams: always start with empty questions
@@ -1496,8 +1499,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     };
 
-    // Modified handleConfirmPublish to send raw blocks of the correct answer
-    const handleConfirmPublish = async () => {
+    // Modified handleConfirmPublish to accept scheduled_publish_at parameter
+    const handleConfirmPublish = async (scheduledPublishAt?: string | null) => {
         if (!taskId) {
             console.error("Cannot publish: taskId is not provided");
             setPublishError("Cannot publish: Task ID is missing");
@@ -1570,7 +1573,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 },
                 body: JSON.stringify({
                     title: currentTitle,
-                    questions: formattedQuestions
+                    questions: formattedQuestions,
+                    scheduled_publish_at: scheduledPublishAt
                 }),
             });
 
@@ -1587,6 +1591,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 ...updatedTaskData,
                 status: 'published',
                 title: currentTitle,
+                scheduled_publish_at: scheduledPublishAt,
                 id: taskId // Ensure the ID is included for proper updating in the module list
             };
 
@@ -1656,7 +1661,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 },
                 body: JSON.stringify({
                     title: currentTitle,
-                    questions: formattedQuestions
+                    questions: formattedQuestions,
+                    scheduled_publish_at: scheduledPublishAt
                 }),
             });
 
@@ -1671,7 +1677,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const updatedData = {
                 ...updatedTaskData,
                 title: currentTitle,
-                id: taskId
+                id: taskId,
             };
 
             console.log("Quiz saved successfully", updatedData);
@@ -2043,7 +2049,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             />
 
             {/* Publish Confirmation Dialog */}
-            <ConfirmationDialog
+            <PublishConfirmationDialog
                 show={showPublishConfirmation}
                 title="Ready to publish?"
                 message="After publishing, you won't be able to add or remove questions, but you can still edit existing ones"
@@ -2051,7 +2057,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 onCancel={handleCancelPublish}
                 isLoading={isPublishing}
                 errorMessage={publishError}
-                type="publish"
             />
 
             {/* Loading indicator */}
