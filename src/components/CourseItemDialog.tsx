@@ -825,6 +825,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                             // Add the scheduled_publish_at value from updatedData to activeItem
                                             activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
 
+                                            if (updatedData.scheduled_publish_at) {
+                                                setScheduledDate(new Date(updatedData.scheduled_publish_at));
+                                            } else {
+                                                setScheduledDate(null);
+                                            }
+
                                             if (updatedData.blocks) {
                                                 // @ts-ignore - types may not perfectly match
                                                 activeItem.content = updatedData.blocks;
@@ -932,6 +938,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                             activeItem.title = updatedData.title;
                                             // Add the scheduled_publish_at value from updatedData to activeItem
                                             activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
+
+                                            if (updatedData.scheduled_publish_at) {
+                                                setScheduledDate(new Date(updatedData.scheduled_publish_at));
+                                            } else {
+                                                setScheduledDate(null);
+                                            }
 
                                             if (updatedData.questions) {
                                                 activeItem.questions = updatedData.questions;

@@ -237,7 +237,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         // Define the fetchQuestions function that takes scorecards as a parameter
         const fetchQuestions = async (availableScorecards: ScorecardTemplate[] = []) => {
             // Only fetch if we have a taskId, the status is published, and we haven't already fetched
-            if (taskId && status === 'published' && !hasFetchedData) {
+            if (taskId && !hasFetchedData) {
                 try {
                     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`);
                     if (!response.ok) {
