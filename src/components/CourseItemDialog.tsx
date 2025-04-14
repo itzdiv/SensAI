@@ -622,7 +622,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         }, 300);
                                     }
                                 }}
-                                className={`text-2xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px] mr-4' : ''}`}
+                                className={`text-2xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
                                 data-placeholder={activeItem?.type === 'material' ? 'New Learning Material' : activeItem?.type === 'quiz' ? 'New Quiz' : 'New Exam'}
                             >
                                 {activeItem?.title}

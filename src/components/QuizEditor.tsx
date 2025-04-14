@@ -1157,12 +1157,20 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 content: [{ "text": "Numbered lists (like this)", "type": "text", styles: {} }]
             },
             {
+                type: "checkListItem",
+                content: [{ "text": "Check lists (like this)", "type": "text", styles: {} }]
+            },
+            {
                 type: "paragraph",
                 content: [{ "text": "Regular paragraphs for your main content", "type": "text", styles: {} }]
             },
             {
                 type: "paragraph",
                 content: [{ "text": "Insert images/videos/audio clips by clicking the + icon on the left and selecting Image/Video/Audio", "type": "text", styles: {} }]
+            },
+            {
+                type: "paragraph",
+                content: [{ "text": "Insert code blocks by clicking the + icon on the left and selecting Code Block", "type": "text", styles: {} }]
             },
             {
                 type: "paragraph",

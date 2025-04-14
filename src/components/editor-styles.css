@@ -48,6 +48,10 @@
     border-color: #444444 !important;
 }
 
+.bn-container a {
+    text-decoration: underline !important;
+}
+
 /* Ensure buttons and interactive elements have proper contrast */
 .dark-editor button {
     color: #ffffff !important;
