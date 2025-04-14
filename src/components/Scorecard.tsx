@@ -280,7 +280,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                     </div>
 
                     {/* Table header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px 80px 40px' }} className="gap-2 mb-2 text-xs text-gray-300">
+                    <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr 80px 80px 40px' }} className="gap-2 mb-2 text-xs text-gray-300">
                         <div className="px-2 flex items-center">
                             Parameter
                             <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
@@ -337,7 +337,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             return (
                                 <div
                                     key={index}
-                                    style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px 80px 40px' }}
+                                    style={{ display: 'grid', gridTemplateColumns: '250px 1fr 80px 80px 40px' }}
                                     className={`gap-2 rounded-md p-1 text-white ${isRowHighlighted ? 'bg-[#4D2424] outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse' : 'bg-[#2A2A2A]'}`}
                                 >
                                     {/* Criterion Name Cell */}
@@ -355,7 +355,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                             />
                                         ) : (
                                             <span
-                                                className={`inline-block px-2 py-0.5 rounded-full text-xs text-white ${!readOnly && !linked ? 'cursor-pointer hover:opacity-80 relative group' : ''}`}
+                                                className={`inline-block px-2 py-0.5 rounded-full text-xs text-white whitespace-nowrap ${!readOnly && !linked ? 'cursor-pointer hover:opacity-80 relative group' : ''}`}
                                                 style={{ backgroundColor: pillColor }}
                                                 onClick={() => startEditing(index, 'name')}
                                             >
@@ -385,7 +385,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                             />
                                         ) : (
                                             <span
-                                                className={`block break-words break-all text-sm w-full whitespace-pre-wrap ${!readOnly && !linked ? 'cursor-pointer hover:opacity-80 relative group' : ''} ${criterion.description ? '' : 'text-gray-500'}`}
+                                                className={`block break-words text-sm w-full whitespace-pre-wrap ${!readOnly && !linked ? 'cursor-pointer hover:opacity-80 relative group' : ''} ${criterion.description ? '' : 'text-gray-500'}`}
                                                 onClick={() => startEditing(index, 'description')}
                                             >
                                                 {criterion.description || 'Click to add description'}
@@ -481,7 +481,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
 
                         {/* If no criteria, show empty state */}
                         {(!criteria || criteria.length === 0) && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px 80px' }} className="gap-2 bg-[#2A2A2A] rounded-md p-1 text-white">
+                            <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr 80px 80px 40px' }} className="gap-2 bg-[#2A2A2A] rounded-md p-1 text-white">
                                 <div className="px-2 py-1 text-sm flex items-center">
                                     <span className="inline-block px-2 py-0.5 rounded-full text-xs text-white bg-[#5E3B5D]">
                                         Add parameter

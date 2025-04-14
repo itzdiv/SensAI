@@ -2395,7 +2395,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     ) : (
                                         // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
                                         currentQuestionConfig.scorecardData ? (
-                                            <div className="h-[600px] overflow-y-auto">
+                                            <div className="h-[600px] overflow-y-auto w-full">
                                                 <Scorecard
                                                     ref={scorecardRef}
                                                     name={currentQuestionConfig.scorecardData?.name || scorecardTitle}
