@@ -30,6 +30,9 @@ interface ScorecardTemplatesDialogProps {
     schoolScorecards?: ScorecardTemplate[]; // New prop for school-specific scorecards
 }
 
+// Tab type for the dialog
+type TabType = 'yours' | 'templates';
+
 // Preview component to show on hover - now matching the Issue Tracking design
 const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: HTMLDivElement | null; type?: 'user' | 'standard' }> = ({ template, templateElement, type = 'standard' }) => {
     // Get the template-specific data or use defaults
@@ -149,6 +152,9 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [hoveredTemplate, setHoveredTemplate] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<TabType>(() =>
+        schoolScorecards.length > 0 ? 'yours' : 'templates'
+    );
 
     // Define template options with updated properties
     const templates: ScorecardTemplate[] = [
@@ -230,7 +236,114 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
     // Check if there are any school-specific scorecards to show
     const hasSchoolScorecards = schoolScorecards.length > 0;
 
-    console.log(schoolScorecards)
+    // Tab navigation logic
+    const renderTabs = () => {
+        if (!hasSchoolScorecards) return null;
+
+        return (
+            <div className="mt-2 flex border-b border-[#333333]">
+                <button
+                    className={`px-4 py-2 text-sm font-light flex-1 cursor-pointer ${activeTab === 'yours' ?
+                        'text-white border-b-2 border-white' :
+                        'text-gray-400 hover:text-white'}`}
+                    onClick={() => setActiveTab('yours')}
+                >
+                    Your Scorecards
+                </button>
+                <button
+                    className={`px-4 py-2 text-sm font-light flex-1 cursor-pointer ${activeTab === 'templates' ?
+                        'text-white border-b-2 border-white' :
+                        'text-gray-400 hover:text-white'}`}
+                    onClick={() => setActiveTab('templates')}
+                >
+                    Templates
+                </button>
+            </div>
+        );
+    };
+
+    // Render your scorecards section with fixed height and scrollable
+    const renderYourScorecards = () => {
+        if (!hasSchoolScorecards || activeTab !== 'yours') return null;
+
+        return (
+            <div className="max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
+                {schoolScorecards.map((template) => (
+                    <div
+                        key={template.id}
+                        className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
+                        onClick={() => onSelectTemplate(template)}
+                        onMouseEnter={(e) => {
+                            setHoveredTemplate(template.id);
+                            setHoveredElement(e.currentTarget as HTMLDivElement);
+                        }}
+                        onMouseLeave={() => {
+                            setHoveredTemplate(null);
+                            setHoveredElement(null);
+                        }}
+                    >
+                        <span className="text-white text-sm">{template.name}</span>
+                        {template.new && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-700 text-white ml-2">
+                                NEW
+                            </span>
+                        )}
+
+                        {/* Preview on hover */}
+                        {hoveredTemplate === template.id && hoveredElement && (
+                            <TemplatePreview
+                                template={template}
+                                templateElement={hoveredElement}
+                                type="user"
+                            />
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    // Render templates section
+    const renderTemplates = () => {
+        if (hasSchoolScorecards && activeTab !== 'templates') return null;
+
+        return (
+            <div>
+                {!hasSchoolScorecards && (
+                    <div className="px-4 py-2 text-sm text-gray-400">Templates</div>
+                )}
+
+                {templates.map((template) => (
+                    <div
+                        key={template.id}
+                        className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
+                        onClick={() => onSelectTemplate(template)}
+                        onMouseEnter={(e) => {
+                            setHoveredTemplate(template.id);
+                            setHoveredElement(e.currentTarget as HTMLDivElement);
+                        }}
+                        onMouseLeave={() => {
+                            setHoveredTemplate(null);
+                            setHoveredElement(null);
+                        }}
+                    >
+                        <div className="w-8 h-8 bg-[#712828] rounded flex items-center justify-center mr-3">
+                            {template.icon}
+                        </div>
+                        <span className="text-white text-sm">{template.name}</span>
+
+                        {/* Preview on hover */}
+                        {hoveredTemplate === template.id && hoveredElement && (
+                            <TemplatePreview
+                                template={template}
+                                templateElement={hoveredElement}
+                            />
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+    };
 
     return (
         <div
@@ -268,78 +381,14 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
                     <span className="text-white text-sm">New empty scorecard</span>
                 </div>
 
-                {/* School Scorecards Section - only shown if there are school scorecards */}
-                {hasSchoolScorecards && (
-                    <div className="mb-2">
-                        <div className="px-4 py-2 text-sm text-gray-400">Your Scorecards</div>
+                {/* Tab navigation */}
+                {renderTabs()}
 
-                        {schoolScorecards.map((template) => (
-                            <div
-                                key={template.id}
-                                className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
-                                onClick={() => onSelectTemplate(template)}
-                                onMouseEnter={(e) => {
-                                    setHoveredTemplate(template.id);
-                                    setHoveredElement(e.currentTarget as HTMLDivElement);
-                                }}
-                                onMouseLeave={() => {
-                                    setHoveredTemplate(null);
-                                    setHoveredElement(null);
-                                }}
-                            >
-                                <span className="text-white text-sm">{template.name}</span>
-                                {template.new && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-700 text-white ml-2">
-                                        NEW
-                                    </span>
-                                )}
+                {/* Your Scorecards Tab Content */}
+                {renderYourScorecards()}
 
-                                {/* Preview on hover */}
-                                {hoveredTemplate === template.id && hoveredElement && (
-                                    <TemplatePreview
-                                        template={template}
-                                        templateElement={hoveredElement}
-                                        type="user"
-                                    />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Suggested section */}
-                <div className="mb-2">
-                    <div className="px-4 py-2 text-sm text-gray-400">Templates</div>
-
-                    {templates.map((template) => (
-                        <div
-                            key={template.id}
-                            className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
-                            onClick={() => onSelectTemplate(template)}
-                            onMouseEnter={(e) => {
-                                setHoveredTemplate(template.id);
-                                setHoveredElement(e.currentTarget as HTMLDivElement);
-                            }}
-                            onMouseLeave={() => {
-                                setHoveredTemplate(null);
-                                setHoveredElement(null);
-                            }}
-                        >
-                            <div className="w-8 h-8 bg-[#712828] rounded flex items-center justify-center mr-3">
-                                {template.icon}
-                            </div>
-                            <span className="text-white text-sm">{template.name}</span>
-
-                            {/* Preview on hover */}
-                            {hoveredTemplate === template.id && hoveredElement && (
-                                <TemplatePreview
-                                    template={template}
-                                    templateElement={hoveredElement}
-                                />
-                            )}
-                        </div>
-                    ))}
-                </div>
+                {/* Templates Tab Content */}
+                {renderTemplates()}
             </div>
         </div>
     );
