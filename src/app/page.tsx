@@ -106,14 +106,19 @@ export default function Home() {
           box-shadow: none !important;
           border: none !important;
         }
+        
+        html, body {
+          height: 100%;
+          overflow-y: auto;
+        }
       `}</style>
 
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-black text-white overflow-y-auto">
         {/* Use the reusable Header component */}
         <Header showCreateCourseButton={hasAnyCourses || (hasSchool ?? false)} />
 
         {/* Main content */}
-        <main className="max-w-6xl mx-auto pt-6 px-8">
+        <main className="max-w-6xl mx-auto pt-6 px-8 pb-12">
           {/* Loading state */}
           {isLoading && (
             <div className="flex justify-center items-center py-12">
