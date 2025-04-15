@@ -27,6 +27,15 @@ services:
     networks:
       - sensai-network-dev
 
+  public-api-dev:
+    image: dalmiamanhv/sensai-ai:v2-dev
+    working_dir: /src
+    command: bash -c "python /src/startup.py && uvicorn api.public:app --host 0.0.0.0 --port 8001"
+    volumes:
+      - /appdata_dev:/appdata
+    ports:
+      - "8005:8001"
+
 networks:
   sensai-network-dev:
     driver: bridge
