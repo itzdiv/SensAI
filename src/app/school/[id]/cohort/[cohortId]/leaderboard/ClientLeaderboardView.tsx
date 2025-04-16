@@ -54,19 +54,6 @@ export default function ClientLeaderboardView({
                     };
                 });
 
-                // Sort by tasks completed (desc) then streak days (desc)
-                performersData.sort((a, b) => {
-                    if (b.tasksSolved !== a.tasksSolved) {
-                        return b.tasksSolved - a.tasksSolved;
-                    }
-                    return b.streakDays - a.streakDays;
-                });
-
-                // Update positions after sorting
-                performersData.forEach((performer, index) => {
-                    performer.position = index + 1;
-                });
-
                 setPerformers(performersData);
                 setLoading(false);
             } catch (error) {
