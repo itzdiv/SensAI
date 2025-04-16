@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink } from "lucide-react";
+import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { useRouter, useParams } from "next/navigation";
@@ -15,6 +15,8 @@ import { transformMilestonesToModules } from "@/lib/course";
 import { CourseCohortSelectionDialog } from "@/components/CourseCohortSelectionDialog";
 import { addModule } from "@/lib/api";
 import Tooltip from "@/components/Tooltip";
+import GenerateWithAIDialog, { GenerateWithAIFormData } from '@/components/GenerateWithAIDialog';
+import CourseGenerationAnimationModal from '@/components/CourseGenerationAnimationModal';
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
@@ -37,6 +39,20 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     linkedMaterialIds: [],
 };
 
+// Add a custom hook for the animated ellipsis
+const useAnimatedEllipsis = () => {
+    const [dotCount, setDotCount] = useState(1);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setDotCount(prev => prev < 3 ? prev + 1 : 1);
+        }, 500);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return '.'.repeat(dotCount);
+};
 
 export default function CreateCourse() {
     const router = useRouter();
@@ -97,6 +113,15 @@ export default function CreateCourse() {
 
     // Add a new state for direct create cohort dialog
     const [showCreateCohortDialog, setShowCreateCohortDialog] = useState(false);
+
+    // Add state for AI generation dialog
+    const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+
+    // Add state for course generation loading state
+    const [isGeneratingCourse, setIsGeneratingCourse] = useState(false);
+
+    // For animated dots on the button
+    const animatedEllipsis = useAnimatedEllipsis();
 
     // Fetch course details from the backend
     useEffect(() => {
@@ -283,7 +308,6 @@ export default function CreateCourse() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    org_id: parseInt(schoolId),
                     course_id: parseInt(courseId),
                     milestone_id: parseInt(moduleId),
                     type: "learning_material",
@@ -339,7 +363,6 @@ export default function CreateCourse() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    org_id: parseInt(schoolId),
                     course_id: parseInt(courseId),
                     milestone_id: parseInt(moduleId),
                     type: "quiz",
@@ -398,7 +421,6 @@ export default function CreateCourse() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    org_id: parseInt(schoolId),
                     course_id: parseInt(courseId),
                     milestone_id: parseInt(moduleId),
                     type: "exam",
@@ -1317,6 +1339,121 @@ export default function CreateCourse() {
         }
     };
 
+    // Add handler for AI course generation
+    const handleGenerateCourse = async (data: GenerateWithAIFormData) => {
+        try {
+            // Close the dialog first
+            setShowGenerateDialog(false);
+
+            // Small delay to ensure UI updates before showing the animation
+            setTimeout(() => {
+                // Set generating state
+                setIsGeneratingCourse(true);
+
+                // Set up a toast notification to show the process has started
+                setToast({
+                    show: true,
+                    title: 'AI Generation Started',
+                    description: 'We\'re generating your course based on the provided information. This may take a few minutes.',
+                    emoji: '🤖'
+                });
+            }, 100);
+
+            // For now, we'll just log the data
+            // In a real implementation, this would be an API call to start the generation process
+            console.log('Generate course with AI:', data);
+
+            let presigned_url = '';
+            let file_key = '';
+            let file_uuid = '';
+
+            try {
+                // First, get a presigned URL for the file
+                const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content_type: 'application/pdf'
+                    })
+                });
+
+                if (!presignedUrlResponse.ok) {
+                    throw new Error('Failed to get presigned URL');
+                }
+
+                const presignedData = await presignedUrlResponse.json();
+
+                console.log('Presigned url generated');
+                presigned_url = presignedData.presigned_url;
+                file_key = presignedData.file_key;
+                file_uuid = presignedData.file_uuid;
+            } catch (error) {
+                console.error("Error getting presigned URL for file:", error);
+                throw error;
+            }
+
+            // Upload the file to S3 using the presigned URL
+            try {
+                // Use data.referencePdf instead of undefined 'file' variable
+                const pdfFile = data.referencePdf;
+
+                // Upload to S3 using the presigned URL
+                const uploadResponse = await fetch(presigned_url, {
+                    method: 'PUT',
+                    body: pdfFile, // Use the file directly, no need to create a Blob
+                    headers: {
+                        'Content-Type': 'application/pdf'
+                    }
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
+                }
+
+                console.log('File uploaded successfully to S3');
+                console.log(uploadResponse);
+                // return uploadResponse.url
+            } catch (error) {
+                console.error('Error uploading file to S3:', error);
+                throw error;
+            }
+
+            const formData = new FormData();
+            formData.append('course_description', data.courseDescription);
+            formData.append('intended_audience', data.intendedAudience);
+            if (data.instructionsForAI) {
+                formData.append('instructions', data.instructionsForAI);
+            }
+            if (data.referencePdf) {
+                formData.append('referencePdf', data.referencePdf);
+            }
+
+            // const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/generate`, {
+            //     method: 'POST',
+            //     body: formData
+            // });
+
+            return Promise.resolve();
+        } catch (error) {
+            console.error('Error generating course:', error);
+
+            // Show error toast
+            setToast({
+                show: true,
+                title: 'Generation Failed',
+                description: 'There was an error generating your course. Please try again.',
+                emoji: '❌'
+            });
+
+            // Reset generating state
+            setIsGeneratingCourse(false);
+
+            return Promise.reject(error);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-black">
             {/* Use the reusable Header component with showCreateCourseButton set to false */}
@@ -1330,7 +1467,12 @@ export default function CreateCourse() {
             ) : (
                 /* Main content area - only shown after loading */
                 <div className="py-12 grid grid-cols-5 gap-6">
-                    <div className="max-w-5xl ml-24 col-span-4">
+                    <div className="max-w-5xl ml-24 col-span-4 relative">
+                        {/* Course Generation Animation Modal - positioned within first column */}
+                        {isGeneratingCourse && (
+                            <CourseGenerationAnimationModal isOpen={isGeneratingCourse} />
+                        )}
+
                         {/* Back to Courses button */}
                         <Link
                             href={`/school/admin/${schoolId}#courses`}
@@ -1535,6 +1677,22 @@ export default function CreateCourse() {
                 </div>
             )}
 
+            {/* Floating Action Button - Generate with AI */}
+            <div className="fixed bottom-10 right-10 z-50">
+                {!isGeneratingCourse && (
+                    <button
+                        className="flex items-center px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity shadow-lg cursor-pointer"
+                        onClick={() => setShowGenerateDialog(true)}
+                        disabled={isGeneratingCourse}
+                    >
+                        <span className="mr-2">
+                            <Sparkles size={18} />
+                        </span>
+                        <span>Generate with AI</span>
+                    </button>
+                )}
+            </div>
+
             {/* Render the CourseCohortSelectionDialog */}
             <CourseCohortSelectionDialog
                 isOpen={showPublishDialog}
@@ -1597,6 +1755,13 @@ export default function CreateCourse() {
                 onClose={closeCreateCohortDialog}
                 onCreateCohort={handleCohortCreated}
                 schoolId={schoolId}
+            />
+
+            {/* Generate with AI Dialog */}
+            <GenerateWithAIDialog
+                open={showGenerateDialog}
+                onClose={() => setShowGenerateDialog(false)}
+                onSubmit={handleGenerateCourse}
             />
         </div>
     );

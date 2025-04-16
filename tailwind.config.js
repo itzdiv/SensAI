@@ -89,6 +89,14 @@ module.exports = {
             backgroundPosition: "100% 50%",
             backgroundSize: "200% 200%"
           }
+        },
+        "loadingBar": {
+          "0%": { width: "0%" },
+          "20%": { width: "20%" },
+          "40%": { width: "45%" },
+          "60%": { width: "65%" },
+          "80%": { width: "85%" },
+          "100%": { width: "100%" }
         }
       },
       animation: {
@@ -97,6 +105,7 @@ module.exports = {
         "gradient-fade": "gradient-fade 3.5s ease-in-out forwards",
         "celebration-reveal": "celebration-reveal 3.5s ease-in-out forwards",
         "gradient-x": "gradient-x 3s ease infinite",
+        "loadingBar": "loadingBar 4s cubic-bezier(0.4, 0, 0.2, 1) infinite"
       },
     },
   },

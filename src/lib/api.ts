@@ -275,7 +275,6 @@ export const addModule = async (courseId: string, schoolId: string, modules: Mod
           body: JSON.stringify({
               name: "New Module",
               color: backgroundColor, // Now sending color as hex with # symbol
-              org_id: parseInt(schoolId)
           }),
       });
 
