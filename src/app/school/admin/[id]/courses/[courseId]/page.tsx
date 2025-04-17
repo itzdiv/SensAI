@@ -1477,6 +1477,37 @@ export default function CreateCourse() {
                         };
 
                         setModules(prevModules => [...prevModules, newModule]);
+                    } else if (data.event === 'course_structure_completed') {
+                        // Course structure generation is complete
+                        const jobId = data.job_id;
+
+                        setGenerationProgress(prev => [...prev, "Course plan complete", "Generating learning materials and quizzes"]);
+                        setIsCourseStructureGenerated(true);
+                        setGeneratedTasksCount(0); // Reset counter when starting task generation
+
+                        // Now we can start the task generation
+                        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/generate/course/${courseId}/tasks`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                job_uuid: jobId
+                            }),
+                        }).then(response => {
+                            if (!response.ok) {
+                                throw new Error(`Failed to generate tasks: ${response.status}`);
+                            }
+                            return response.json();
+                        }).catch(error => {
+                            console.error('Error generating tasks:', error);
+                            // Handle error appropriately
+                            if (wsRef.current) {
+                                wsRef.current.close();
+                                wsRef.current = null;
+                            }
+                            setGenerationProgress(prev => [...prev, "Error generating tasks. Please try again."]);
+                        });
                     } else if (data.event === 'task_created') {
                         // Increment the generated tasks counter
                         setTotalTasksToGenerate(prev => prev + 1);
@@ -1719,6 +1750,8 @@ export default function CreateCourse() {
                     }),
                 });
 
+                console.log('1')
+
                 if (!response.ok) {
                     // Close WebSocket on API error
                     if (wsRef.current) {
@@ -1727,40 +1760,17 @@ export default function CreateCourse() {
                     }
                     throw new Error(`Failed to generate course: ${response.status}`);
                 }
+
+                console.log('2')
 
                 const result = await response.json();
                 console.log('Course generation initiated successfully:', result);
 
-                // Add final completion message
-                setGenerationProgress(prev => [...prev, "Course plan complete", "Generating learning materials and quizzes"]);
-                setIsCourseStructureGenerated(true);
-                setGeneratedTasksCount(0); // Reset counter when starting task generation
+                // We'll set a listener for the course structure completion
+                // instead of immediately setting it as complete
 
-                // Note: We're NOT closing the WebSocket or clearing the generating state here
-                // The WebSocket should stay open until the server completes the generation
-                // and closes the connection, or until the component unmounts
-
-                jobId = result.job_uuid;
-
-                response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/generate/course/${courseId}/tasks`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        job_uuid: jobId
-                    }),
-                });
-
-                if (!response.ok) {
-                    // Close WebSocket on API error
-                    if (wsRef.current) {
-                        wsRef.current.close();
-                        wsRef.current = null;
-                    }
-                    throw new Error(`Failed to generate course: ${response.status}`);
-                }
-
+                // Wait for the WebSocket to notify that the course structure is complete
+                // Instead of immediately calling the tasks endpoint
             } catch (error) {
                 console.error('Error making course generation API request:', error);
                 // Close WebSocket on API error
