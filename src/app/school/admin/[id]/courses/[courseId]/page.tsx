@@ -115,6 +115,13 @@ export default function CreateCourse() {
     // Add a ref for the heartbeat interval
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Add these new state variables after the existing state declarations
+    const [totalTasksToGenerate, setTotalTasksToGenerate] = useState(0);
+    const [generatedTasksCount, setGeneratedTasksCount] = useState(0);
+
+    // Add a new state variable to track generation completion
+    const [isGenerationComplete, setIsGenerationComplete] = useState(false);
+
     // Extract fetchCourseDetails as a standalone function
     const fetchCourseDetails = async () => {
         try {
@@ -1348,6 +1355,38 @@ export default function CreateCourse() {
         };
     }, []);
 
+    // Add a useEffect to watch for completion of task generation
+    useEffect(() => {
+        if (isGenerationComplete) {
+            return;
+        }
+
+        // Check if all tasks have been generated
+        if (totalTasksToGenerate > 0 && generatedTasksCount === totalTasksToGenerate) {
+            // Add final completion message
+            setGenerationProgress(["Course generation complete"]);
+
+            // Set generation as complete
+            setIsGenerationComplete(true);
+
+            // Close WebSocket connection when all tasks are completed
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+        }
+    }, [generatedTasksCount, totalTasksToGenerate]);
+
+    // Update the handleGenerationDone function to reset the isGenerationComplete state
+    const handleGenerationDone = () => {
+        setIsGeneratingCourse(false);
+        setIsCourseStructureGenerated(false);
+        setGenerationProgress([]);
+        setGeneratedTasksCount(0);
+        setTotalTasksToGenerate(0);
+        setIsGenerationComplete(false);
+    };
+
     // Add handler for AI course generation
     const handleGenerateCourse = async (data: GenerateWithAIFormData) => {
         try {
@@ -1356,8 +1395,8 @@ export default function CreateCourse() {
 
             // Set generating state and initialize with first progress message
             setIsGeneratingCourse(true);
-
             setIsCourseStructureGenerated(false);
+            setIsGenerationComplete(false); // Reset completion state
 
             // Clear any existing WebSocket connection
             if (wsRef.current) {
@@ -1485,6 +1524,9 @@ export default function CreateCourse() {
 
                             setModules(prevModules => [...prevModules, newModule]);
                         } else if (data.event === 'task_created') {
+                            // Increment the generated tasks counter
+                            setTotalTasksToGenerate(prev => prev + 1);
+
                             // Add the new task to the appropriate module
                             setModules(prevModules => {
                                 return prevModules.map(module => {
@@ -1500,7 +1542,8 @@ export default function CreateCourse() {
                                                 type: 'material',
                                                 content: [],
                                                 status: 'draft',
-                                                scheduled_publish_at: null
+                                                scheduled_publish_at: null,
+                                                isGenerating: true
                                             } as LearningMaterial;
                                         } else if (data.task.type === 'quiz') {
                                             newItem = {
@@ -1510,7 +1553,8 @@ export default function CreateCourse() {
                                                 type: 'quiz',
                                                 questions: [],
                                                 status: 'draft',
-                                                scheduled_publish_at: null
+                                                scheduled_publish_at: null,
+                                                isGenerating: true
                                             } as Quiz;
                                         } else {
                                             // Default to exam if type is not recognized
@@ -1521,7 +1565,8 @@ export default function CreateCourse() {
                                                 type: 'exam',
                                                 questions: [],
                                                 status: 'draft',
-                                                scheduled_publish_at: null
+                                                scheduled_publish_at: null,
+                                                isGenerating: true
                                             } as Exam;
                                         }
 
@@ -1531,6 +1576,33 @@ export default function CreateCourse() {
                                         };
                                     }
                                     return module;
+                                });
+                            });
+                        } else if (data.event === 'task_completed') {
+                            // Increment the completed tasks counter when a task is completed
+                            setGeneratedTasksCount(prev => prev + 1);
+
+                            // Mark this specific task as no longer generating
+                            const taskId = data.task.id.toString();
+
+                            // Update the module item to remove the isGenerating flag
+                            setModules(prevModules => {
+                                return prevModules.map(module => {
+                                    // Update items in this module
+                                    const updatedItems = module.items.map(item => {
+                                        if (item.id === taskId) {
+                                            return {
+                                                ...item,
+                                                isGenerating: false
+                                            };
+                                        }
+                                        return item;
+                                    });
+
+                                    return {
+                                        ...module,
+                                        items: updatedItems
+                                    };
                                 });
                             });
                         }
@@ -1552,16 +1624,16 @@ export default function CreateCourse() {
                         clearInterval(heartbeatIntervalRef.current);
                         heartbeatIntervalRef.current = null;
                     }
-
-                    setGenerationProgress(prev => [...prev, "Generation complete"]);
                 };
             } catch (wsError) {
                 console.error('Error setting up WebSocket:', wsError);
             }
 
+            let jobId = '';
+
             // Make API request to generate course structure
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/generate/course/${courseId}/structure`, {
+                let response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/generate/course/${courseId}/structure`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1589,10 +1661,32 @@ export default function CreateCourse() {
                 // Add final completion message
                 setGenerationProgress(prev => [...prev, "Course plan complete", "Generating the content for the learning materials and quizzes"]);
                 setIsCourseStructureGenerated(true);
+                setGeneratedTasksCount(0); // Reset counter when starting task generation
 
                 // Note: We're NOT closing the WebSocket or clearing the generating state here
                 // The WebSocket should stay open until the server completes the generation
                 // and closes the connection, or until the component unmounts
+
+                jobId = result.job_uuid;
+
+                response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/generate/course/${courseId}/tasks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        job_uuid: jobId
+                    }),
+                });
+
+                if (!response.ok) {
+                    // Close WebSocket on API error
+                    if (wsRef.current) {
+                        wsRef.current.close();
+                        wsRef.current = null;
+                    }
+                    throw new Error(`Failed to generate course: ${response.status}`);
+                }
 
             } catch (error) {
                 console.error('Error making course generation API request:', error);
@@ -1603,8 +1697,6 @@ export default function CreateCourse() {
                 }
                 throw error;
             }
-
-            return Promise.resolve();
         } catch (error) {
             console.error('Error generating course:', error);
 
@@ -1872,10 +1964,13 @@ export default function CreateCourse() {
                         {generationProgress.map((message, index) => {
                             const isLatest = index === generationProgress.length - 1;
 
+                            // Show spinner only for latest message when generation is not complete
+                            const showSpinner = isLatest && !isGenerationComplete;
+
                             return (
                                 <div key={index} className="flex items-center text-sm">
                                     <div className="flex-shrink-0 mr-3">
-                                        {isLatest ? (
+                                        {showSpinner ? (
                                             <div className="h-5 w-5 flex items-center justify-center">
                                                 <Loader2 className="h-4 w-4 animate-spin text-white" />
                                             </div>
@@ -1891,11 +1986,39 @@ export default function CreateCourse() {
                                 </div>
                             );
                         })}
+
+                        {/* Task generation progress bar - only shown after course structure is generated */}
+                        {isCourseStructureGenerated && totalTasksToGenerate > 0 && !isGenerationComplete && (
+                            <div className="mt-2">
+                                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                    <span>{generatedTasksCount} / {totalTasksToGenerate}</span>
+                                </div>
+                                <div className="w-full bg-gray-800 rounded-full h-2.5">
+                                    <div
+                                        className="bg-green-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+                                        style={{ width: `${Math.min(100, (generatedTasksCount / totalTasksToGenerate) * 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )}
+
+
                     </div>
+                    {/* Done button - only shown when generation is complete */}
+                    {isGenerationComplete && (
+                        <div className="mb-4 flex justify-center">
+                            <button
+                                onClick={handleGenerationDone}
+                                className="px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Floating Action Button - Generate with AI */}
+            {/* Floating Action Button - Generate with AI - only shown when not generating */}
             <div className="fixed bottom-10 right-10 z-50">
                 {!isGeneratingCourse && (
                     <button

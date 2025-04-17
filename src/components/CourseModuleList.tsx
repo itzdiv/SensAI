@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Clipboard, Check } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Clipboard, Check, Loader2 } from "lucide-react";
 import { Module, ModuleItem, Quiz, Exam } from "@/types/course";
 import { QuizQuestion } from "@/types/quiz"; // Import from types instead
 import CourseItemDialog from "@/components/CourseItemDialog";
@@ -709,8 +709,10 @@ export default function CourseModuleList({
                                     {module.items.map((item, itemIndex) => (
                                         <div
                                             key={item.id}
-                                            className={`flex items-center group p-2 rounded-md cursor-pointer transition-all relative mt-2 hover:bg-gray-700/50 ${completedItems[item.id] ? "opacity-60" : ""}`}
-                                            onClick={() => onOpenItem && onOpenItem(module.id, item.id)}
+                                            className={`flex items-center group p-2 rounded-md cursor-pointer transition-all relative mt-2 hover:bg-gray-700/50 ${completedItems[item.id] ? "opacity-60" : ""
+                                                } ${item.isGenerating ? "opacity-40 pointer-events-none" : ""
+                                                }`}
+                                            onClick={() => onOpenItem && !item.isGenerating && onOpenItem(module.id, item.id)}
                                         >
                                             <div className={`flex items-center mr-4 sm:mr-2 ${completedItems[item.id]
                                                 ? "text-gray-400"
@@ -723,16 +725,23 @@ export default function CourseModuleList({
                                                 {item.type === 'material' ? <BookOpen size={16} /> :
                                                     item.type === 'quiz' ? <HelpCircle size={16} /> :
                                                         <Clipboard size={16} />}
+
+                                                {/* Add a small generating indicator if the item is still being generated */}
+                                                {item.isGenerating && (
+                                                    <div className="ml-2 animate-pulse">
+                                                        <Loader2 size={12} className="animate-spin text-gray-400" />
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex-1">
-                                                <div className={`text-base font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none mr-2 ${completedItems[item.id]
-                                                    ? "line-through"
+                                                <div className={`text-base font-light ${completedItems[item.id]
+                                                    ? "line-through text-white"
                                                     : (item.type === 'quiz' || item.type === 'exam') &&
                                                         completedQuestionIds[item.id] &&
                                                         Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
                                                         ? "text-yellow-500"
-                                                        : ""
-                                                    }`}>
+                                                        : "text-white"
+                                                    } outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none mr-2`}>
                                                     {item.title}
 
                                                     {/* Always display question count for quizzes/exams (except drafts) */}

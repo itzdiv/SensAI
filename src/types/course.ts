@@ -1,4 +1,3 @@
-
 import { QuizQuestion } from "./quiz";
 export interface LearningMaterial {
   id: string;
@@ -8,6 +7,7 @@ export interface LearningMaterial {
   content?: any[]; // Using any[] for content blocks
   status?: string; // Add status field to track draft/published state
   scheduled_publish_at: string | null;
+  isGenerating?: boolean;
 }
 
 export interface Quiz {
@@ -19,6 +19,7 @@ export interface Quiz {
   questions: QuizQuestion[];
   status?: string; // Add status field to track draft/published state
   scheduled_publish_at: string | null;
+  isGenerating?: boolean;
 }
 
 export interface Exam {
@@ -30,6 +31,7 @@ export interface Exam {
   questions: QuizQuestion[];
   status?: string; // Add status field to track draft/published state
   scheduled_publish_at: string | null;
+  isGenerating?: boolean;
 }
 
 export type ModuleItem = LearningMaterial | Quiz | Exam;
