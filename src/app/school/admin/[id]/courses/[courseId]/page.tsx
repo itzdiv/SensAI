@@ -163,7 +163,6 @@ export default function CreateCourse() {
                     isEditing: false
                 }));
 
-                console.log('modules', modulesWithEditing);
                 // Check if any task in the course has isGenerating = true
                 const totalTasksToGenerate = modulesWithEditing.reduce((count, module) =>
                     count + (module.items?.filter(item => item.isGenerating !== null)?.length || 0), 0
@@ -171,9 +170,6 @@ export default function CreateCourse() {
                 const generatedTasksCount = modulesWithEditing.reduce((count, module) =>
                     count + (module.items?.filter(item => item.isGenerating === false)?.length || 0), 0
                 );
-
-                console.log('totalTasksToGenerate', totalTasksToGenerate);
-                console.log('generatedTasksCount', generatedTasksCount);
 
                 // Set up WebSocket connection if any task is being generated
                 if (totalTasksToGenerate && totalTasksToGenerate != generatedTasksCount) {
