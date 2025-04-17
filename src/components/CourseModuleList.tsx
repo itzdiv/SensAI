@@ -870,7 +870,7 @@ export default function CourseModuleList({
                                                     Learning Material
                                                 </button>
                                             </Tooltip>
-                                            <Tooltip content="Create a practice quiz where AI nudges learners to think and answer on their own" position="top">
+                                            <Tooltip content="Create a practice quiz where AI gives feedback to learners on their answers" position="top">
                                                 <button
                                                     onClick={async () => {
                                                         if (onAddQuiz) {
@@ -887,7 +887,7 @@ export default function CourseModuleList({
                                                     Quiz
                                                 </button>
                                             </Tooltip>
-                                            <Tooltip content="Create an exam where AI evaluates responses without giving any feedback" position="top">
+                                            <Tooltip content="Create an exam where learners are not given any feedback" position="top">
                                                 <button
                                                     onClick={async () => {
                                                         if (onAddExam) {

@@ -121,6 +121,24 @@ export default function CreateCourse() {
     // Add a new state variable to track generation completion
     const [isGenerationComplete, setIsGenerationComplete] = useState(false);
 
+    // Add these refs after the existing refs declaration
+    const isGeneratingCourseRef = useRef(false);
+    const totalTasksToGenerateRef = useRef(0);
+    const generatedTasksCountRef = useRef(0);
+
+    // Update the refs whenever the state changes
+    useEffect(() => {
+        isGeneratingCourseRef.current = isGeneratingCourse;
+    }, [isGeneratingCourse]);
+
+    useEffect(() => {
+        totalTasksToGenerateRef.current = totalTasksToGenerate;
+    }, [totalTasksToGenerate]);
+
+    useEffect(() => {
+        generatedTasksCountRef.current = generatedTasksCount;
+    }, [generatedTasksCount]);
+
     // Extract fetchCourseDetails as a standalone function
     const fetchCourseDetails = async () => {
         try {
@@ -1519,8 +1537,7 @@ export default function CreateCourse() {
                             });
                         });
                     } else if (data.event === 'task_completed') {
-                        // Increment the completed tasks counter when a task is completed
-                        setGeneratedTasksCount(prev => prev + 1);
+                        setGeneratedTasksCount(data.total_completed);
 
                         // Mark this specific task as no longer generating
                         const taskId = data.task.id.toString();
@@ -1563,6 +1580,25 @@ export default function CreateCourse() {
                 if (heartbeatIntervalRef.current) {
                     clearInterval(heartbeatIntervalRef.current);
                     heartbeatIntervalRef.current = null;
+                }
+
+                // Attempt to reconnect if generation is still in progress
+                if (isGeneratingCourseRef.current &&
+                    totalTasksToGenerateRef.current > 0 &&
+                    generatedTasksCountRef.current < totalTasksToGenerateRef.current) {
+
+                    console.log('Generation still in progress. Attempting to reconnect...');
+                    // Add a small delay before attempting to reconnect
+                    setTimeout(() => {
+                        // Try to setup a new WebSocket connection
+                        const ws = setupGenerationWebSocket();
+                        if (ws) {
+                            wsRef.current = ws;
+                            console.log('WebSocket reconnection successful');
+                        } else {
+                            console.error('WebSocket reconnection failed');
+                        }
+                    }, 500); // small delay before reconnection attempt
                 }
             };
 
