@@ -66,6 +66,24 @@ const SnapshotWaveform = ({
     );
 };
 
+// Function to get supported MIME type
+const getSupportedMimeType = () => {
+    const types = [
+        'audio/webm',
+        'audio/mp4',
+        'audio/aac',
+        'audio/ogg;codecs=opus',
+        ''  // empty string means browser default
+    ];
+
+    for (const type of types) {
+        if (!type || MediaRecorder.isTypeSupported(type)) {
+            return type;
+        }
+    }
+    return '';  // Return empty string as fallback (browser default)
+};
+
 export default function AudioInputComponent({
     onAudioSubmit,
     isSubmitting,
@@ -138,8 +156,11 @@ export default function AudioInputComponent({
             const source = audioContext.createMediaStreamSource(stream);
             source.connect(analyser);
 
-            // Create media recorder
-            const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            // Replace the MediaRecorder initialization with:
+            const mimeType = getSupportedMimeType();
+            const mediaRecorder = new MediaRecorder(stream,
+                mimeType ? { mimeType } : undefined
+            );
             mediaRecorderRef.current = mediaRecorder;
 
             // When data becomes available, add it to our array
@@ -152,7 +173,7 @@ export default function AudioInputComponent({
             // When recording stops
             mediaRecorder.onstop = () => {
                 // Create audio blob from recorded chunks
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
                 setAudioBlob(audioBlob);
 
                 // Set up audio player
