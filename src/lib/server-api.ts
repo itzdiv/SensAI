@@ -1,4 +1,3 @@
-import { Task, Milestone } from "@/types";
 import { transformMilestonesToModules } from "./course";
 
 /**

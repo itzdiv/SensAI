@@ -48,6 +48,7 @@ export interface Task {
     num_questions?: number;
     questions?: any[]; // Questions for quizzes and exams
     scheduled_publish_at: string;
+    is_generating: boolean;
 }
 
 export interface Milestone {

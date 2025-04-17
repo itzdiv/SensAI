@@ -46,7 +46,6 @@ export default function CreateCourse() {
     const courseId = params.courseId as string;
 
     const [courseTitle, setCourseTitle] = useState("Loading course...");
-    const [courseDetails, setCourseDetails] = useState<CourseDetails | null>(null);
     const [modules, setModules] = useState<Module[]>([]);
     const [activeItem, setActiveItem] = useState<ModuleItem | null>(null);
     const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
@@ -133,7 +132,6 @@ export default function CreateCourse() {
             }
 
             const data = await response.json();
-            setCourseDetails(data);
             setCourseTitle(data.name);
 
             // Check if milestones are available in the response
@@ -146,6 +144,37 @@ export default function CreateCourse() {
                     ...module,
                     isEditing: false
                 }));
+
+                console.log('modules', modulesWithEditing);
+                // Check if any task in the course has isGenerating = true
+                const totalTasksToGenerate = modulesWithEditing.reduce((count, module) =>
+                    count + (module.items?.filter(item => item.isGenerating !== null)?.length || 0), 0
+                );
+                const generatedTasksCount = modulesWithEditing.reduce((count, module) =>
+                    count + (module.items?.filter(item => item.isGenerating === false)?.length || 0), 0
+                );
+
+                console.log('totalTasksToGenerate', totalTasksToGenerate);
+                console.log('generatedTasksCount', generatedTasksCount);
+
+                // Set up WebSocket connection if any task is being generated
+                if (totalTasksToGenerate && totalTasksToGenerate != generatedTasksCount) {
+                    const ws = setupGenerationWebSocket();
+
+                    if (!ws) {
+                        throw new Error('Failed to setup WebSocket connection');
+                    }
+
+                    wsRef.current = ws;
+                    console.log('WebSocket connection established for active generation task');
+
+                    setIsGeneratingCourse(true);
+                    setIsCourseStructureGenerated(true);
+                    setIsGenerationComplete(false);
+                    setTotalTasksToGenerate(totalTasksToGenerate);
+                    setGeneratedTasksCount(generatedTasksCount);
+                    setGenerationProgress(["Uploaded reference material", 'Generating course plan', 'Course plan complete', 'Generating learning materials and quizzes']);
+                }
 
                 // Set the modules state
                 setModules(modulesWithEditing);
@@ -1274,7 +1303,7 @@ export default function CreateCourse() {
     };
 
     // Update to handle dialog opening from either button
-    const openCohortDialog = (origin: 'publish' | 'add') => {
+    const openCohortSelectionDialog = (origin: 'publish' | 'add') => {
         // Toggle dialog if clicking the same button that opened it
         if (showPublishDialog && dialogOrigin === origin) {
             // Close the dialog if it's already open with the same origin
@@ -1387,6 +1416,163 @@ export default function CreateCourse() {
         setIsGenerationComplete(false);
     };
 
+    const setupGenerationWebSocket = () => {
+        // Set up WebSocket connection for real-time updates
+        try {
+            const websocketUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/^http/, 'ws')}/ws/course/${courseId}/generation`;
+            console.log('Connecting to WebSocket at:', websocketUrl);
+
+            // Create new WebSocket and store in ref
+            wsRef.current = new WebSocket(websocketUrl);
+
+            wsRef.current.onopen = () => {
+                console.log('WebSocket connection established for course generation');
+
+                // Set up heartbeat to keep connection alive
+                // Typically sending a ping every 30 seconds prevents timeout
+                heartbeatIntervalRef.current = setInterval(() => {
+                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                        // Send a simple ping message to keep the connection alive
+                        wsRef.current.send(JSON.stringify({ type: 'ping' }));
+                        console.log('Sent WebSocket heartbeat ping');
+                    } else {
+                        // Clear the interval if the WebSocket is closed
+                        if (heartbeatIntervalRef.current) {
+                            clearInterval(heartbeatIntervalRef.current);
+                            heartbeatIntervalRef.current = null;
+                        }
+                    }
+                }, 30000); // 30 seconds interval
+            };
+
+            wsRef.current.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Received WebSocket message:', data);
+
+                    if (data.event === 'module_created') {
+                        // Add the new module to the list of modules
+                        const newModule: Module = {
+                            id: data.module.id.toString(),
+                            title: data.module.name,
+                            position: data.module.ordering,
+                            backgroundColor: data.module.color,
+                            isExpanded: true,
+                            isEditing: false,
+                            items: []
+                        };
+
+                        setModules(prevModules => [...prevModules, newModule]);
+                    } else if (data.event === 'task_created') {
+                        // Increment the generated tasks counter
+                        setTotalTasksToGenerate(prev => prev + 1);
+
+                        // Add the new task to the appropriate module
+                        setModules(prevModules => {
+                            return prevModules.map(module => {
+                                if (module.id === data.task.module_id.toString()) {
+                                    // Create appropriate item based on type
+                                    let newItem: ModuleItem;
+
+                                    if (data.task.type === 'learning_material') {
+                                        newItem = {
+                                            id: data.task.id.toString(),
+                                            title: data.task.name,
+                                            position: data.task.ordering,
+                                            type: 'material',
+                                            content: [],
+                                            status: 'draft',
+                                            scheduled_publish_at: null,
+                                            isGenerating: true
+                                        } as LearningMaterial;
+                                    } else if (data.task.type === 'quiz') {
+                                        newItem = {
+                                            id: data.task.id.toString(),
+                                            title: data.task.name,
+                                            position: data.task.ordering,
+                                            type: 'quiz',
+                                            questions: [],
+                                            status: 'draft',
+                                            scheduled_publish_at: null,
+                                            isGenerating: true
+                                        } as Quiz;
+                                    } else {
+                                        // Default to exam if type is not recognized
+                                        newItem = {
+                                            id: data.task.id.toString(),
+                                            title: data.task.name,
+                                            position: data.task.ordering,
+                                            type: 'exam',
+                                            questions: [],
+                                            status: 'draft',
+                                            scheduled_publish_at: null,
+                                            isGenerating: true
+                                        } as Exam;
+                                    }
+
+                                    return {
+                                        ...module,
+                                        items: [...module.items, newItem]
+                                    };
+                                }
+                                return module;
+                            });
+                        });
+                    } else if (data.event === 'task_completed') {
+                        // Increment the completed tasks counter when a task is completed
+                        setGeneratedTasksCount(prev => prev + 1);
+
+                        // Mark this specific task as no longer generating
+                        const taskId = data.task.id.toString();
+
+                        // Update the module item to remove the isGenerating flag
+                        setModules(prevModules => {
+                            return prevModules.map(module => {
+                                // Update items in this module
+                                const updatedItems = module.items.map(item => {
+                                    if (item.id === taskId) {
+                                        return {
+                                            ...item,
+                                            isGenerating: false
+                                        };
+                                    }
+                                    return item;
+                                });
+
+                                return {
+                                    ...module,
+                                    items: updatedItems
+                                };
+                            });
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error processing WebSocket message:', error);
+                }
+            };
+
+            wsRef.current.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                setGenerationProgress(prev => [...prev, "There was an error generating your course. Please try again."]);
+            };
+
+            wsRef.current.onclose = () => {
+                console.log('WebSocket connection closed');
+
+                // Clear heartbeat interval
+                if (heartbeatIntervalRef.current) {
+                    clearInterval(heartbeatIntervalRef.current);
+                    heartbeatIntervalRef.current = null;
+                }
+            };
+
+            return wsRef.current;
+        } catch (wsError) {
+            console.error('Error setting up WebSocket:', wsError);
+        }
+    }
+
+
     // Add handler for AI course generation
     const handleGenerateCourse = async (data: GenerateWithAIFormData) => {
         try {
@@ -1476,158 +1662,13 @@ export default function CreateCourse() {
             setGenerationProgress(["Uploaded reference material", 'Generating course plan']);
 
             // Set up WebSocket connection for real-time updates
-            try {
-                const websocketUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/^http/, 'ws')}/ws/course/${courseId}/generation`;
-                console.log('Connecting to WebSocket at:', websocketUrl);
+            const ws = setupGenerationWebSocket()
 
-                // Create new WebSocket and store in ref
-                wsRef.current = new WebSocket(websocketUrl);
-
-                wsRef.current.onopen = () => {
-                    console.log('WebSocket connection established for course generation');
-
-                    // Set up heartbeat to keep connection alive
-                    // Typically sending a ping every 30 seconds prevents timeout
-                    heartbeatIntervalRef.current = setInterval(() => {
-                        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                            // Send a simple ping message to keep the connection alive
-                            wsRef.current.send(JSON.stringify({ type: 'ping' }));
-                            console.log('Sent WebSocket heartbeat ping');
-                        } else {
-                            // Clear the interval if the WebSocket is closed
-                            if (heartbeatIntervalRef.current) {
-                                clearInterval(heartbeatIntervalRef.current);
-                                heartbeatIntervalRef.current = null;
-                            }
-                        }
-                    }, 30000); // 30 seconds interval
-                };
-
-                wsRef.current.onmessage = (event) => {
-                    try {
-                        console.log('received message')
-                        console.log(event.data)
-                        const data = JSON.parse(event.data);
-                        console.log('Received WebSocket message:', data);
-
-                        if (data.event === 'module_created') {
-                            // Add the new module to the list of modules
-                            const newModule: Module = {
-                                id: data.module.id.toString(),
-                                title: data.module.name,
-                                position: data.module.ordering,
-                                backgroundColor: data.module.color,
-                                isExpanded: true,
-                                isEditing: false,
-                                items: []
-                            };
-
-                            setModules(prevModules => [...prevModules, newModule]);
-                        } else if (data.event === 'task_created') {
-                            // Increment the generated tasks counter
-                            setTotalTasksToGenerate(prev => prev + 1);
-
-                            // Add the new task to the appropriate module
-                            setModules(prevModules => {
-                                return prevModules.map(module => {
-                                    if (module.id === data.task.module_id.toString()) {
-                                        // Create appropriate item based on type
-                                        let newItem: ModuleItem;
-
-                                        if (data.task.type === 'learning_material') {
-                                            newItem = {
-                                                id: data.task.id.toString(),
-                                                title: data.task.name,
-                                                position: data.task.ordering,
-                                                type: 'material',
-                                                content: [],
-                                                status: 'draft',
-                                                scheduled_publish_at: null,
-                                                isGenerating: true
-                                            } as LearningMaterial;
-                                        } else if (data.task.type === 'quiz') {
-                                            newItem = {
-                                                id: data.task.id.toString(),
-                                                title: data.task.name,
-                                                position: data.task.ordering,
-                                                type: 'quiz',
-                                                questions: [],
-                                                status: 'draft',
-                                                scheduled_publish_at: null,
-                                                isGenerating: true
-                                            } as Quiz;
-                                        } else {
-                                            // Default to exam if type is not recognized
-                                            newItem = {
-                                                id: data.task.id.toString(),
-                                                title: data.task.name,
-                                                position: data.task.ordering,
-                                                type: 'exam',
-                                                questions: [],
-                                                status: 'draft',
-                                                scheduled_publish_at: null,
-                                                isGenerating: true
-                                            } as Exam;
-                                        }
-
-                                        return {
-                                            ...module,
-                                            items: [...module.items, newItem]
-                                        };
-                                    }
-                                    return module;
-                                });
-                            });
-                        } else if (data.event === 'task_completed') {
-                            // Increment the completed tasks counter when a task is completed
-                            setGeneratedTasksCount(prev => prev + 1);
-
-                            // Mark this specific task as no longer generating
-                            const taskId = data.task.id.toString();
-
-                            // Update the module item to remove the isGenerating flag
-                            setModules(prevModules => {
-                                return prevModules.map(module => {
-                                    // Update items in this module
-                                    const updatedItems = module.items.map(item => {
-                                        if (item.id === taskId) {
-                                            return {
-                                                ...item,
-                                                isGenerating: false
-                                            };
-                                        }
-                                        return item;
-                                    });
-
-                                    return {
-                                        ...module,
-                                        items: updatedItems
-                                    };
-                                });
-                            });
-                        }
-                    } catch (error) {
-                        console.error('Error processing WebSocket message:', error);
-                    }
-                };
-
-                wsRef.current.onerror = (error) => {
-                    console.error('WebSocket error:', error);
-                    setGenerationProgress(prev => [...prev, "There was an error generating your course. Please try again."]);
-                };
-
-                wsRef.current.onclose = () => {
-                    console.log('WebSocket connection closed');
-
-                    // Clear heartbeat interval
-                    if (heartbeatIntervalRef.current) {
-                        clearInterval(heartbeatIntervalRef.current);
-                        heartbeatIntervalRef.current = null;
-                    }
-                };
-            } catch (wsError) {
-                console.error('Error setting up WebSocket:', wsError);
+            if (!ws) {
+                throw new Error('Failed to setup WebSocket connection');
             }
+
+            wsRef.current = ws;
 
             let jobId = '';
 
@@ -1659,7 +1700,7 @@ export default function CreateCourse() {
                 console.log('Course generation initiated successfully:', result);
 
                 // Add final completion message
-                setGenerationProgress(prev => [...prev, "Course plan complete", "Generating the content for the learning materials and quizzes"]);
+                setGenerationProgress(prev => [...prev, "Course plan complete", "Generating learning materials and quizzes"]);
                 setIsCourseStructureGenerated(true);
                 setGeneratedTasksCount(0); // Reset counter when starting task generation
 
@@ -1845,7 +1886,7 @@ export default function CreateCourse() {
                                                     ref={publishButtonRef}
                                                     data-dropdown-toggle="true"
                                                     className="flex items-center px-6 py-2 text-sm font-medium text-white bg-[#016037] border-0 hover:bg-[#017045] outline-none rounded-full transition-all cursor-pointer shadow-md"
-                                                    onClick={() => openCohortDialog('publish')}
+                                                    onClick={() => openCohortSelectionDialog('publish')}
                                                 >
                                                     <span className="mr-2 text-base">🚀</span>
                                                     <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Publish</span>
@@ -1909,7 +1950,7 @@ export default function CreateCourse() {
                                     ref={addCohortButtonRef}
                                     data-dropdown-toggle="true"
                                     className="flex items-center px-6 py-2 text-sm font-medium text-white bg-[#016037] border-0 hover:bg-[#017045] outline-none rounded-full transition-all cursor-pointer shadow-md"
-                                    onClick={() => openCohortDialog('add')}
+                                    onClick={() => openCohortSelectionDialog('add')}
                                 >
                                     <span className="mr-2 text-base"><UsersRound size={16} /></span>
                                     <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Add to Cohorts</span>
@@ -1953,7 +1994,7 @@ export default function CreateCourse() {
 
             {/* Generation Progress Window */}
             {isGeneratingCourse && (
-                <div className="fixed bottom-10 right-10 z-50 w-80 bg-black border border-gray-800 rounded-xl shadow-lg overflow-hidden">
+                <div className="fixed bottom-4 right-4 z-50 w-72 bg-black border border-gray-800 rounded-xl shadow-lg overflow-hidden">
                     <div className="px-5 py-3 bg-[#111111] border-b border-gray-800 flex justify-between items-center">
                         <div className="flex items-center">
                             <Sparkles size={16} className="text-white mr-2" />
@@ -2020,7 +2061,7 @@ export default function CreateCourse() {
 
             {/* Floating Action Button - Generate with AI - only shown when not generating */}
             <div className="fixed bottom-10 right-10 z-50">
-                {!isGeneratingCourse && (
+                {!isGeneratingCourse && !toast.show && (
                     <button
                         className="flex items-center px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity shadow-lg cursor-pointer"
                         onClick={() => setShowGenerateDialog(true)}

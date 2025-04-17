@@ -26,7 +26,8 @@ export function transformMilestonesToModules(milestones: Milestone[] | undefined
             type: 'material',
             content: task.content || [], // Use content if available or empty array
             status: task.status,
-            scheduled_publish_at: task.scheduled_publish_at
+            scheduled_publish_at: task.scheduled_publish_at,
+            isGenerating: task.is_generating
           });
         } else if (task.type === 'quiz') {
           moduleItems.push({
@@ -37,7 +38,8 @@ export function transformMilestonesToModules(milestones: Milestone[] | undefined
             questions: task.questions || [], // Use questions if available or empty array
             status: task.status,
             numQuestions: task.num_questions,
-            scheduled_publish_at: task.scheduled_publish_at
+            scheduled_publish_at: task.scheduled_publish_at,
+            isGenerating: task.is_generating
           });
         } else if (task.type === 'exam') {
           moduleItems.push({
@@ -48,7 +50,8 @@ export function transformMilestonesToModules(milestones: Milestone[] | undefined
             questions: task.questions || [], // Use questions if available or empty array
             status: task.status,
             numQuestions: task.num_questions,
-            scheduled_publish_at: task.scheduled_publish_at
+            scheduled_publish_at: task.scheduled_publish_at,
+            isGenerating: task.is_generating
           });
         }
       });
