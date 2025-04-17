@@ -299,7 +299,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
                                                 name="courseDescription"
                                                 value={formData.courseDescription}
                                                 onChange={handleTextChange}
-                                                placeholder="A beginner's guide to cooking, covering essential kitchen skills, understanding flavors, and creating delicious, healthy meals at home."
+                                                placeholder="A comprehensive guide to personal finance for beginners, covering budgeting essentials, debt management, building credit, emergency funds, and basic investment principles for long-term financial stability."
                                                 className={`w-full h-32 px-4 py-3 bg-[#0D0D0D] text-white rounded-lg font-light placeholder-gray-500 outline-none ${errors.courseDescription ? 'border-2 border-red-500' : 'border-none'} focus:ring-2 focus:ring-white/20`}
                                             />
                                             {errors.courseDescription && (
@@ -319,7 +319,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
                                                 name="intendedAudience"
                                                 value={formData.intendedAudience}
                                                 onChange={handleTextChange}
-                                                placeholder="Beginners with no prior experience who want to learn cooking basics, working professionals looking to save time while eating better, or parents wanting to prepare healthy meals for their families."
+                                                placeholder="Recent graduates and young professionals starting their first full-time job, individuals with no prior financial education, or anyone looking to establish healthy financial habits and avoid common money mistakes in early career stages."
                                                 className={`w-full h-32 px-4 py-3 bg-[#0D0D0D] text-white rounded-lg font-light placeholder-gray-500 outline-none ${errors.intendedAudience ? 'border-2 border-red-500' : 'border-none'} focus:ring-2 focus:ring-white/20`}
                                             />
                                             {errors.intendedAudience && (
@@ -362,7 +362,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
                                                     <button
                                                         type="button"
                                                         onClick={removeFile}
-                                                        className="text-gray-400 hover:text-white"
+                                                        className="text-gray-400 hover:text-white cursor-pointer"
                                                         aria-label="Remove file"
                                                     >
                                                         <X size={18} />
@@ -387,7 +387,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
                                                 name="instructionsForAI"
                                                 value={formData.instructionsForAI}
                                                 onChange={handleTextChange}
-                                                placeholder="Include lots of practical examples, make it suitable for a 2-week learning period, emphasize visual learning, or focus on everyday applications."
+                                                placeholder="Focus on practical, actionable advice rather than theory. Include real-world examples and templates for budgeting. Structure the course for a 4-week learning period with small, achievable weekly goals."
                                                 className="w-full h-32 px-4 py-3 bg-[#0D0D0D] text-white rounded-lg font-light placeholder-gray-500 outline-none border-none focus:ring-2 focus:ring-white/20"
                                             />
                                         </div>

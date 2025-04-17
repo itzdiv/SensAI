@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles } from "lucide-react";
+import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { useRouter, useParams } from "next/navigation";
@@ -16,7 +16,6 @@ import { CourseCohortSelectionDialog } from "@/components/CourseCohortSelectionD
 import { addModule } from "@/lib/api";
 import Tooltip from "@/components/Tooltip";
 import GenerateWithAIDialog, { GenerateWithAIFormData } from '@/components/GenerateWithAIDialog';
-import CourseGenerationAnimationModal from '@/components/CourseGenerationAnimationModal';
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
@@ -39,20 +38,6 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     linkedMaterialIds: [],
 };
 
-// Add a custom hook for the animated ellipsis
-const useAnimatedEllipsis = () => {
-    const [dotCount, setDotCount] = useState(1);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setDotCount(prev => prev < 3 ? prev + 1 : 1);
-        }, 500);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    return '.'.repeat(dotCount);
-};
 
 export default function CreateCourse() {
     const router = useRouter();
@@ -120,47 +105,55 @@ export default function CreateCourse() {
     // Add state for course generation loading state
     const [isGeneratingCourse, setIsGeneratingCourse] = useState(false);
 
-    // For animated dots on the button
-    const animatedEllipsis = useAnimatedEllipsis();
+    const [isCourseStructureGenerated, setIsCourseStructureGenerated] = useState(false);
+
+    // Add state for generation progress messages
+    const [generationProgress, setGenerationProgress] = useState<string[]>([]);
+
+    // Add a ref to store the WebSocket connection
+    const wsRef = useRef<WebSocket | null>(null);
+    // Add a ref for the heartbeat interval
+    const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Extract fetchCourseDetails as a standalone function
+    const fetchCourseDetails = async () => {
+        try {
+            setIsLoading(true);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}`);
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch course details: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setCourseDetails(data);
+            setCourseTitle(data.name);
+
+            // Check if milestones are available in the response
+            if (data.milestones && Array.isArray(data.milestones)) {
+                // Use the shared utility function to transform the milestones to modules
+                const transformedModules = transformMilestonesToModules(data.milestones);
+
+                // Add isEditing property required by the admin view
+                const modulesWithEditing = transformedModules.map(module => ({
+                    ...module,
+                    isEditing: false
+                }));
+
+                // Set the modules state
+                setModules(modulesWithEditing);
+            }
+
+            setIsLoading(false);
+        } catch (err) {
+            console.error("Error fetching course details:", err);
+            setError("Failed to load course details. Please try again later.");
+            setIsLoading(false);
+        }
+    };
 
     // Fetch course details from the backend
     useEffect(() => {
-        const fetchCourseDetails = async () => {
-            try {
-                setIsLoading(true);
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}`);
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch course details: ${response.status}`);
-                }
-
-                const data = await response.json();
-                setCourseDetails(data);
-                setCourseTitle(data.name);
-
-                // Check if milestones are available in the response
-                if (data.milestones && Array.isArray(data.milestones)) {
-                    // Use the shared utility function to transform the milestones to modules
-                    const transformedModules = transformMilestonesToModules(data.milestones);
-
-                    // Add isEditing property required by the admin view
-                    const modulesWithEditing = transformedModules.map(module => ({
-                        ...module,
-                        isEditing: false
-                    }));
-
-                    // Set the modules state
-                    setModules(modulesWithEditing);
-                }
-
-                setIsLoading(false);
-            } catch (err) {
-                console.error("Error fetching course details:", err);
-                setError("Failed to load course details. Please try again later.");
-                setIsLoading(false);
-            }
-        };
-
         fetchCourseDetails();
 
         // Also fetch cohorts assigned to this course
@@ -1339,25 +1332,44 @@ export default function CreateCourse() {
         }
     };
 
+    // Add useEffect for WebSocket cleanup
+    useEffect(() => {
+        // Cleanup function
+        return () => {
+            // Close WebSocket when component unmounts
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.close();
+            }
+
+            // Clear heartbeat interval
+            if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+            }
+        };
+    }, []);
+
     // Add handler for AI course generation
     const handleGenerateCourse = async (data: GenerateWithAIFormData) => {
         try {
             // Close the dialog first
             setShowGenerateDialog(false);
 
-            // Small delay to ensure UI updates before showing the animation
-            setTimeout(() => {
-                // Set generating state
-                setIsGeneratingCourse(true);
+            // Set generating state and initialize with first progress message
+            setIsGeneratingCourse(true);
 
-                // Set up a toast notification to show the process has started
-                setToast({
-                    show: true,
-                    title: 'AI Generation Started',
-                    description: 'We\'re generating your course based on the provided information. This may take a few minutes.',
-                    emoji: '🤖'
-                });
-            }, 100);
+            setIsCourseStructureGenerated(false);
+
+            // Clear any existing WebSocket connection
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+
+            // Clear any existing heartbeat interval
+            if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+                heartbeatIntervalRef.current = null;
+            }
 
             // For now, we'll just log the data
             // In a real implementation, this would be an API call to start the generation process
@@ -1366,6 +1378,8 @@ export default function CreateCourse() {
             let presigned_url = '';
             let file_key = '';
             let file_uuid = '';
+
+            setGenerationProgress(["Uploading reference material"]);
 
             try {
                 // First, get a presigned URL for the file
@@ -1389,6 +1403,7 @@ export default function CreateCourse() {
                 presigned_url = presignedData.presigned_url;
                 file_key = presignedData.file_key;
                 file_uuid = presignedData.file_uuid;
+
             } catch (error) {
                 console.error("Error getting presigned URL for file:", error);
                 throw error;
@@ -1414,41 +1429,206 @@ export default function CreateCourse() {
 
                 console.log('File uploaded successfully to S3');
                 console.log(uploadResponse);
-                // return uploadResponse.url
             } catch (error) {
                 console.error('Error uploading file to S3:', error);
                 throw error;
             }
 
-            const formData = new FormData();
-            formData.append('course_description', data.courseDescription);
-            formData.append('intended_audience', data.intendedAudience);
-            if (data.instructionsForAI) {
-                formData.append('instructions', data.instructionsForAI);
-            }
-            if (data.referencePdf) {
-                formData.append('referencePdf', data.referencePdf);
+            setGenerationProgress(["Uploaded reference material", 'Generating course plan']);
+
+            // Set up WebSocket connection for real-time updates
+            try {
+                const websocketUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/^http/, 'ws')}/ws/course/${courseId}/generation`;
+                console.log('Connecting to WebSocket at:', websocketUrl);
+
+                // Create new WebSocket and store in ref
+                wsRef.current = new WebSocket(websocketUrl);
+
+                wsRef.current.onopen = () => {
+                    console.log('WebSocket connection established for course generation');
+
+                    // Set up heartbeat to keep connection alive
+                    // Typically sending a ping every 30 seconds prevents timeout
+                    heartbeatIntervalRef.current = setInterval(() => {
+                        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                            // Send a simple ping message to keep the connection alive
+                            wsRef.current.send(JSON.stringify({ type: 'ping' }));
+                            console.log('Sent WebSocket heartbeat ping');
+                        } else {
+                            // Clear the interval if the WebSocket is closed
+                            if (heartbeatIntervalRef.current) {
+                                clearInterval(heartbeatIntervalRef.current);
+                                heartbeatIntervalRef.current = null;
+                            }
+                        }
+                    }, 30000); // 30 seconds interval
+                };
+
+                wsRef.current.onmessage = (event) => {
+                    try {
+                        console.log('received message')
+                        console.log(event.data)
+                        const data = JSON.parse(event.data);
+                        console.log('Received WebSocket message:', data);
+
+                        if (data.event === 'module_created') {
+                            // Add the new module to the list of modules
+                            const newModule: Module = {
+                                id: data.module.id.toString(),
+                                title: data.module.name,
+                                position: data.module.ordering,
+                                backgroundColor: data.module.color,
+                                isExpanded: true,
+                                isEditing: false,
+                                items: []
+                            };
+
+                            setModules(prevModules => [...prevModules, newModule]);
+                        } else if (data.event === 'task_created') {
+                            // Add the new task to the appropriate module
+                            setModules(prevModules => {
+                                return prevModules.map(module => {
+                                    if (module.id === data.task.module_id.toString()) {
+                                        // Create appropriate item based on type
+                                        let newItem: ModuleItem;
+
+                                        if (data.task.type === 'learning_material') {
+                                            newItem = {
+                                                id: data.task.id.toString(),
+                                                title: data.task.name,
+                                                position: data.task.ordering,
+                                                type: 'material',
+                                                content: [],
+                                                status: 'draft',
+                                                scheduled_publish_at: null
+                                            } as LearningMaterial;
+                                        } else if (data.task.type === 'quiz') {
+                                            newItem = {
+                                                id: data.task.id.toString(),
+                                                title: data.task.name,
+                                                position: data.task.ordering,
+                                                type: 'quiz',
+                                                questions: [],
+                                                status: 'draft',
+                                                scheduled_publish_at: null
+                                            } as Quiz;
+                                        } else {
+                                            // Default to exam if type is not recognized
+                                            newItem = {
+                                                id: data.task.id.toString(),
+                                                title: data.task.name,
+                                                position: data.task.ordering,
+                                                type: 'exam',
+                                                questions: [],
+                                                status: 'draft',
+                                                scheduled_publish_at: null
+                                            } as Exam;
+                                        }
+
+                                        return {
+                                            ...module,
+                                            items: [...module.items, newItem]
+                                        };
+                                    }
+                                    return module;
+                                });
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error processing WebSocket message:', error);
+                    }
+                };
+
+                wsRef.current.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    setGenerationProgress(prev => [...prev, "There was an error generating your course. Please try again."]);
+                };
+
+                wsRef.current.onclose = () => {
+                    console.log('WebSocket connection closed');
+
+                    // Clear heartbeat interval
+                    if (heartbeatIntervalRef.current) {
+                        clearInterval(heartbeatIntervalRef.current);
+                        heartbeatIntervalRef.current = null;
+                    }
+
+                    setGenerationProgress(prev => [...prev, "Generation complete"]);
+                };
+            } catch (wsError) {
+                console.error('Error setting up WebSocket:', wsError);
             }
 
-            // const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/generate`, {
-            //     method: 'POST',
-            //     body: formData
-            // });
+            // Make API request to generate course structure
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/generate/course/${courseId}/structure`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        course_description: data.courseDescription,
+                        intended_audience: data.intendedAudience,
+                        instructions: data.instructionsForAI || undefined,
+                        reference_material_s3_key: file_key
+                    }),
+                });
+
+                if (!response.ok) {
+                    // Close WebSocket on API error
+                    if (wsRef.current) {
+                        wsRef.current.close();
+                        wsRef.current = null;
+                    }
+                    throw new Error(`Failed to generate course: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Course generation initiated successfully:', result);
+
+                // Add final completion message
+                setGenerationProgress(prev => [...prev, "Course plan complete", "Generating the content for the learning materials and quizzes"]);
+                setIsCourseStructureGenerated(true);
+
+                // Note: We're NOT closing the WebSocket or clearing the generating state here
+                // The WebSocket should stay open until the server completes the generation
+                // and closes the connection, or until the component unmounts
+
+            } catch (error) {
+                console.error('Error making course generation API request:', error);
+                // Close WebSocket on API error
+                if (wsRef.current) {
+                    wsRef.current.close();
+                    wsRef.current = null;
+                }
+                throw error;
+            }
 
             return Promise.resolve();
         } catch (error) {
             console.error('Error generating course:', error);
 
-            // Show error toast
-            setToast({
-                show: true,
-                title: 'Generation Failed',
-                description: 'There was an error generating your course. Please try again.',
-                emoji: '❌'
-            });
+            // Clean up WebSocket
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
 
-            // Reset generating state
-            setIsGeneratingCourse(false);
+            // Clear heartbeat interval
+            if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+                heartbeatIntervalRef.current = null;
+            }
+
+            // Add error message to progress
+            setGenerationProgress(prev => [...prev, "There was an error generating your course. Please try again."]);
+
+            // Reset generating state after delay
+            setTimeout(() => {
+                setIsGeneratingCourse(false);
+                setIsCourseStructureGenerated(false);
+                setGenerationProgress([]);
+            }, 3000);
 
             return Promise.reject(error);
         }
@@ -1459,6 +1639,13 @@ export default function CreateCourse() {
             {/* Use the reusable Header component with showCreateCourseButton set to false */}
             <Header showCreateCourseButton={false} />
 
+            {/* Add overlay when course is being generated */}
+            {isGeneratingCourse && !isCourseStructureGenerated && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-[1px] z-40 flex items-center justify-center pointer-events-auto">
+
+                </div>
+            )}
+
             {/* Show spinner when loading */}
             {isLoading ? (
                 <div className="flex justify-center items-center h-[calc(100vh-80px)]">
@@ -1468,11 +1655,6 @@ export default function CreateCourse() {
                 /* Main content area - only shown after loading */
                 <div className="py-12 grid grid-cols-5 gap-6">
                     <div className="max-w-5xl ml-24 col-span-4 relative">
-                        {/* Course Generation Animation Modal - positioned within first column */}
-                        {isGeneratingCourse && (
-                            <CourseGenerationAnimationModal isOpen={isGeneratingCourse} />
-                        )}
-
                         {/* Back to Courses button */}
                         <Link
                             href={`/school/admin/${schoolId}#courses`}
@@ -1674,6 +1856,42 @@ export default function CreateCourse() {
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Generation Progress Window */}
+            {isGeneratingCourse && (
+                <div className="fixed bottom-10 right-10 z-50 w-80 bg-black border border-gray-800 rounded-xl shadow-lg overflow-hidden">
+                    <div className="px-5 py-3 bg-[#111111] border-b border-gray-800 flex justify-between items-center">
+                        <div className="flex items-center">
+                            <Sparkles size={16} className="text-white mr-2" />
+                            <h3 className="text-white text-sm font-light">AI Course Generation</h3>
+                        </div>
+                    </div>
+                    <div className="p-5 max-h-60 overflow-y-auto space-y-4">
+                        {generationProgress.map((message, index) => {
+                            const isLatest = index === generationProgress.length - 1;
+
+                            return (
+                                <div key={index} className="flex items-center text-sm">
+                                    <div className="flex-shrink-0 mr-3">
+                                        {isLatest ? (
+                                            <div className="h-5 w-5 flex items-center justify-center">
+                                                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                                            </div>
+                                        ) : (
+                                            <div className="h-5 w-5 flex items-center justify-center">
+                                                <Check className="h-3 w-3 text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className={`text-${isLatest ? 'white' : 'gray-400'} font-light`}>
+                                        {message}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
 

@@ -27,7 +27,7 @@ const facts = [
         icon: <Users className="w-5 h-5" />
     },
     {
-        text: "Learn from any device with responsive design",
+        text: "With SensAI, learners can even learn right inside their phone's browser",
         icon: <Phone className="w-5 h-5" />
     },
     {
