@@ -67,6 +67,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
         setCurrentStep('description');
         setIsSubmitting(false);
         setErrors({});
+        setFileError(null)
     };
 
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
