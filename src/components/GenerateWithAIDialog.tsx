@@ -1,11 +1,22 @@
-import { useState, useRef, Fragment } from 'react';
+"use client"
+
+import { useState, useRef, Fragment, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, Upload, File, ArrowLeft, ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { Document, Page } from 'react-pdf';
+import { pdfjs } from 'react-pdf';
+
+// Set worker source using CDN (keeps the bundle smaller)
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+).toString();
 
 interface GenerateWithAIDialogProps {
     open: boolean;
     onClose: () => void;
     onSubmit: (data: GenerateWithAIFormData) => void;
+    validationError?: string | null;
 }
 
 export interface GenerateWithAIFormData {
@@ -23,7 +34,7 @@ interface FormErrors {
     referencePdf?: string;
 }
 
-export default function GenerateWithAIDialog({ open, onClose, onSubmit }: GenerateWithAIDialogProps) {
+export default function GenerateWithAIDialog({ open, onClose, onSubmit, validationError }: GenerateWithAIDialogProps) {
     const [formData, setFormData] = useState<GenerateWithAIFormData>({
         courseDescription: '',
         intendedAudience: '',
@@ -39,6 +50,10 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
     const [fileName, setFileName] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Add inside the component, after the existing state declarations
+    const [fileValidating, setFileValidating] = useState(false);
+    const [fileError, setFileError] = useState<string | null>(null);
 
     // Reset state when dialog is opened
     const resetState = () => {
@@ -64,13 +79,45 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
         }
     };
 
+
+    function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
+        console.log(numPages)
+        setFileValidating(false);
+
+        if (numPages > 100) {
+            setFileError(`The PDF has too many pages (${numPages}). A maximum of 100 pages is supported at a time. Please upload a shorter document, or generate in multiple parts by uploading smaller sections.`);
+
+            // Optionally remove the file if it's invalid
+            removeFile();
+        } else {
+            console.log(`PDF validation passed: ${numPages} pages`);
+            // We're keeping the file since it's valid
+        }
+    }
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
         if (file) {
+            // Reset previous validation errors
+            setFileError(null);
+
+            // Check file type
             if (file.type !== 'application/pdf') {
                 setErrors(prev => ({ ...prev, referencePdf: 'Please upload a PDF file' }));
                 return;
             }
+
+            // Check file size (32MB = 32 * 1024 * 1024 bytes)
+            const maxSize = 32 * 1024 * 1024; // 32MB in bytes
+            if (file.size > maxSize) {
+                setFileError("PDF file is too large. Please upload a file smaller than 32MB, or generate in multiple parts by uploading smaller sections.");
+                return;
+            }
+
+            // Start validating
+            setFileValidating(true);
+
+            // Update form data with the file - page count validation will happen separately
             setFormData(prev => ({ ...prev, referencePdf: file }));
             setFileName(file.name);
 
@@ -186,6 +233,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
         }
     };
 
+
     const handleDialogClose = () => {
         resetState();
         onClose();
@@ -207,7 +255,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
             case 'reference':
                 return {
                     heading: 'Upload reference material',
-                    description: 'Add a PDF file that will be used as reference to generate your course.'
+                    description: 'Add a PDF file to be used as reference to generate your course'
                 };
             case 'instructions':
                 return {
@@ -345,7 +393,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
                                             {!fileName ? (
                                                 <div
                                                     onClick={triggerFileInput}
-                                                    className={`flex items-center justify-center w-full h-36 px-4 py-3 bg-[#0A0A0A] rounded-lg cursor-pointer hover:bg-[#111] transition-colors ${errors.referencePdf ? 'border-2 border-red-500' : 'border border-dashed border-gray-600 hover:border-white'}`}
+                                                    className={`flex items-center justify-center w-full h-36 px-4 py-3 bg-[#0A0A0A] rounded-lg cursor-pointer hover:bg-[#111] transition-colors ${(errors.referencePdf || fileError) ? 'border-2 border-red-500' : 'border border-dashed border-gray-600 hover:border-white'}`}
                                                 >
                                                     <div className="flex flex-col items-center text-gray-400">
                                                         <Upload size={24} className="mb-2" />
@@ -356,8 +404,14 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
                                             ) : (
                                                 <div className="flex items-center justify-between w-full px-4 py-4 bg-[#0A0A0A] border border-gray-700 rounded-lg">
                                                     <div className="flex items-center text-white">
-                                                        <File size={20} className="mr-2" />
-                                                        <span className="text-sm truncate max-w-xs">{fileName}</span>
+                                                        {fileValidating ? (
+                                                            <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                                                        ) : (
+                                                            <File size={20} className="mr-2" />
+                                                        )}
+                                                        <span className="text-sm truncate max-w-xs">
+                                                            {fileValidating ? "Validating PDF..." : fileName}
+                                                        </span>
                                                     </div>
                                                     <button
                                                         type="button"
@@ -370,10 +424,12 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
                                                 </div>
                                             )}
 
-                                            {errors.referencePdf && (
-                                                <div className="flex items-center text-red-500 text-sm mt-1">
-                                                    <AlertCircle size={14} className="mr-1" />
-                                                    {errors.referencePdf}
+                                            {(errors.referencePdf || fileError) && (
+                                                <div className="flex items-start text-red-500 text-sm mt-2">
+                                                    <AlertCircle size={14} className="mr-1 mt-1 flex-shrink-0" />
+                                                    <div>
+                                                        {fileError || errors.referencePdf}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -463,6 +519,12 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit }: Genera
                                         )}
                                     </button>
                                 </div>
+
+                                {formData.referencePdf && (
+                                    <Document file={formData.referencePdf} onLoadSuccess={onDocumentLoadSuccess}>
+                                    </Document>
+
+                                )}
                             </Dialog.Panel>
                         </Transition.Child>
                     </div>
