@@ -234,10 +234,15 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
         }
     };
 
-
+    // Create a handler that completely ignores outside clicks
     const handleDialogClose = () => {
         resetState();
         onClose();
+    };
+
+    // Simple no-op function that ignores all outside clicks
+    const noop = () => {
+        // Intentionally empty - this prevents the dialog from closing on outside clicks
     };
 
     // Get step heading and description based on current step
@@ -286,7 +291,11 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
 
     return (
         <Transition appear show={open} as={Fragment}>
-            <Dialog as="div" className="relative z-50" onClose={handleDialogClose}>
+            <Dialog
+                as="div"
+                className="relative z-50"
+                onClose={noop}
+            >
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
