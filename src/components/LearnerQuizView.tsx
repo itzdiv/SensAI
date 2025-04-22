@@ -390,8 +390,6 @@ export default function LearnerQuizView({
                     chatHistoryByQuestion[questionId].push(chatMessage);
                 }));
 
-                console.log(chatHistoryByQuestion)
-
                 // Sort chat history by timestamp for each question to ensure correct order
                 Object.keys(chatHistoryByQuestion).forEach(questionId => {
                     chatHistoryByQuestion[questionId].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());

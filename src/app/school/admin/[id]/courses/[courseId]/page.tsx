@@ -2103,7 +2103,7 @@ export default function CreateCourse() {
 
             {/* Floating Action Button - Generate with AI - only shown when not generating */}
             <div className="fixed bottom-10 right-10 z-50">
-                {!isGeneratingCourse && !toast.show && (
+                {!isGeneratingCourse && !toast.show && !isDialogOpen && (
                     <button
                         className="flex items-center px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity shadow-lg cursor-pointer"
                         onClick={() => setShowGenerateDialog(true)}
