@@ -28,8 +28,6 @@ async function uploadFile(file: File) {
     }
 
     let presigned_url = '';
-    let file_key = '';
-    let file_uuid = '';
 
     try {
         // First, get a presigned URL for the file
@@ -51,42 +49,78 @@ async function uploadFile(file: File) {
 
         console.log('Presigned url generated');
         presigned_url = presignedData.presigned_url;
-        file_key = presignedData.file_key;
-        file_uuid = presignedData.file_uuid;
     } catch (error) {
         console.error("Error getting presigned URL for file:", error);
-        throw error;
     }
 
-    // Upload the file to S3 using the presigned URL
-    try {
-        let fileBlob = new Blob([file], { type: file.type });
+    if (!presigned_url) {
+        // If we couldn't get a presigned URL, try direct upload to the backend
+        try {
+            console.log("Attempting direct upload to backend");
 
-        // Upload to S3 using the presigned URL with WAV content type
-        const uploadResponse = await fetch(presigned_url, {
-            method: 'PUT',
-            body: fileBlob,
-            headers: {
-                'Content-Type': file.type
+            // Create FormData for the file upload
+            const formData = new FormData();
+            formData.append('file', file, file.name);
+            formData.append('content_type', file.type);
+
+            // Upload directly to the backend
+            const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error(`Failed to upload audio to backend: ${uploadResponse.status}`);
             }
-        });
 
-        if (!uploadResponse.ok) {
-            throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
+            const uploadData = await uploadResponse.json();
+            const file_static_path = uploadData.static_url;
+
+            const static_url = `${process.env.NEXT_PUBLIC_BACKEND_URL}${file_static_path}`;
+
+            console.log('File uploaded successfully to backend');
+            console.log(static_url);
+
+            return static_url;
+        } catch (error) {
+            console.error('Error with direct upload to backend:', error);
+            throw error;
         }
+    } else {
+        // Upload the file to S3 using the presigned URL
+        try {
+            let fileBlob = new Blob([file], { type: file.type });
 
-        console.log('File uploaded successfully to S3');
-        console.log(uploadResponse);
-        // Update the request body with the file information
-        return uploadResponse.url
-    } catch (error) {
-        console.error('Error uploading file to S3:', error);
-        throw error;
+            // Upload to S3 using the presigned URL with WAV content type
+            const uploadResponse = await fetch(presigned_url, {
+                method: 'PUT',
+                body: fileBlob,
+                headers: {
+                    'Content-Type': file.type
+                }
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
+            }
+
+            console.log('File uploaded successfully to S3');
+            console.log(uploadResponse);
+            // Update the request body with the file information
+            return uploadResponse.url
+        } catch (error) {
+            console.error('Error uploading file to S3:', error);
+            throw error;
+        }
     }
 }
 
 async function resolveFileUrl(url: string) {
     if (!url || !url.includes("?X-Amz-Algorithm=AWS4-HMAC-SHA256")) {
+        return url;
+    }
+
+    if (url.includes(`${process.env.NEXT_PUBLIC_BACKEND_URL}/`)) {
         return url;
     }
 

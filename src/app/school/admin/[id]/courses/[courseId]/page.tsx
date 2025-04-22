@@ -1638,6 +1638,10 @@ export default function CreateCourse() {
 
     // Add handler for AI course generation
     const handleGenerateCourse = async (data: GenerateWithAIFormData) => {
+        if (!data.referencePdf) {
+            throw new Error('Reference material is required');
+        }
+
         try {
             // Close the dialog first
             setShowGenerateDialog(false);
@@ -1665,7 +1669,6 @@ export default function CreateCourse() {
 
             let presigned_url = '';
             let file_key = '';
-            let file_uuid = '';
 
             setGenerationProgress(["Uploading reference material"]);
 
@@ -1690,36 +1693,65 @@ export default function CreateCourse() {
                 console.log('Presigned url generated');
                 presigned_url = presignedData.presigned_url;
                 file_key = presignedData.file_key;
-                file_uuid = presignedData.file_uuid;
 
             } catch (error) {
                 console.error("Error getting presigned URL for file:", error);
-                throw error;
             }
 
-            // Upload the file to S3 using the presigned URL
-            try {
-                // Use data.referencePdf instead of undefined 'file' variable
-                const pdfFile = data.referencePdf;
+            if (!presigned_url) {
+                // If we couldn't get a presigned URL, try direct upload to the backend
+                try {
+                    console.log("Attempting direct upload to backend");
 
-                // Upload to S3 using the presigned URL
-                const uploadResponse = await fetch(presigned_url, {
-                    method: 'PUT',
-                    body: pdfFile, // Use the file directly, no need to create a Blob
-                    headers: {
-                        'Content-Type': 'application/pdf'
+                    // Create FormData for the file upload
+                    const formData = new FormData();
+                    formData.append('file', data.referencePdf, 'reference_material.pdf');
+                    formData.append('content_type', 'application/pdf');
+
+                    // Upload directly to the backend
+                    const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Failed to upload audio to backend: ${uploadResponse.status}`);
                     }
-                });
 
-                if (!uploadResponse.ok) {
-                    throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
+                    const uploadData = await uploadResponse.json();
+                    file_key = uploadData.file_key;
+
+                    console.log('Reference material uploaded successfully to backend');
+                } catch (error) {
+                    console.error('Error with direct upload to backend:', error);
+                    throw error;
                 }
+            } else {
 
-                console.log('File uploaded successfully to S3');
-                console.log(uploadResponse);
-            } catch (error) {
-                console.error('Error uploading file to S3:', error);
-                throw error;
+                // Upload the file to S3 using the presigned URL
+                try {
+                    // Use data.referencePdf instead of undefined 'file' variable
+                    const pdfFile = data.referencePdf;
+
+                    // Upload to S3 using the presigned URL
+                    const uploadResponse = await fetch(presigned_url, {
+                        method: 'PUT',
+                        body: pdfFile, // Use the file directly, no need to create a Blob
+                        headers: {
+                            'Content-Type': 'application/pdf'
+                        }
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
+                    }
+
+                    console.log('File uploaded successfully to S3');
+                    console.log(uploadResponse);
+                } catch (error) {
+                    console.error('Error uploading file to S3:', error);
+                    throw error;
+                }
             }
 
             setGenerationProgress(["Uploaded reference material", 'Generating course plan']);
