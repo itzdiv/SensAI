@@ -359,7 +359,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 style={{ backgroundColor: pillColor }}
                                                 onClick={() => startEditing(index, 'name')}
                                             >
-                                                {criterion.name}
+                                                {criterion.name || 'Click to add name'}
                                                 {!readOnly && !linked && (
                                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block px-2 py-1 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
                                                         Click to edit
