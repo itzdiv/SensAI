@@ -69,7 +69,7 @@ export default function JoinCohortPage() {
 
                         // Redirect to school page after a short delay
                         setTimeout(() => {
-                            router.push(`/school/${slug}`);
+                            router.push(`/school/${slug}?cohort_id=${cohortId}`);
                         }, 1500);
                         return;
                     }
@@ -83,7 +83,7 @@ export default function JoinCohortPage() {
 
                         // Redirect to school page after a short delay
                         setTimeout(() => {
-                            router.push(`/school/${slug}`);
+                            router.push(`/school/${slug}?cohort_id=${cohortId}`);
                         }, 1500);
                         return;
                     }
@@ -98,7 +98,7 @@ export default function JoinCohortPage() {
 
                 // Redirect to the school page after a short delay
                 setTimeout(() => {
-                    router.push(`/school/${slug}`);
+                    router.push(`/school/${slug}?cohort_id=${cohortId}`);
                 }, 1500);
             } catch (error) {
                 console.error("Error joining cohort:", error);
@@ -148,7 +148,7 @@ export default function JoinCohortPage() {
                             {errorMessage}
                         </p>
                         <button
-                            onClick={() => router.push(`/school/${slug}`)}
+                            onClick={() => router.push(`/school/${slug}?cohort_id=${cohortId}`)}
                             className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer"
                         >
                             Back to School
