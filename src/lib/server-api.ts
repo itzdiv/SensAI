@@ -10,7 +10,7 @@ export const getPublishedCourseModules = async (courseId: string): Promise<{
   courseData: any,
   modules: any[]
 }> => {
-  const response = await fetch(`${process.env.BACKEND_URL}/courses/${courseId}?published=true`, {
+  const response = await fetch(`${process.env.BACKEND_URL}/courses/${courseId}?only_published=true`, {
     cache: 'no-store'
   });
 

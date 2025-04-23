@@ -143,7 +143,7 @@ export default function CreateCourse() {
     const fetchCourseDetails = async () => {
         try {
             setIsLoading(true);
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}?only_published=false`);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch course details: ${response.status}`);
