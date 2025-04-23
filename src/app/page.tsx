@@ -115,7 +115,10 @@ export default function Home() {
 
       <div className="min-h-screen bg-black text-white overflow-y-auto">
         {/* Use the reusable Header component */}
-        <Header showCreateCourseButton={hasAnyCourses || (hasSchool ?? false)} />
+        <Header
+          showCreateCourseButton={hasAnyCourses || (hasSchool ?? false)}
+          showTryDemoButton={!hasLearningCourses}
+        />
 
         {/* Main content */}
         <main className="max-w-6xl mx-auto pt-6 px-8 pb-12">

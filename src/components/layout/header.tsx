@@ -16,13 +16,15 @@ interface HeaderProps {
     cohorts?: Cohort[];
     activeCohort?: Cohort | null;
     onCohortSelect?: (cohort: Cohort) => void;
+    showTryDemoButton?: boolean;
 }
 
 export function Header({
     showCreateCourseButton = true,
     cohorts = [],
     activeCohort = null,
-    onCohortSelect
+    onCohortSelect,
+    showTryDemoButton = false
 }: HeaderProps) {
     const router = useRouter();
     const { data: session } = useSession();
@@ -146,6 +148,12 @@ export function Header({
         setMobileActionsOpen(false);
     };
 
+    // Add handler for "Try a demo" button click
+    const handleTryDemoClick = () => {
+        window.open("https://sensai.hyperverge.org/school/first-principles/join?cohortId=4", "_blank");
+        setMobileActionsOpen(false);
+    };
+
     // Get user initials for avatar
     const getInitials = () => {
         if (session?.user?.name) {
@@ -222,14 +230,26 @@ export function Header({
 
                 {/* Right side actions */}
                 <div className="flex items-center space-x-4 pr-1">
-                    {showCreateCourseButton && (
-                        <button
-                            onClick={handleButtonClick}
-                            className="hidden md:block px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
-                        >
-                            {getButtonText()}
-                        </button>
-                    )}
+
+                    <>
+                        {showTryDemoButton && (
+                            <button
+                                onClick={handleTryDemoClick}
+                                className="hidden md:block px-6 py-3 bg-white/20 text-white text-sm font-medium rounded-full hover:bg-white/30 cursor-pointer"
+                            >
+                                Try a demo
+                            </button>
+                        )}
+                        {showCreateCourseButton && (
+                            <button
+                                onClick={handleButtonClick}
+                                className="hidden md:block px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
+                            >
+                                {getButtonText()}
+                            </button>
+                        )}
+                    </>
+
 
                     {/* Profile dropdown */}
                     <div className="relative" ref={profileMenuRef}>
@@ -302,8 +322,34 @@ export function Header({
                         {/* Action buttons that appear when FAB is clicked */}
                         {mobileActionsOpen && (
                             <div className="fixed bottom-24 right-6 flex flex-col gap-4 items-end z-20">
+                                {/* Try a demo Button - only shown if not already a learner */}
+                                {showTryDemoButton && (
+                                    <div className="flex items-center gap-3">
+                                        <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                            Try a demo
+                                        </span>
+                                        <button
+                                            onClick={handleTryDemoClick}
+                                            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                            aria-label="Try as a learner"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                                                <path d="M12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"></path>
+                                                <path d="M12 3v2"></path>
+                                                <path d="M12 19v2"></path>
+                                                <path d="m19 12 2 1"></path>
+                                                <path d="M3 13 5 12"></path>
+                                                <path d="m17 7 1.4-1.4"></path>
+                                                <path d="m5.6 18.4 1.4-1.4"></path>
+                                                <path d="m16.7 18.4 1.4 1.4"></path>
+                                                <path d="m5.6 5.6 1.4 1.4"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Create Course Button */}
-                                <div className="flex items-center gap-3">
+                                {/* <div className="flex items-center gap-3">
                                     <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
                                         Create a Course
                                     </span>
@@ -314,7 +360,7 @@ export function Header({
                                     >
                                         <Book className="h-6 w-6" />
                                     </button>
-                                </div>
+                                </div> */}
 
                                 {/* Go To School Button - only shown if hasOwnedSchool is true */}
                                 {hasOwnedSchool && (
