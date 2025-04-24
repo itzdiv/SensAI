@@ -170,7 +170,7 @@ export default function CourseModuleList({
         }
 
         try {
-            const response = await fetch(`http://localhost:8001/courses/${courseId}/milestones/swap`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/milestones/swap`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -200,7 +200,7 @@ export default function CourseModuleList({
         }
 
         try {
-            const response = await fetch(`http://localhost:8001/courses/${courseId}/tasks/swap`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/tasks/swap`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
