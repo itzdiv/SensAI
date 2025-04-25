@@ -354,6 +354,76 @@ export default function BlockNoteEditor({
         }
     }, [editor]);
 
+    // Add effect to handle clicks in the empty space of editor blocks
+    useEffect(() => {
+        if (editor && editorContainerRef.current && !readOnly) {
+            const handleEditorClick = (e: MouseEvent) => {
+                // Don't interfere with normal clicks on content
+                const target = e.target as HTMLElement;
+
+                // Check if we're clicking on the editor container but not on an actual block content
+                const isEditorContainer = target.classList.contains('bn-block-content')
+
+                if (isEditorContainer) {
+                    // Find the closest block element to the click
+                    const blockElements = editorContainerRef.current?.querySelectorAll('.bn-block');
+                    if (!blockElements || blockElements.length === 0) return;
+
+                    // Find the block at the click position
+                    let closestBlock: Element | null = null;
+                    let minDistance = Infinity;
+
+                    blockElements.forEach(block => {
+                        const rect = block.getBoundingClientRect();
+                        // Check if the click is on the same line as this block (y-axis)
+                        if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                            const distance = Math.abs(e.clientY - (rect.top + rect.height / 2));
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                closestBlock = block;
+                            }
+                        }
+                    });
+
+                    if (closestBlock) {
+                        // Explicitly reassert the type right where we need it
+                        const block = closestBlock as HTMLElement;
+                        // Get the editable element within the block
+                        const editableContent = block.querySelector('.bn-inline-content') as HTMLElement;
+
+                        console.log(editableContent);
+                        if (editableContent) {
+                            // Focus and place cursor at the end
+                            editableContent.focus();
+
+                            // Set selection to the end of the content
+                            const range = document.createRange();
+                            const sel = window.getSelection();
+
+                            range.selectNodeContents(editableContent);
+                            range.collapse(false); // false means collapse to end
+
+                            if (sel) {
+                                sel.removeAllRanges();
+                                sel.addRange(range);
+                            }
+
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    }
+                }
+            };
+
+            const editorContainer = editorContainerRef.current;
+            editorContainer.addEventListener('click', handleEditorClick);
+
+            return () => {
+                editorContainer.removeEventListener('click', handleEditorClick);
+            };
+        }
+    }, [editor, readOnly]);
+
     return (
         <div
             ref={editorContainerRef}
