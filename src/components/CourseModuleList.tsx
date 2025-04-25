@@ -766,13 +766,13 @@ export default function CourseModuleList({
                                             {mode === 'edit' && (
                                                 <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                                                     {item.status === 'draft' && (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500 text-white mr-2">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500 text-white">
                                                             DRAFT
                                                         </span>
                                                     )}
                                                     {item.status === 'published' && item.scheduled_publish_at && (
                                                         <Tooltip content={`Scheduled for ${formatScheduleDate(new Date(item.scheduled_publish_at))}`} position="top">
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-600 text-white mr-2">
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-600 text-white">
                                                                 SCHEDULED
                                                             </span>
                                                         </Tooltip>
