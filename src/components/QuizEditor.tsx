@@ -2094,27 +2094,35 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                     {/* Middle: Navigation Controls */}
                     <div className="flex-1 flex items-center justify-center">
-                        <button
-                            onClick={goToPreviousQuestion}
-                            disabled={currentQuestionIndex === 0}
-                            className={`w-10 h-10 flex items-center justify-center rounded-full ${currentQuestionIndex === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-[#3A3A3A] cursor-pointer'} transition-colors border border-[#3A3A3A]`}
-                            aria-label="Previous question"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
+                        {questions.length > 1 ? (
+                            <>
+                                <button
+                                    onClick={goToPreviousQuestion}
+                                    disabled={currentQuestionIndex === 0}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-full ${currentQuestionIndex === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-[#3A3A3A] cursor-pointer'} transition-colors border border-[#3A3A3A]`}
+                                    aria-label="Previous question"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
 
-                        <div className="mx-3 px-4 py-1.5 rounded-full border border-[#3A3A3A] bg-[#2A2A2A] text-gray-300 text-sm font-medium">
-                            Question {currentQuestionIndex + 1} / {questions.length}
-                        </div>
+                                <div className="mx-3 px-4 py-1.5 rounded-full border border-[#3A3A3A] bg-[#2A2A2A] text-gray-300 text-sm font-medium">
+                                    Question {currentQuestionIndex + 1} / {questions.length}
+                                </div>
 
-                        <button
-                            onClick={goToNextQuestion}
-                            disabled={currentQuestionIndex === questions.length - 1}
-                            className={`w-10 h-10 flex items-center justify-center rounded-full ${currentQuestionIndex === questions.length - 1 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-[#3A3A3A] cursor-pointer'} transition-colors border border-[#3A3A3A]`}
-                            aria-label="Next question"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
+                                <button
+                                    onClick={goToNextQuestion}
+                                    disabled={currentQuestionIndex === questions.length - 1}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-full ${currentQuestionIndex === questions.length - 1 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-[#3A3A3A] cursor-pointer'} transition-colors border border-[#3A3A3A]`}
+                                    aria-label="Next question"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="px-4 py-1.5 rounded-full border border-[#3A3A3A] bg-[#2A2A2A] text-gray-300 text-sm font-medium">
+                                Question
+                            </div>
+                        )}
                     </div>
 
                     {/* Right: Delete Button and Publish Button */}
