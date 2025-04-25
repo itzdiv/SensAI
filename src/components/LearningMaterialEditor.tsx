@@ -327,8 +327,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                         setEditorContent(data.blocks);
                     }
 
-                    console.log("data", data);
-
                     setIsLoading(false);
                 })
                 .catch(error => {

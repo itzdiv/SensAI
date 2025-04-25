@@ -6,6 +6,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState } from "react";
 import { BlockNoteSchema, defaultBlockSpecs, locales } from "@blocknote/core";
+import Toast from "./Toast";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -150,6 +151,11 @@ async function resolveFileUrl(url: string) {
     }
 }
 
+// Function to check if a URL is a YouTube link
+function isYouTubeLink(url: string): boolean {
+    return url.includes('youtube.com') || url.includes('youtu.be');
+}
+
 export default function BlockNoteEditor({
     initialContent = [],
     onChange,
@@ -161,14 +167,21 @@ export default function BlockNoteEditor({
     allowMedia = true,
 }: BlockNoteEditorProps) {
     const locale = locales["en"];
-
     const editorContainerRef = useRef<HTMLDivElement>(null);
-    // Track if we're currently updating the editor content
     const isUpdatingContent = useRef(false);
-    // Store the last content to avoid unnecessary updates
     const lastContent = useRef<any[]>([]);
-    // Store the editor instance in a ref
     const editorRef = useRef<any>(null);
+
+    // Replace the boolean showToast with a toast object
+    const [toast, setToast] = useState({
+        show: false,
+        title: '',
+        description: '',
+        emoji: ''
+    });
+
+    // Add a timeout ref to store the timeout ID
+    const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Extract blocks we don't want based on configuration
     let enabledBlocks;
@@ -208,6 +221,69 @@ export default function BlockNoteEditor({
             editorRef.current = editor;
         }
     }, [editor]);
+
+    // Update the function to handle closing the toast
+    const handleCloseToast = () => {
+        setToast(prev => ({ ...prev, show: false }));
+
+        // Clear any existing timeout
+        if (toastTimeoutRef.current) {
+            clearTimeout(toastTimeoutRef.current);
+            toastTimeoutRef.current = null;
+        }
+    };
+
+    // Update the effect that checks for YouTube links
+    useEffect(() => {
+        if (editor && allowMedia) {
+            const handleVideoBlockChange = () => {
+                // Skip checking during programmatic updates
+                if (isUpdatingContent.current) return;
+
+                // Get all video blocks
+                const blocks = editor.document;
+
+                blocks.forEach(block => {
+                    // Check if this is a video block
+                    // @ts-ignore - TypeScript doesn't recognize custom block types
+                    if (block.type === "video") {
+                        // Check if the URL is a YouTube link
+                        // @ts-ignore - TypeScript doesn't recognize props on custom block types
+                        const videoUrl = block.props?.url || "";
+                        if (videoUrl && isYouTubeLink(videoUrl)) {
+                            // Show toast with customized properties
+                            setToast({
+                                show: true,
+                                title: "Cannot embed YouTube videos yet",
+                                description: "Please use video file URLs (e.g. link to a mp4 file) instead",
+                                emoji: "🚫"
+                            });
+
+                            // Clear any existing timeout
+                            if (toastTimeoutRef.current) {
+                                clearTimeout(toastTimeoutRef.current);
+                            }
+
+                            // Set a new timeout to auto-hide the toast after 5 seconds
+                            toastTimeoutRef.current = setTimeout(() => {
+                                setToast(prev => ({ ...prev, show: false }));
+                            }, 5000);
+                        }
+                    }
+                });
+            };
+
+            // Listen for content changes to detect YouTube links
+            editor.onEditorContentChange(handleVideoBlockChange);
+
+            // Cleanup function to clear timeout when component unmounts
+            return () => {
+                if (toastTimeoutRef.current) {
+                    clearTimeout(toastTimeoutRef.current);
+                }
+            };
+        }
+    }, [editor, allowMedia]);
 
     // Provide the editor instance to the parent component if onEditorReady is provided
     useEffect(() => {
@@ -296,6 +372,15 @@ export default function BlockNoteEditor({
                 theme={isDarkMode ? "dark" : "light"}
                 className={isDarkMode ? "dark-editor" : ""}
                 editable={!readOnly}
+            />
+
+            {/* Update Toast component to use the toast object */}
+            <Toast
+                show={toast.show}
+                title={toast.title}
+                description={toast.description}
+                emoji={toast.emoji}
+                onClose={handleCloseToast}
             />
         </div>
     );
