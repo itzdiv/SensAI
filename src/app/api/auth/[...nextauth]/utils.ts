@@ -25,9 +25,7 @@ export async function registerUserWithBackend(
   user: UserData,
   account: AccountData
 ): Promise<any> {
-  try {
-    console.log("Sending auth request to backend with user:", user.email);
-    
+  try {    
     const response = await fetch(`${process.env.BACKEND_URL}/auth/login`, {
       method: 'POST',
       headers: {
@@ -47,7 +45,6 @@ export async function registerUserWithBackend(
 
     // Return the raw response data - assuming it contains an 'id' field directly
     const data = await response.json();
-    console.log("Backend auth response:", JSON.stringify(data));
     
     // Make sure the ID exists and is returned properly
     if (!data.id) {

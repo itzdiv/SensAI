@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Clipboard, Check, Loader2 } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Clipboard, Check, Loader2, Copy } from "lucide-react";
 import { Module, ModuleItem, Quiz } from "@/types/course";
 import { QuizQuestion } from "@/types/quiz"; // Import from types instead
 import CourseItemDialog from "@/components/CourseItemDialog";
@@ -43,9 +43,9 @@ interface CourseModuleListProps {
     saveItem?: () => void;
     cancelEditMode?: () => void;
     enableEditMode?: () => void;
-    handleDialogTitleChange?: (e: React.FormEvent<HTMLHeadingElement>) => void;
     handleQuizContentChange?: (questions: QuizQuestion[]) => void;
     setShowPublishConfirmation?: (show: boolean) => void;
+    onDuplicateItem?: (moduleId: string, taskData: any, ordering: number) => Promise<void>;
 }
 
 export default function CourseModuleList({
@@ -83,9 +83,9 @@ export default function CourseModuleList({
     saveItem = () => { },
     cancelEditMode = () => { },
     enableEditMode = () => { },
-    handleDialogTitleChange = () => { },
     handleQuizContentChange = () => { },
     setShowPublishConfirmation = () => { },
+    onDuplicateItem,
 }: CourseModuleListProps) {
     // For editor mode where we need to keep track of expanded modules internally
     const [internalExpandedModules, setInternalExpandedModules] = useState<Record<string, boolean>>({});
@@ -112,6 +112,9 @@ export default function CourseModuleList({
     // States to track task swapping in progress
     const [swappingTaskUpId, setSwappingTaskUpId] = useState<string | null>(null);
     const [swappingTaskDownId, setSwappingTaskDownId] = useState<string | null>(null);
+
+    // State to track task duplication in progress
+    const [duplicatingTaskId, setDuplicatingTaskId] = useState<string | null>(null);
 
     // Update completedItems when completedTaskIds changes
     useEffect(() => {
@@ -474,6 +477,48 @@ export default function CourseModuleList({
         }
     };
 
+    // Function to handle task duplication with API call
+    const handleDuplicateTask = async (moduleId: string, itemId: string) => {
+        if (!courseId) {
+            console.error('Course ID is required for cloning tasks');
+            return;
+        }
+
+        try {
+            setDuplicatingTaskId(itemId);
+
+            // Make the API call to duplicate the task
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/duplicate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    task_id: parseInt(itemId),
+                    milestone_id: parseInt(moduleId),
+                    course_id: parseInt(courseId)
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to duplicate task: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            // If the API call was successful, update the UI
+            if (onDuplicateItem) {
+                await onDuplicateItem(moduleId, data['task'], data['ordering']);
+            }
+
+        } catch (error) {
+            console.error('Error duplicating task:', error);
+            // You could add a toast notification here for the error
+        } finally {
+            setDuplicatingTaskId(null);
+        }
+    };
+
     return (
         <>
             <div className="space-y-2">
@@ -773,6 +818,23 @@ export default function CourseModuleList({
                                                             </span>
                                                         </Tooltip>
                                                     )}
+                                                    <Tooltip content="Duplicate as draft" position="top">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDuplicateTask(module.id, item.id);
+                                                            }}
+                                                            disabled={duplicatingTaskId === item.id}
+                                                            className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                                            aria-label="Duplicate task as draft"
+                                                        >
+                                                            {duplicatingTaskId === item.id ? (
+                                                                <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full" />
+                                                            ) : (
+                                                                <Copy size={16} />
+                                                            )}
+                                                        </button>
+                                                    </Tooltip>
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -909,7 +971,6 @@ export default function CourseModuleList({
                 onSaveItem={saveItem}
                 onCancelEditMode={cancelEditMode}
                 onEnableEditMode={enableEditMode}
-                onDialogTitleChange={handleDialogTitleChange}
                 onQuizContentChange={handleQuizContentChange}
                 focusEditor={focusEditor}
                 schoolId={schoolId}

@@ -118,12 +118,6 @@ export default function CreateSchool() {
         setSlugError(null);
 
         try {
-            // In a real app, you would send this data to your API
-            console.log("Creating school with: ", {
-                schoolName,
-                slug: `${slug}`
-            });
-
             // Create the school via API
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/`, {
                 method: 'POST',

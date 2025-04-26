@@ -48,7 +48,6 @@ async function uploadFile(file: File) {
 
         const presignedData = await presignedUrlResponse.json();
 
-        console.log('Presigned url generated');
         presigned_url = presignedData.presigned_url;
     } catch (error) {
         console.error("Error getting presigned URL for file:", error);
@@ -80,7 +79,6 @@ async function uploadFile(file: File) {
             const static_url = `${process.env.NEXT_PUBLIC_BACKEND_URL}${file_static_path}`;
 
             console.log('File uploaded successfully to backend');
-            console.log(static_url);
 
             return static_url;
         } catch (error) {
@@ -106,7 +104,6 @@ async function uploadFile(file: File) {
             }
 
             console.log('File uploaded successfully to S3');
-            console.log(uploadResponse);
             // Update the request body with the file information
             return uploadResponse.url
         } catch (error) {
@@ -141,10 +138,7 @@ async function resolveFileUrl(url: string) {
             throw new Error('Failed to get presigned URL for file');
         }
 
-        console.log('Presigned url for fetch generated');
-
         const { url } = await presignedResponse.json();
-
         return url;
     } catch (error) {
         console.error('Error fetching file:', error);
@@ -391,7 +385,6 @@ export default function BlockNoteEditor({
                         // Get the editable element within the block
                         const editableContent = block.querySelector('.bn-inline-content') as HTMLElement;
 
-                        console.log(editableContent);
                         if (editableContent) {
                             // Focus and place cursor at the end
                             editableContent.focus();

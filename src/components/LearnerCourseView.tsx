@@ -284,7 +284,6 @@ export default function LearnerCourseView({
     const openTaskItem = async (moduleId: string, itemId: string, questionId?: string) => {
         // Check if AI is responding and we're trying to open a different item
         if (isAiResponding && (moduleId !== activeModuleId || itemId !== activeItem?.id || questionId !== activeQuestionId)) {
-            console.log("Should show confirmation dialog for openTaskItem");
             setPendingNavigation({
                 action: 'openTaskItem',
                 params: { moduleId, itemId, questionId }
@@ -593,9 +592,6 @@ export default function LearnerCourseView({
         setIsMarkingComplete(true);
 
         try {
-            // API call to mark the task as completed would go here
-            console.log("Marking task as complete:", activeItem.id);
-
             // Store chat message for learning material completion
             // This is similar to the chat message storage in LearnerQuizView
             // but we only send a user message, not an AI response

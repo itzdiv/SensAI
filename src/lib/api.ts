@@ -284,7 +284,6 @@ export const addModule = async (courseId: string, schoolId: string, modules: Mod
 
       // Get the module ID from the response
       const data = await response.json();
-      console.log("Module created successfully:", data);
 
       // Create the new module with the ID from the API
       const newModule: Module = {

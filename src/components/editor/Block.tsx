@@ -56,7 +56,6 @@ const Block: React.FC<BlockProps> = ({ id, type, content, onShowBlockMenu }) => 
     const handleInput = (e: React.FormEvent<HTMLElement>) => {
         // Get the current input text
         const newContent = e.currentTarget.textContent || '';
-        console.log('Input received:', newContent);
 
         // Update the content in the editor context
         updateBlockContent(id, newContent);
@@ -125,9 +124,6 @@ const Block: React.FC<BlockProps> = ({ id, type, content, onShowBlockMenu }) => 
             suppressContentEditableWarning: true,
             className: "outline-none"
         };
-
-        // For debugging purposes, trace the content
-        console.log(`Rendering block ${id} with content:`, content);
 
         switch (type) {
             case 'heading1':

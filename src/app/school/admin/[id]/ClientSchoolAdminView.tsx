@@ -165,8 +165,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
     // Handle name blur
     const handleNameBlur = () => {
         setIsEditingName(false);
-        // In a real app, you would save the name change here
-        console.log("School name updated:", schoolNameRef.current?.textContent);
     };
 
     // Handle keyboard events for name editing
@@ -174,8 +172,6 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         if (e.key === 'Enter') {
             e.preventDefault();
             setIsEditingName(false);
-            // In a real app, you would save the name change here
-            console.log("School name updated:", schoolNameRef.current?.textContent);
         }
     };
 
@@ -280,12 +276,9 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
     const handleCreateCohort = async (cohort: any) => {
         try {
-            console.log("Cohort created:", cohort);
-
             // Important: Navigate before closing the dialog to prevent flash of school page
             // This navigation will unmount the current component, which implicitly closes the dialog
             if (cohort && cohort.id) {
-                console.log("Navigating to:", `/school/admin/${id}/cohorts/${cohort.id}`);
                 router.push(`/school/admin/${id}/cohorts/${cohort.id}`);
             } else {
                 console.error("Cohort ID is missing in the response:", cohort);

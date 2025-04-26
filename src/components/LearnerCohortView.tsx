@@ -64,11 +64,6 @@ export default function LearnerCohortView({
     // State for the active mobile tab
     const [activeMobileTab, setActiveMobileTab] = useState<MobileTab>(MobileTab.Course);
 
-    // Add useEffect to monitor showTopPerformers changes
-    useEffect(() => {
-        console.log("showTopPerformers changed to:", showTopPerformers);
-    }, [showTopPerformers]);
-
     // Add useEffect to update local state when props change
     useEffect(() => {
         setLocalCompletedTaskIds(completedTaskIds);
@@ -140,7 +135,6 @@ export default function LearnerCohortView({
 
         // Don't fetch if streak was already incremented today
         if (isStreakIncrementedToday() && !isInitialLoadRef.current) {
-            console.log("Streak already incremented today, skipping fetch");
             return;
         }
 
@@ -172,9 +166,6 @@ export default function LearnerCohortView({
                     `${LAST_INCREMENT_DATE_KEY}_${userId}_${cohortId}`,
                     today
                 );
-
-                console.log("Streak incremented! New streak:", data.streak_count);
-                console.log("showTopPerformers", showTopPerformers);
 
                 if (!showTopPerformers) {
                     // If streak has been incremented today, show the TopPerformers component
@@ -211,11 +202,8 @@ export default function LearnerCohortView({
 
     // Handle dialog close event to refresh streak data
     const handleDialogClose = useCallback(() => {
-        console.log("LearnerCourseView dialog closed, checking if streak needs update");
         if (!isStreakIncrementedToday()) {
             fetchStreakData();
-        } else {
-            console.log("Streak already incremented today, no need to fetch");
         }
     }, [fetchStreakData, isStreakIncrementedToday]);
 
@@ -287,9 +275,7 @@ export default function LearnerCohortView({
 
     // Callback for when TopPerformers has no data
     const handleEmptyPerformersData = useCallback((isEmpty: boolean) => {
-        console.log("handleEmptyPerformersData called with isEmpty:", isEmpty);
         setShowTopPerformers(!isEmpty);
-        console.log("setShowTopPerformers called with:", !isEmpty);
     }, []);
 
     // Close dropdown when clicking outside

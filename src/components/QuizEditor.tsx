@@ -273,7 +273,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 const matchingScorecard = availableScorecards.find(sc => parseInt(sc.id) === question.scorecard_id);
 
                                 if (matchingScorecard) {
-                                    console.log(`Found matching scorecard for question ${question.id}: ${matchingScorecard.name}`);
                                     scorecardData = {
                                         id: matchingScorecard.id,
                                         name: matchingScorecard.name,
@@ -1579,9 +1578,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 };
             });
 
-            console.log("Publishing quiz with title:", currentTitle);
-            console.log("Formatted questions:", formattedQuestions);
-
             // Make POST request to publish the quiz
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/quiz`, {
                 method: 'POST',
@@ -1602,7 +1598,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             // Get the updated task data from the response
             const updatedTaskData = await response.json();
-            console.log("API response:", updatedTaskData);
 
             const updatedData = {
                 ...updatedTaskData,
@@ -1651,7 +1646,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                 // Get input_type from the current config
                 const inputType = question.config.inputType;
-                console.log(`Question ${question.id} - Input type: ${inputType}`);
 
                 return {
                     id: question.id,
@@ -1663,8 +1657,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     context: getKnowledgeBaseContent(question.config)
                 };
             });
-
-            console.log("Saving quiz with formatted questions:", formattedQuestions);
 
             // Make PUT request to update the quiz content, keeping the same status
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/quiz`, {
@@ -1693,8 +1685,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 id: taskId,
             };
 
-            console.log("Quiz saved successfully", updatedData);
-
             // Call the onSaveSuccess callback if provided
             if (onSaveSuccess) {
                 setTimeout(() => {
@@ -1709,8 +1699,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // Handle cancel in edit mode - revert to original data
     const handleCancel = () => {
         if (originalQuestionsRef.current.length === 0) return;
-
-        console.log('Original questions:', originalQuestionsRef.current);
         // Restore the original questions
         setQuestions(JSON.parse(JSON.stringify(originalQuestionsRef.current)));
 
@@ -1925,9 +1913,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 newQuestionType: currentQuestionConfig.questionType,
                 newInputType: option.value as 'text' | 'code' | 'audio'
             });
-
-            // Ensure question state is updated immediately in case we save right after changing
-            console.log(`Answer type changed to: ${option.value}`);
         }
     }, [handleConfigChange, status, questions, currentQuestionIndex, onChange, currentQuestionConfig.questionType]);
 
@@ -2052,8 +2037,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const syncLinkedScorecards = useCallback((sourceId: string, newName?: string, newCriteria?: CriterionData[]) => {
         if (!sourceId) return;
 
-        console.log("questions before:", questions);
-
         // Update all questions that have scorecard linked to this source
         const updatedQuestions = questions.map(question => {
             // Check if this question has a linked scorecard with the matching id
@@ -2082,8 +2065,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Return question unchanged if it doesn't have a matching scorecard
             return question;
         });
-
-        console.log("Updated questions after:", updatedQuestions);
 
         // Update questions state and notify parent
         setQuestions(updatedQuestions);

@@ -102,8 +102,6 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                     cohortsData = await userCohortsResponse.json();
                 }
 
-                console.log("cohortsData", cohortsData);
-
                 // Transform cohorts data
                 const transformedCohorts: Cohort[] = cohortsData.map((cohort: any) => ({
                     id: cohort.id,

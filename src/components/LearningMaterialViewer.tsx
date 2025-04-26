@@ -386,12 +386,10 @@ export default function LearningMaterialViewer({
 
     // Function to handle audio submission
     const handleAudioSubmit = (audioBlob: Blob) => {
-        console.log("Audio submission received", audioBlob);
     };
 
     // Function to handle viewing scorecard
     const handleViewScorecard = (scorecard: any[]) => {
-        console.log("View scorecard", scorecard);
     };
 
     // Handle ask doubt button click
