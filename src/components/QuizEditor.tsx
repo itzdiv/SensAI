@@ -2111,8 +2111,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             )}
 
             {/* Quiz Controls - Hide in preview mode and when there are no questions */}
-            {!isPreviewMode && questions.length > 0 && (
-                <div className="flex justify-between items-center mb-4 px-6 py-6">
+            {!isPreviewMode && ((questions.length > 0 && status === 'draft') || (questions.length > 1 && status === 'published')) && (
+                <div className="flex justify-between items-center mx-12 px-6 py-6">
                     {/* Left: Add Question Button */}
                     <div className="flex-1">
                         {!readOnly && status === 'draft' && <button
@@ -2177,7 +2177,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             )}
 
             {/* Content area with animation when a new question is added */}
-            <div className={`flex flex-1 gap-4 ${newQuestionAdded ? 'animate-new-question' : ''} ${isPreviewMode ? 'h-[600px]' : ''}`}>
+            <div className={`flex flex-1 gap-4 mt-4 ${newQuestionAdded ? 'animate-new-question' : ''} ${isPreviewMode ? 'h-[600px]' : ''}`}>
                 {isPreviewMode ? (
                     <>
                         <div
@@ -2196,8 +2196,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 <EmptyQuizPlaceholder />
                             </div>
                         ) : (
-                            <div className="w-full flex flex-col mx-6 mb-4">
-                                <div className="flex flex-col space-y-2 mb-4">
+                            <div className="w-full flex flex-col mx-4 mb-4">
+                                <div className="flex flex-col space-y-2 mx-12 mb-4">
 
                                     <div className="flex items-center">
                                         <Dropdown
