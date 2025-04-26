@@ -2202,7 +2202,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             )}
 
             {/* Content area with animation when a new question is added */}
-            <div className={`flex flex-1 gap-4 mt-4 ${newQuestionAdded ? 'animate-new-question' : ''} ${isPreviewMode ? 'h-[600px]' : ''}`}>
+            <div className={`flex flex-1 gap-4 mt-4 ${newQuestionAdded ? 'animate-new-question' : ''} ${isPreviewMode ? 'h-full' : ''}`}>
                 {isPreviewMode ? (
                     <>
                         <div
@@ -2326,7 +2326,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     {/* Show content based on active tab */}
                                     {activeEditorTab === 'question' ? (
                                         <div className="w-full">
-                                            <div className={`editor-container h-[600px] overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                            <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
                                                 <BlockNoteEditor
                                                     key={`quiz-editor-question-${currentQuestionIndex}`}
                                                     initialContent={currentQuestionContent}
@@ -2339,7 +2339,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             </div>
                                         </div>
                                     ) : activeEditorTab === 'answer' ? (
-                                        <div className={`w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden h-[600px] overflow-y-auto ${highlightedField === 'answer' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
+                                        <div className={`w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden h-full overflow-y-auto ${highlightedField === 'answer' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 // Ensure the correct answer editor keeps focus
@@ -2398,7 +2398,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="h-[600px]">
+                                                    <div className="h-full">
                                                         {/* Add learning material selection component */}
                                                         <div className="mb-4 ml-12">
                                                             <LearningMaterialLinker
@@ -2479,7 +2479,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     ) : (
                                         // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
                                         currentQuestionConfig.scorecardData ? (
-                                            <div className="h-[600px] overflow-y-auto w-full">
+                                            <div className="h-full overflow-y-auto w-full">
                                                 <Scorecard
                                                     ref={scorecardRef}
                                                     name={currentQuestionConfig.scorecardData?.name || scorecardTitle}
