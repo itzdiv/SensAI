@@ -497,8 +497,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 title: currentTitle // Use the current title from the dialog
             };
 
-            console.log(updatedData)
-
             // Update our local state with the data from the API
             setTaskData(updatedData);
 
