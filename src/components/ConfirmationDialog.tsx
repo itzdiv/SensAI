@@ -29,6 +29,10 @@ interface ConfirmationDialogProps {
 
     // Custom content to be rendered between message and buttons
     children?: React.ReactNode;
+
+    // Close button props
+    showCloseButton?: boolean;
+    onClose?: () => void;
 }
 
 export default function ConfirmationDialog({
@@ -56,7 +60,11 @@ export default function ConfirmationDialog({
     type = 'delete',
 
     // Custom content
-    children
+    children,
+
+    // Close button props
+    showCloseButton = false,
+    onClose
 }: ConfirmationDialogProps) {
     // Handle both 'open' and 'show' props for backward compatibility
     const isVisible = open !== undefined ? open : (show !== undefined ? show : false);
@@ -88,6 +96,15 @@ export default function ConfirmationDialog({
                 type === 'save' ? 'bg-yellow-500 hover:bg-yellow-600' :
                     'bg-blue-600 hover:bg-blue-700'; // Default for custom type
 
+    // Handle close button click
+    const handleClose = () => {
+        if (onClose) {
+            onClose();
+        } else {
+            onCancel();
+        }
+    };
+
     return (
         <div
             className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
@@ -97,9 +114,20 @@ export default function ConfirmationDialog({
             }}
         >
             <div
-                className="w-full max-w-md bg-[#1A1A1A] rounded-lg shadow-2xl"
+                className="w-full max-w-md bg-[#1A1A1A] rounded-lg shadow-2xl relative"
                 onClick={(e) => e.stopPropagation()}
             >
+                {showCloseButton && (
+                    <button
+                        className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors focus:outline-none cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleClose();
+                        }}
+                    >
+                        <X size={18} />
+                    </button>
+                )}
                 <div className="p-6">
                     <h2 className="text-xl font-light text-white mb-4">{displayTitle}</h2>
                     <p className="text-gray-300">{displayMessage}</p>

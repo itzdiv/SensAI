@@ -967,6 +967,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 onCancel={isClosingDraft ? handleConfirmDiscardChanges : handleCancelClosingDialog}
                 onClickOutside={isClosingDraft ? () => setShowCloseConfirmation(false) : handleCancelClosingDialog}
                 type={isClosingDraft ? 'save' : 'delete'}
+                showCloseButton={isClosingDraft}
+                onClose={() => setShowCloseConfirmation(false)}
             />
 
             {/* Save confirmation dialog */}
