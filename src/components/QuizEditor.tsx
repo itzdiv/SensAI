@@ -121,7 +121,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     className = "",
     isPreviewMode = false,
     readOnly = false,
-    onPublish,
     taskId,
     status = 'draft',
     onPublishSuccess,
@@ -446,6 +445,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // State to track which field is being highlighted for validation errors
     const [highlightedField, setHighlightedField] = useState<'question' | 'answer' | 'codingLanguage' | null>(null);
+
+    // State to track if the question count should be highlighted (after adding a new question)
+    const [questionCountHighlighted, setQuestionCountHighlighted] = useState(false);
 
     // Add validation utility functions to reduce duplication
     // These functions can validate both the current question and any question by index
@@ -1367,10 +1369,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         // Trigger animation
         setNewQuestionAdded(true);
 
-        // Reset animation flag after animation completes
+        // Trigger question count highlight animation
+        setQuestionCountHighlighted(true);
+
+        // Reset animation flags after animation completes
         setTimeout(() => {
             setNewQuestionAdded(false);
         }, 800); // slightly longer than animation duration to ensure it completes
+
+        setTimeout(() => {
+            setQuestionCountHighlighted(false);
+        }, 1000); // Animation duration for the question counter highlight
 
         if (onChange) {
             onChange(updatedQuestions);
@@ -1494,21 +1503,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         </div>
     );
 
-    // Handle publish confirmation
-    const handleShowPublishConfirmation = () => {
-        if (onPublish) {
-            onPublish();
-        }
-    };
-
     const handleCancelPublish = () => {
         if (onPublishCancel) {
             onPublishCancel();
         }
     };
 
-    // Modified handleConfirmPublish to accept scheduled_publish_at parameter
-    const handleConfirmPublish = async (scheduledPublishAt?: string | null) => {
+
+    const updateDraftQuiz = async (scheduledPublishAt?: string | null, status: 'draft' | 'published' = 'published') => {
         if (!taskId) {
             console.error("Cannot publish: taskId is not provided");
             setPublishError("Cannot publish: Task ID is missing");
@@ -1582,7 +1584,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 body: JSON.stringify({
                     title: currentTitle,
                     questions: formattedQuestions,
-                    scheduled_publish_at: scheduledPublishAt
+                    scheduled_publish_at: scheduledPublishAt,
+                    status: status
                 }),
             });
 
@@ -1594,30 +1597,25 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             const updatedTaskData = await response.json();
             console.log("API response:", updatedTaskData);
 
-            // Ensure the status is set to 'published'
-            const publishedTaskData = {
+            const updatedData = {
                 ...updatedTaskData,
-                status: 'published',
+                status: status,
                 title: currentTitle,
                 scheduled_publish_at: scheduledPublishAt,
                 id: taskId // Ensure the ID is included for proper updating in the module list
             };
 
-            console.log("Quiz published successfully", publishedTaskData);
+            console.log("Draft quiz updated successfully");
 
             // Set publishing to false to avoid state updates during callbacks
             setIsPublishing(false);
 
-            // Call the original onPublish callback if provided
-            if (onPublish) {
-                onPublish();
-            }
-
             // Call the onPublishSuccess callback if provided
-            if (onPublishSuccess) {
+            const callback = status === 'published' ? onPublishSuccess : onSaveSuccess;
+            if (callback) {
                 // Use setTimeout to break the current render cycle
                 setTimeout(() => {
-                    onPublishSuccess(publishedTaskData);
+                    callback(updatedData);
                 }, 0);
             }
         } catch (error) {
@@ -1627,8 +1625,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     };
 
-    // Modified handleSave for edit mode to send raw blocks of the correct answer
-    const handleSave = async () => {
+    // Modified handleSavePublishedQuiz for edit mode to send raw blocks of the correct answer
+    const handleSavePublishedQuiz = async () => {
         if (!taskId) {
             console.error("Cannot save: taskId is not provided");
             return;
@@ -1735,7 +1733,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Expose methods to parent component via the ref
     useImperativeHandle(ref, () => ({
-        save: handleSave,
+        saveDraft: () => updateDraftQuiz(null, 'draft'),
+        savePublished: handleSavePublishedQuiz,
         cancel: handleCancel,
         hasContent: () => questions.length > 0,
         hasQuestionContent: () => {
@@ -2061,7 +2060,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 show={showPublishConfirmation}
                 title="Ready to publish?"
                 message="After publishing, you won't be able to add or remove questions, but you can still edit existing ones"
-                onConfirm={handleConfirmPublish}
+                onConfirm={updateDraftQuiz}
                 onCancel={handleCancelPublish}
                 isLoading={isPublishing}
                 errorMessage={publishError}
@@ -2094,7 +2093,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                     {/* Middle: Navigation Controls */}
                     <div className="flex-1 flex items-center justify-center">
-                        {questions.length > 1 ? (
+                        {questions.length > 1 && (
                             <>
                                 <button
                                     onClick={goToPreviousQuestion}
@@ -2105,7 +2104,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     <ChevronLeft size={20} />
                                 </button>
 
-                                <div className="mx-3 px-4 py-1.5 rounded-full border border-[#3A3A3A] bg-[#2A2A2A] text-gray-300 text-sm font-medium">
+                                <div className={`mx-3 px-4 py-1.5 rounded-full border transition-all duration-300 text-sm font-medium relative z-10 text-gray-300
+                                    ${questionCountHighlighted
+                                        ? 'bg-green-700 font-semibold shadow-lg animate-question-highlight'
+                                        : 'bg-[#2A2A2A] border-[#3A3A3A]'}`}>
                                     Question {currentQuestionIndex + 1} / {questions.length}
                                 </div>
 
@@ -2118,10 +2120,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     <ChevronRight size={20} />
                                 </button>
                             </>
-                        ) : (
-                            <div className="px-4 py-1.5 rounded-full border border-[#3A3A3A] bg-[#2A2A2A] text-gray-300 text-sm font-medium">
-                                Question
-                            </div>
                         )}
                     </div>
 

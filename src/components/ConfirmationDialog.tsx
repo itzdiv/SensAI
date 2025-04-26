@@ -7,7 +7,7 @@ interface ConfirmationDialogProps {
     // Core props (required)
     onConfirm: () => void;
     onCancel: () => void;
-
+    onClickOutside?: () => void;
     // Visibility prop (with two possible names for backward compatibility)
     open?: boolean;
     show?: boolean;
@@ -25,7 +25,7 @@ interface ConfirmationDialogProps {
     errorMessage?: string | null;
 
     // Type props for styling
-    type?: 'publish' | 'delete' | 'custom';
+    type?: 'publish' | 'delete' | 'custom' | 'save';
 
     // Custom content to be rendered between message and buttons
     children?: React.ReactNode;
@@ -43,7 +43,7 @@ export default function ConfirmationDialog({
     // Action handlers
     onConfirm,
     onCancel,
-
+    onClickOutside,
     // Button text with defaults
     confirmButtonText,
     cancelButtonText = "Cancel",
@@ -64,11 +64,17 @@ export default function ConfirmationDialog({
     if (!isVisible) return null;
 
     // Default values based on type
-    const defaultTitle = type === 'publish' ? "Ready to publish?" : "Confirm deletion";
+    const defaultTitle = type === 'publish' ? "Ready to publish?"
+        : type === 'save' ? "Save changes?"
+            : "Confirm deletion";
     const defaultMessage = type === 'publish'
         ? "Make sure your content is complete and reviewed for errors before publishing"
-        : "Are you sure you want to delete this item? This action cannot be undone.";
-    const defaultButtonText = type === 'publish' ? "Publish Now" : "Delete";
+        : type === 'save'
+            ? "Do you want to save your changes?"
+            : "Are you sure you want to delete? This action cannot be undone.";
+    const defaultButtonText = type === 'publish' ? "Publish Now"
+        : type === 'save' ? "Save"
+            : "Delete";
 
     // Use provided values or defaults
     const displayTitle = title || defaultTitle;
@@ -79,14 +85,15 @@ export default function ConfirmationDialog({
     const buttonBgColor =
         type === 'publish' ? 'bg-green-800 hover:bg-green-900' :
             type === 'delete' ? 'bg-red-800 hover:bg-red-900' :
-                'bg-blue-600 hover:bg-blue-700'; // Default for custom type
+                type === 'save' ? 'bg-yellow-500 hover:bg-yellow-600' :
+                    'bg-blue-600 hover:bg-blue-700'; // Default for custom type
 
     return (
         <div
             className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
             onClick={(e) => {
                 e.stopPropagation();
-                onCancel();
+                onClickOutside ? onClickOutside() : onCancel();
             }}
         >
             <div
@@ -123,7 +130,7 @@ export default function ConfirmationDialog({
                             e.stopPropagation();
                             onConfirm();
                         }}
-                        className={`px-6 py-2 ${buttonBgColor} text-white text-sm font-medium rounded-full transition-colors focus:outline-none cursor-pointer ${isLoading ? 'opacity-70' : ''}`}
+                        className={`px-6 py-2 ${buttonBgColor} ${type === 'save' ? 'text-black' : 'text-white'} text-sm font-medium rounded-full transition-colors focus:outline-none cursor-pointer ${isLoading ? 'opacity-70' : ''}`}
                         disabled={isLoading}
                     >
                         {isLoading ? (
