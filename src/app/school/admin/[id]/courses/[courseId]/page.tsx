@@ -9,7 +9,7 @@ import CourseModuleList from "@/components/CourseModuleList";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Toast from "@/components/Toast";
 import CoursePublishSuccessBanner from "@/components/CoursePublishSuccessBanner";
-import { Module, ModuleItem, LearningMaterial, Quiz, Exam } from "@/types/course";
+import { Module, ModuleItem, LearningMaterial, Quiz } from "@/types/course";
 import { Milestone } from "@/types";
 import { transformMilestonesToModules } from "@/lib/course";
 import { CourseCohortSelectionDialog } from "@/components/CourseCohortSelectionDialog";
@@ -455,60 +455,6 @@ export default function CreateCourse() {
         }
     };
 
-    const addExam = async (moduleId: string) => {
-        try {
-            // Make API request to create a new exam
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    course_id: parseInt(courseId),
-                    milestone_id: parseInt(moduleId),
-                    type: "exam",
-                    title: "New Exam",
-                    status: "draft"
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to create exam: ${response.status}`);
-            }
-
-            // Get the exam ID from the response
-            const data = await response.json();
-            console.log("Exam created successfully:", data);
-
-            // Update the UI only after the API request is successful
-            setModules(modules.map(module => {
-                if (module.id === moduleId) {
-                    const newItem: Exam = {
-                        id: data.id.toString(), // Use the ID from the API
-                        title: "New Exam",
-                        position: module.items.length,
-                        type: 'exam',
-                        questions: [],
-                        status: 'draft',
-                        scheduled_publish_at: null
-                    };
-
-                    setActiveItem(newItem);
-                    setActiveModuleId(moduleId);
-
-                    return {
-                        ...module,
-                        items: [...module.items, newItem]
-                    };
-                }
-                return module;
-            }));
-        } catch (error) {
-            console.error("Error creating exam:", error);
-            // You might want to show an error message to the user here
-        }
-    };
-
     const deleteItem = (moduleId: string, itemId: string) => {
         setModules(modules.map(module => {
             if (module.id === moduleId) {
@@ -768,9 +714,9 @@ export default function CreateCourse() {
                         ...module,
                         items: module.items.map(item => {
                             if (item.id === itemId) {
-                                // Get numQuestions from activeItem if available (for quizzes/exams)
+                                // Get numQuestions from activeItem if available (for quizzes)
                                 const numQuestions = activeItem &&
-                                    (activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+                                    activeItem.type === 'quiz' &&
                                     activeItem.questions ?
                                     activeItem.questions.length : undefined;
 
@@ -779,7 +725,7 @@ export default function CreateCourse() {
                                     status,
                                     title,
                                     scheduled_publish_at,
-                                    ...(numQuestions !== undefined && (item.type === 'quiz' || item.type === 'exam') ? { numQuestions } : {})
+                                    ...(numQuestions !== undefined && item.type === 'quiz' ? { numQuestions } : {})
                                 };
                             }
                             return item;
@@ -1025,12 +971,6 @@ export default function CreateCourse() {
                                         content: activeItem.content
                                     };
                                 } else if (item.type === 'quiz' && activeItem.type === 'quiz') {
-                                    return {
-                                        ...item,
-                                        ...commonUpdates,
-                                        questions: activeItem.questions
-                                    };
-                                } else if (item.type === 'exam' && activeItem.type === 'exam') {
                                     return {
                                         ...item,
                                         ...commonUpdates,
@@ -1530,7 +1470,7 @@ export default function CreateCourse() {
                                             scheduled_publish_at: null,
                                             isGenerating: true
                                         } as LearningMaterial;
-                                    } else if (data.task.type === 'quiz') {
+                                    } else {
                                         newItem = {
                                             id: data.task.id.toString(),
                                             title: data.task.name,
@@ -1541,18 +1481,6 @@ export default function CreateCourse() {
                                             scheduled_publish_at: null,
                                             isGenerating: true
                                         } as Quiz;
-                                    } else {
-                                        // Default to exam if type is not recognized
-                                        newItem = {
-                                            id: data.task.id.toString(),
-                                            title: data.task.name,
-                                            position: data.task.ordering,
-                                            type: 'exam',
-                                            questions: [],
-                                            status: 'draft',
-                                            scheduled_publish_at: null,
-                                            isGenerating: true
-                                        } as Exam;
                                     }
 
                                     return {
@@ -1989,7 +1917,6 @@ export default function CreateCourse() {
                             onDeleteItem={deleteItem}
                             onAddLearningMaterial={addLearningMaterial}
                             onAddQuiz={addQuiz}
-                            onAddExam={addExam}
                             onMoveModuleUp={moveModuleUp}
                             onMoveModuleDown={moveModuleDown}
                             onDeleteModule={deleteModule}

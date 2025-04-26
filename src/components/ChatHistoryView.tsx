@@ -251,7 +251,7 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
             message.scorecard &&
             message.scorecard.length > 0 &&
             // Check if the current question is configured for report responses
-            currentQuestionConfig?.responseType === 'report'
+            currentQuestionConfig?.questionType === 'subjective'
         );
     };
 

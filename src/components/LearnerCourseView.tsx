@@ -57,7 +57,7 @@ export default function LearnerCourseView({
     const [isLoading, setIsLoading] = useState(false);
     // Track completed tasks - initialize with props
     const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>(completedTaskIds);
-    // Track completed questions within quizzes/exams - initialize with structure that will be populated
+    // Track completed questions within quizzes - initialize with structure that will be populated
     const [completedQuestions, setCompletedQuestions] = useState<Record<string, boolean>>({});
     // Add state to track when task is being marked as complete
     const [isMarkingComplete, setIsMarkingComplete] = useState(false);
@@ -324,7 +324,7 @@ export default function LearnerCourseView({
                     ...item,
                     content: data.blocks || []
                 };
-            } else if (item.type === 'quiz' || item.type === 'exam') {
+            } else if (item.type === 'quiz') {
                 // Ensure questions have the right format for the QuizEditor component
                 const formattedQuestions = (data.questions || []).map((q: any) => {
                     // Create a properly formatted question object
@@ -372,8 +372,8 @@ export default function LearnerCourseView({
                 setActiveModuleId(moduleId);
                 setIsDialogOpen(true);
 
-                // Set first question as active if it's a quiz/exam
-                if ((item.type === 'quiz' || item.type === 'exam') &&
+                // Set first question as active if it's a quiz
+                if ((item.type === 'quiz') &&
                     item.questions && item.questions.length > 0) {
                     setActiveQuestionId(questionId || item.questions[0].id);
                 }
@@ -401,8 +401,8 @@ export default function LearnerCourseView({
     const executeGoToNextTask = () => {
         if (!activeItem || !activeModuleId) return;
 
-        // If this is a quiz/exam with questions and not on the last question, go to next question
-        if ((activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+        // If this is a quiz with questions and not on the last question, go to next question
+        if ((activeItem.type === 'quiz') &&
             activeItem.questions &&
             activeItem.questions.length > 1 &&
             activeQuestionId) {
@@ -450,8 +450,8 @@ export default function LearnerCourseView({
     const executeGoToPreviousTask = () => {
         if (!activeItem || !activeModuleId) return;
 
-        // If this is a quiz/exam with questions and not on the first question, go to previous question
-        if ((activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+        // If this is a quiz with questions and not on the first question, go to previous question
+        if ((activeItem.type === 'quiz') &&
             activeItem.questions &&
             activeItem.questions.length > 1 &&
             activeQuestionId) {
@@ -493,7 +493,7 @@ export default function LearnerCourseView({
         return allTasksCompleted && module.items.length > 0;
     };
 
-    // Function to handle quiz/exam answer submission
+    // Function to handle quiz answer submission
     const handleQuizAnswerSubmit = useCallback((questionId: string, answer: string) => {
         // Mark the question as completed
         setCompletedQuestions(prev => ({
@@ -501,8 +501,8 @@ export default function LearnerCourseView({
             [questionId]: true
         }));
 
-        // Check if all questions in the current quiz/exam are now completed
-        if (activeItem?.type === 'quiz' || activeItem?.type === 'exam') {
+        // Check if all questions in the current quiz are now completed
+        if (activeItem?.type === 'quiz') {
             const allQuestions = activeItem.questions || [];
 
             // Also update the nested completedQuestionIds structure to match our UI display
@@ -551,7 +551,7 @@ export default function LearnerCourseView({
                     triggerConfetti(true); // Full celebration for single question quiz completion
                 }
             } else {
-                // For multi-question quiz/exam, check if all questions are now completed
+                // For multi-question quiz, check if all questions are now completed
                 const areAllQuestionsCompleted = allQuestions.every(
                     (q: any) => completedQuestions[q.id] || q.id === questionId
                 );
@@ -575,7 +575,7 @@ export default function LearnerCourseView({
                         triggerModuleCompletionCelebration();
                     } else {
                         // Standard celebration for task completion
-                        triggerConfetti(true); // Full celebration for completing entire quiz/exam
+                        triggerConfetti(true); // Full celebration for completing entire quiz
                     }
                 } else {
                     // Trigger light confetti for individual question completion
@@ -665,8 +665,8 @@ export default function LearnerCourseView({
     const isFirstTask = () => {
         if (!activeItem || !activeModuleId) return false;
 
-        // If this is a quiz/exam with questions, check if we're on the first question
-        if ((activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+        // If this is a quiz with questions, check if we're on the first question
+        if ((activeItem.type === 'quiz') &&
             activeItem.questions &&
             activeItem.questions.length > 1 &&
             activeQuestionId) {
@@ -689,8 +689,8 @@ export default function LearnerCourseView({
     const isLastTask = () => {
         if (!activeItem || !activeModuleId) return false;
 
-        // If this is a quiz/exam with questions, check if we're on the last question
-        if ((activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+        // If this is a quiz with questions, check if we're on the last question
+        if ((activeItem.type === 'quiz') &&
             activeItem.questions &&
             activeItem.questions.length > 1 &&
             activeQuestionId) {
@@ -728,8 +728,8 @@ export default function LearnerCourseView({
     const getPreviousTaskInfo = () => {
         if (!activeItem || !activeModuleId) return null;
 
-        // If this is a quiz/exam with questions and not on the first question, get previous question info
-        if ((activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+        // If this is a quiz with questions and not on the first question, get previous question info
+        if ((activeItem.type === 'quiz') &&
             activeItem.questions &&
             activeItem.questions.length > 1 &&
             activeQuestionId) {
@@ -764,8 +764,8 @@ export default function LearnerCourseView({
     const getNextTaskInfo = () => {
         if (!activeItem || !activeModuleId) return null;
 
-        // If this is a quiz/exam with questions and not on the last question, get next question info
-        if ((activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+        // If this is a quiz with questions and not on the last question, get next question info
+        if ((activeItem.type === 'quiz') &&
             activeItem.questions &&
             activeItem.questions.length > 1 &&
             activeQuestionId) {
@@ -1009,15 +1009,15 @@ export default function LearnerCourseView({
                                         <div
                                             className={`px-4 py-2 cursor-pointer flex items-center ${item.id === activeItem.id &&
                                                 (
-                                                    (item.type !== 'quiz' && item.type !== 'exam') ||
+                                                    (item.type !== 'quiz') ||
                                                     !activeItem?.questions ||
                                                     activeItem.questions.length <= 1
                                                 )
                                                 ? "bg-[#222222] border-l-2 border-green-500"
                                                 : completedTasks[item.id]
                                                     ? "border-l-2 border-green-500 text-green-500"
-                                                    : (item.type === 'quiz' || item.type === 'exam') &&
-                                                        // Check if there are any completed questions for this quiz/exam
+                                                    : (item.type === 'quiz') &&
+                                                        // Check if there are any completed questions for this quiz
                                                         localCompletedQuestionIds[item.id] &&
                                                         Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
                                                         ? "border-l-2 border-yellow-500"
@@ -1027,7 +1027,7 @@ export default function LearnerCourseView({
                                         >
                                             <div className={`flex items-center mr-2 ${completedTasks[item.id]
                                                 ? "text-green-500"
-                                                : (item.type === 'quiz' || item.type === 'exam') &&
+                                                : (item.type === 'quiz') &&
                                                     // Match the same condition for the icon color
                                                     localCompletedQuestionIds[item.id] &&
                                                     Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
@@ -1045,7 +1045,7 @@ export default function LearnerCourseView({
                                             </div>
                                             <div className={`flex-1 text-sm ${completedTasks[item.id]
                                                 ? "text-green-500"
-                                                : (item.type === 'quiz' || item.type === 'exam') &&
+                                                : (item.type === 'quiz') &&
                                                     // Match the same condition for the text color
                                                     localCompletedQuestionIds[item.id] &&
                                                     Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
@@ -1056,8 +1056,8 @@ export default function LearnerCourseView({
                                             </div>
                                         </div>
 
-                                        {/* Show questions as expanded items for active quiz/exam */}
-                                        {(item.type === 'quiz' || item.type === 'exam') &&
+                                        {/* Show questions as expanded items for active quiz */}
+                                        {(item.type === 'quiz') &&
                                             item.id === activeItem?.id &&
                                             activeItem?.questions &&
                                             activeItem.questions.length > 1 && (
@@ -1138,7 +1138,7 @@ export default function LearnerCourseView({
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-3 flex-shrink-0 ml-2">
-                                    {/* Show completed status for learning material/quiz/exam that has been completed */}
+                                    {/* Show completed status for learning material/quiz that has been completed */}
                                     {completedTasks[activeItem.id] && (
                                         <button
                                             className="hidden lg:flex items-center px-4 py-2 text-sm text-white bg-green-700 rounded-full transition-colors cursor-default"
@@ -1202,13 +1202,12 @@ export default function LearnerCourseView({
                                                 viewOnly={viewOnly}
                                             />
                                         )}
-                                        {(activeItem?.type === 'quiz' || activeItem?.type === 'exam') && (
+                                        {(activeItem?.type === 'quiz') && (
                                             <>
                                                 <DynamicLearnerQuizView
                                                     questions={activeItem.questions || []}
                                                     readOnly={true}
                                                     viewOnly={viewOnly}
-                                                    taskType={activeItem.type as 'quiz' | 'exam'}
                                                     currentQuestionId={activeQuestionId || undefined}
                                                     onQuestionChange={activateQuestion}
                                                     onSubmitAnswer={handleQuizAnswerSubmit}

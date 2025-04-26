@@ -25,7 +25,6 @@ export interface LearnerQuizViewProps {
     className?: string;
     readOnly?: boolean;
     viewOnly?: boolean;
-    taskType?: 'quiz' | 'exam';
     currentQuestionId?: string;
     onQuestionChange?: (questionId: string) => void;
     userId?: string;
@@ -43,7 +42,6 @@ export default function LearnerQuizView({
     className = "",
     readOnly = false,
     viewOnly = false,
-    taskType = 'quiz',
     currentQuestionId,
     onQuestionChange,
     userId = '',
@@ -242,7 +240,7 @@ export default function LearnerQuizView({
         const history = chatHistories[currentQuestionId] || [];
 
         // For exam questions with existing chat history, we need to filter what's shown
-        if (taskType === 'exam') {
+        if (validQuestions[currentQuestionIndex]?.config?.responseType === 'exam') {
             // Find any user messages in the history
             const userMessages = history.filter(msg => msg.sender === 'user');
 
@@ -271,7 +269,7 @@ export default function LearnerQuizView({
         }
 
         return history;
-    }, [chatHistories, currentQuestionIndex, validQuestions, taskType, completedQuestionIds, pendingSubmissionQuestionIds]);
+    }, [chatHistories, currentQuestionIndex, validQuestions, completedQuestionIds, pendingSubmissionQuestionIds]);
 
     // Get the last user message for the current question
     const getLastUserMessage = useMemo(() => {
@@ -404,7 +402,7 @@ export default function LearnerQuizView({
                 setChatHistories(chatHistoryByQuestion);
 
                 // For exam questions with responses, mark them as completed
-                if (taskType === 'exam') {
+                if (validQuestions[currentQuestionIndex]?.config?.responseType === 'exam') {
                     setCompletedQuestionIds(prev => ({
                         ...prev,
                         ...questionsWithResponses
@@ -428,7 +426,7 @@ export default function LearnerQuizView({
         };
 
         fetchChatHistory();
-    }, [isTestMode, userId, validQuestions, isChatHistoryLoaded, taskId, taskType]);
+    }, [isTestMode, userId, validQuestions, isChatHistoryLoaded, taskId]);
 
     // Helper function to convert Blob to base64
     const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -567,7 +565,7 @@ export default function LearnerQuizView({
     const storeChatHistory = useCallback(async (questionId: string, userMessage: ChatMessage, aiResponse: AIResponse) => {
         if (!userId || isTestMode) return;
 
-        // For both exam and quiz questions, use the completedQuestionIds state
+        // For quiz questions, use the completedQuestionIds state
         const userIsSolved = completedQuestionIds[questionId] || false;
 
         // For AI messages, check if it contains feedback about correctness
@@ -584,11 +582,10 @@ export default function LearnerQuizView({
 
         // Get the response type from the current question config
         const currentQuestion = validQuestions.find(q => q.id === questionId);
-        const responseType = currentQuestion?.config?.responseType;
 
         // Create content based on the response type
         let contentObj = {};
-        if (responseType === 'report') {
+        if (currentQuestion?.config?.questionType === 'subjective') {
             // For report type, include both feedback and scorecard
             contentObj = {
                 feedback: aiResponse.feedback,
@@ -618,7 +615,7 @@ export default function LearnerQuizView({
             }
         ];
 
-        const isComplete = taskType === 'exam' ? true : !userIsSolved && aiIsSolved;
+        const isComplete = currentQuestion?.config?.responseType === 'exam' ? true : !userIsSolved && aiIsSolved;
 
         const requestBody = {
             user_id: parseInt(userId),
@@ -642,7 +639,7 @@ export default function LearnerQuizView({
         } catch (error) {
             console.error('Error storing chat history:', error);
         }
-    }, [userId, isTestMode, completedQuestionIds, taskType, validQuestions]);
+    }, [userId, isTestMode, completedQuestionIds, validQuestions]);
 
     // Process a user response (shared logic between text and audio submission)
     const processUserResponse = useCallback(
@@ -698,7 +695,7 @@ export default function LearnerQuizView({
 
             // Special case: For exam questions in test mode, don't make the API call
             // instead show confirmation immediately
-            if (taskType === 'exam' && isTestMode) {
+            if (validQuestions[currentQuestionIndex]?.config?.responseType === 'exam' && isTestMode) {
                 // Mark this question as completed
                 setCompletedQuestionIds(prev => ({
                     ...prev,
@@ -732,7 +729,7 @@ export default function LearnerQuizView({
             }
 
             // For exam questions, mark as pending submission
-            if (taskType === 'exam') {
+            if (validQuestions[currentQuestionIndex]?.config?.responseType === 'exam') {
                 setPendingSubmissionQuestionIds(prev => ({
                     ...prev,
                     [currentQuestionId]: true
@@ -751,13 +748,13 @@ export default function LearnerQuizView({
                 const formattedChatHistory = (chatHistories[currentQuestionId] || []).map(msg => ({
                     role: msg.sender === 'user' ? 'user' : 'assistant',
                     content: msg.sender === 'user' ? msg.content :
-                        validQuestions[currentQuestionIndex].config.responseType === 'chat' ? JSON.stringify({ feedback: msg.content }) : JSON.stringify({ feedback: msg.content, scorecard: msg.scorecard }),
+                        validQuestions[currentQuestionIndex].config.questionType === 'objective' ? JSON.stringify({ feedback: msg.content }) : JSON.stringify({ feedback: msg.content, scorecard: msg.scorecard }),
                     response_type: msg.messageType,
                     audio_data: msg.audioData
                 }));
 
                 let scorecard = undefined;
-                if (validQuestions[currentQuestionIndex].config.responseType === 'report') {
+                if (validQuestions[currentQuestionIndex].config.questionType === 'subjective') {
                     scorecard = {
                         id: validQuestions[currentQuestionIndex].config.scorecardData?.id || '',
                         title: validQuestions[currentQuestionIndex].config.scorecardData?.name || '',
@@ -786,7 +783,7 @@ export default function LearnerQuizView({
                         "coding_languages": validQuestions[currentQuestionIndex].config.codingLanguages,
                         "context": getKnowledgeBaseContent(validQuestions[currentQuestionIndex].config as QuizQuestionConfig)
                     },
-                    task_type: taskType
+                    task_type: 'quiz'
                 };
             } else {
                 // In normal mode, send question_id and user_id
@@ -795,7 +792,7 @@ export default function LearnerQuizView({
                     response_type: responseType,
                     question_id: currentQuestionId,
                     user_id: userId,
-                    task_type: taskType
+                    task_type: 'quiz'
                 };
             }
 
@@ -968,8 +965,8 @@ export default function LearnerQuizView({
                                             // Append to accumulated feedback
                                             accumulatedFeedback = data.feedback;
 
-                                            // For quiz questions, update the UI as we receive chunks
-                                            if (taskType === 'quiz') {
+                                            // For practice questions, update the UI as we receive chunks
+                                            if (validQuestions[currentQuestionIndex]?.config?.responseType === 'chat') {
                                                 // If this is the first feedback chunk we've received
                                                 if (!receivedAnyFeedback) {
                                                     receivedAnyFeedback = true;
@@ -1019,7 +1016,7 @@ export default function LearnerQuizView({
                                         // Handle scorecard data when available
                                         if (data.scorecard && data.scorecard.length > 0) {
                                             // Show preparing report message if not already shown
-                                            if (!showPreparingReport) {
+                                            if (!showPreparingReport && validQuestions[currentQuestionIndex]?.config?.responseType === 'chat') {
                                                 setShowPreparingReport(true);
                                             }
 
@@ -1028,8 +1025,8 @@ export default function LearnerQuizView({
                                             completeScorecard = data.scorecard;
                                         }
 
-                                        // Handle is_correct when available - for quiz questions
-                                        if (taskType === 'quiz' && data.is_correct !== undefined) {
+                                        // Handle is_correct when available - for practice questions
+                                        if (validQuestions[currentQuestionIndex]?.config?.responseType === 'chat' && data.is_correct !== undefined) {
                                             isCorrect = data.is_correct;
                                         }
                                     } catch (e) {
@@ -1092,7 +1089,7 @@ export default function LearnerQuizView({
                             }
 
                             // Handle exam questions completion
-                            if (taskType === 'exam') {
+                            if (validQuestions[currentQuestionIndex]?.config?.responseType === 'exam') {
                                 // Now that all chunks have been received, mark as complete
                                 // Mark this question as completed
                                 setCompletedQuestionIds(prev => ({
@@ -1128,7 +1125,7 @@ export default function LearnerQuizView({
                                 setIsAiResponding(false);
                             }
 
-                            // Store chat history in backend for both quiz and exam
+                            // Store chat history in backend for quiz
                             if (!isTestMode) {
                                 const aiResponse: AIResponse = {
                                     feedback: accumulatedFeedback,
@@ -1171,7 +1168,7 @@ export default function LearnerQuizView({
                     };
 
                     // For exam questions, clear the pending status so the user can try again
-                    if (taskType === 'exam') {
+                    if (validQuestions[currentQuestionIndex]?.config?.responseType === 'exam') {
                         setPendingSubmissionQuestionIds(prev => {
                             const newState = { ...prev };
                             delete newState[currentQuestionId];
@@ -1203,7 +1200,6 @@ export default function LearnerQuizView({
             validQuestions,
             currentQuestionIndex,
             onSubmitAnswer,
-            taskType,
             userId,
             isTestMode,
             chatHistories,
@@ -1496,7 +1492,7 @@ export default function LearnerQuizView({
     // Determine if we should show the 3-column layout
     const isCodeQuestion = useMemo(() => {
         if (!validQuestions || validQuestions.length === 0) return false;
-        return validQuestions[currentQuestionIndex]?.config?.questionType === 'coding';
+        return validQuestions[currentQuestionIndex]?.config?.inputType === 'code';
     }, [validQuestions, currentQuestionIndex]);
 
     // Mobile view controls
@@ -1917,7 +1913,7 @@ export default function LearnerQuizView({
                             showPreparingReport={showPreparingReport}
                             isChatHistoryLoaded={isChatHistoryLoaded}
                             isTestMode={isTestMode}
-                            taskType={taskType}
+                            taskType='quiz'
                             currentQuestionConfig={validQuestions[currentQuestionIndex]?.config}
                             isSubmitting={isSubmitting}
                             currentAnswer={currentAnswer}

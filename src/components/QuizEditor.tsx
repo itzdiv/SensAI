@@ -3,7 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from "react";
-import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck, Search, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck, Search, BookOpen, Code, Sparkles } from "lucide-react";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -20,7 +20,7 @@ import ScorecardPickerDialog, { CriterionData, ScorecardTemplate } from "./Score
 // Import the new Scorecard component
 import Scorecard, { ScorecardHandle } from "./Scorecard";
 // Import dropdown options
-import { questionTypeOptions, answerTypeOptions, codingLanguageOptions } from "./dropdownOptions";
+import { questionTypeOptions, answerTypeOptions, codingLanguageOptions, questionPurposeOptions } from "./dropdownOptions";
 // Import quiz types
 import { QuizEditorHandle, QuizQuestionConfig, QuizQuestion, QuizEditorProps, APIQuestionResponse, ScorecardCriterion } from "../types";
 // Add import for LearningMaterialLinker
@@ -138,8 +138,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     courseId,
     scheduledPublishAt = null,
 }, ref) => {
-    // For published quizzes/exams: data is always fetched from the API
-    // For draft quizzes/exams: always start with empty questions
+    // For published quizzes: data is always fetched from the API
+    // For draft quizzes: always start with empty questions
     // initialQuestions prop is no longer used
 
     // Initialize questions state - always start with empty array
@@ -308,7 +308,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     inputType: question.input_type || 'text' as 'text' | 'code' | 'audio',
                                     responseType: question.response_type,
                                     correctAnswer: correctAnswer,
-                                    questionType: questionType as 'objective' | 'subjective' | 'coding',
+                                    questionType: questionType as 'objective' | 'subjective',
                                     scorecardData: scorecardData,
                                     knowledgeBaseBlocks: knowledgeBaseBlocks,
                                     linkedMaterialIds: linkedMaterialIds,
@@ -611,7 +611,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     };
 
     /**
-     * Validates all questions in the quiz/exam and navigates to the first invalid question
+     * Validates all questions in the quiz and navigates to the first invalid question
      * @returns True if all questions are valid, false otherwise
      */
     const validateAllQuestions = useCallback(() => {
@@ -651,7 +651,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
 
             // For coding questions, check if coding languages are set
-            if (question.config.questionType === 'coding') {
+            if (question.config.inputType === 'code') {
                 if (!question.config.codingLanguages || !Array.isArray(question.config.codingLanguages) || question.config.codingLanguages.length === 0) {
                     // Navigate to the question with missing coding languages
                     setCurrentQuestionIndex(i);
@@ -673,7 +673,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             }
 
             // For objective questions, check if correct answer is set
-            if (question.config.questionType === 'objective' || question.config.questionType === 'coding') {
+            if (question.config.questionType === 'objective') {
                 if (!validateCorrectAnswer(question.config)) {
                     // Navigate to the question with missing answer
                     setCurrentQuestionIndex(i);
@@ -910,7 +910,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }, [questions, currentQuestionIndex, onChange]);
 
     // Handle configuration change for the current question
-    const handleConfigChange = useCallback((configUpdate: Partial<QuizQuestionConfig>, options?: { updateTemplate?: boolean, newQuestionType?: 'objective' | 'subjective' | 'coding' }) => {
+    const handleConfigChange = useCallback((configUpdate: Partial<QuizQuestionConfig>, options?: { updateTemplate?: boolean, newQuestionType?: 'objective' | 'subjective', newInputType?: 'text' | 'code' | 'audio' }) => {
         if (questions.length === 0) return;
 
         const updatedQuestions = [...questions];
@@ -923,7 +923,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         };
 
         // If updateTemplate flag is true and we have a newQuestionType, update the template content
-        if (options?.updateTemplate && options.newQuestionType && status === 'draft') {
+        if (options?.updateTemplate && options.newQuestionType && options.newInputType && status === 'draft') {
             const currentContent = updatedQuestions[currentQuestionIndex].content || [];
 
             // Check if any block has an ID (indicating user modification)
@@ -931,7 +931,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             if (!hasUserModifiedContent) {
                 // Generate new template blocks based on the new question type
-                const newTemplateContent = getQuestionTemplateBlocks(options.newQuestionType);
+                const newTemplateContent = getQuestionTemplateBlocks(options.newQuestionType, options.newInputType);
 
                 // Update the content with the new template
                 updatedQuestions[currentQuestionIndex].content = newTemplateContent;
@@ -973,7 +973,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }, [questions, currentQuestionIndex, schoolScorecards, onChange]);
 
     // Function to get template blocks based on question type
-    const getQuestionTemplateBlocks = (questionType: 'objective' | 'subjective' | 'coding') => {
+    const getQuestionTemplateBlocks = (questionType: 'objective' | 'subjective', inputType: 'text' | 'code' | 'audio') => {
         // Common blocks that appear in all templates
         const commonBlocks = [
             {
@@ -1017,7 +1017,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         ];
 
         // Answer type section - not shown for coding questions
-        const answerTypeBlocks = questionType !== 'coding' ? [
+        const answerTypeBlocks = [
             {
                 type: "heading",
                 props: { level: 3 },
@@ -1036,13 +1036,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 content: [{ "text": "Audio", "type": "text", styles: { "bold": true } }, { "text": ": Learners need to record their answer", "type": "text", styles: {} }]
             },
             {
+                type: "bulletListItem",
+                content: [{ "text": "Code", "type": "text", styles: { "bold": true } }, { "text": ": Learners need to write code as their answer in a code editor. They can run their code and see the output without leaving the editor and submit when they are done.", "type": "text", styles: {} }]
+            },
+            {
                 type: "paragraph",
                 content: [{ "text": "", "type": "text", styles: {} }]
             }
-        ] : [];
+        ];
 
         // Programming languages section - only shown for coding questions
-        const programmingLanguagesBlocks = questionType === 'coding' ? [
+        const programmingLanguagesBlocks = inputType === 'code' ? [
             {
                 type: "heading",
                 props: { level: 3 },
@@ -1257,11 +1261,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     content: [{ "text": "Create a detailed scorecard with clear evaluation criteria or pick one of the templates already provided", "type": "text", styles: {} }]
                 }
             ];
-        } else if (questionType === 'coding') {
+        } else if (inputType === 'code') {
             questionTypeTipsBlocks = [
                 {
                     type: "bulletListItem",
-                    content: [{ "text": "Provide a clear problem statement and any constraints or performance requirements", "type": "text", styles: {} }]
+                    content: [{ "text": "Provide a clear problem statement and any constraints or performance requirements along with the expected code solution", "type": "text", styles: {} }]
                 }
             ];
         } else {
@@ -1330,6 +1334,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         let questionType = 'objective';
         let inputType: 'text' | 'code' | 'audio' = 'text';
         let codingLanguages: string[] = [];
+        let responseType: 'chat' | 'exam' = 'chat';
 
         // If there's at least one question (to be used as a reference)
         if (questions.length > 0) {
@@ -1345,17 +1350,19 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     previousQuestion.config.codingLanguages.length > 0) {
                     codingLanguages = [...previousQuestion.config.codingLanguages];
                 }
+                responseType = previousQuestion.config.responseType;
             }
         }
 
         const newQuestion: QuizQuestion = {
             id: `question-${Date.now()}`,
-            content: getQuestionTemplateBlocks(questionType as 'objective' | 'subjective' | 'coding'),
+            content: getQuestionTemplateBlocks(questionType as 'objective' | 'subjective', inputType),
             config: {
                 ...defaultQuestionConfig,
-                questionType: questionType as 'objective' | 'subjective' | 'coding',
+                questionType: questionType as 'objective' | 'subjective',
                 inputType: inputType,
-                codingLanguages: codingLanguages
+                codingLanguages: codingLanguages,
+                responseType: responseType
             }
         };
 
@@ -1560,12 +1567,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     blocks: question.content,
                     answer: question.config.correctAnswer || [],
                     input_type: inputType,
-                    response_type: questionType === 'subjective' ? "report" : "chat",
+                    response_type: question.config.responseType,
                     coding_languages: question.config.codingLanguages || [],
                     generation_model: null,
                     type: questionType,
-                    max_attempts: taskType === 'exam' ? 1 : null,
-                    is_feedback_shown: taskType === 'exam' ? false : true,
+                    max_attempts: question.config.responseType === 'exam' ? 1 : null,
+                    is_feedback_shown: question.config.responseType === 'exam' ? false : true,
                     scorecard: scorecard,
                     scorecard_id: scorecardId,
                     context: getKnowledgeBaseContent(question.config),
@@ -1721,7 +1728,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
 
         const question = questions[currentQuestionIndex];
-        if (question.config.questionType !== 'coding') {
+        if (question.config.inputType !== 'code') {
             return true; // Not relevant for non-coding questions
         }
 
@@ -1750,6 +1757,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         getCurrentQuestionType: () => {
             // Return the current question's type, defaulting to 'objective' if not set
             return currentQuestionConfig.questionType;
+        },
+        getCurrentQuestionInputType: () => {
+            // Return the current question's input type, defaulting to 'text' if not set
+            return currentQuestionConfig.inputType;
         },
         hasCorrectAnswer: () => {
             const isValid = validateCorrectAnswer(currentQuestionConfig);
@@ -1805,7 +1816,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 readOnly={readOnly}
                 className="w-full h-full"
                 onSubmitAnswer={onSubmitAnswer}
-                taskType={taskType}
                 currentQuestionId={activeQuestionId}
                 onQuestionChange={(questionId) => {
                     // Find the index for this question ID
@@ -1833,6 +1843,10 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         return answerTypeOptions.find(option => option.value === type) || answerTypeOptions[0];
     }, []);
 
+    const getPurposeOption = useCallback((purpose: string = 'practice') => {
+        return questionPurposeOptions.find(option => option.value === purpose) || questionPurposeOptions[0];
+    }, []);
+
     // Handle question type change
     const handleQuestionTypeChange = useCallback((option: DropdownOption | DropdownOption[]) => {
         // We know this is a single-select dropdown
@@ -1840,22 +1854,37 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             setSelectedQuestionType(option);
 
             // Get the new question type
-            const newQuestionType = option.value as 'objective' | 'subjective' | 'coding';
+            const newQuestionType = option.value as 'objective' | 'subjective';
 
             // Update the question config with the new question type and also update template if needed
             handleConfigChange({
                 questionType: newQuestionType,
-                responseType: newQuestionType === 'subjective' ? 'report' : 'chat',
-                inputType: newQuestionType === 'coding' ? 'text' : currentQuestionConfig.inputType
             }, {
                 updateTemplate: true,
-                newQuestionType: newQuestionType
+                newQuestionType: newQuestionType,
+                newInputType: currentQuestionConfig.inputType
             });
 
             // Set active tab to question whenever question type changes
             setActiveEditorTab('question');
         }
     }, [handleConfigChange, status, questions, currentQuestionIndex, onChange, currentQuestionConfig.inputType]);
+
+    // Handle purpose change
+    const handlePurposeChange = useCallback((option: DropdownOption | DropdownOption[]) => {
+        // We know this is a single-select dropdown
+        if (!Array.isArray(option)) {
+            setSelectedPurpose(option);
+
+            // Get the new purpose
+            const newPurpose = option.value as 'practice' | 'exam';
+
+            // Update the question config with the new purpose
+            handleConfigChange({
+                responseType: newPurpose === 'exam' ? 'exam' : 'chat'
+            });
+        }
+    }, [handleConfigChange]);
 
     // Handle answer type change
     const handleAnswerTypeChange = useCallback((option: DropdownOption | DropdownOption[]) => {
@@ -1866,12 +1895,16 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Update the question config with the new input type
             handleConfigChange({
                 inputType: option.value as 'text' | 'code' | 'audio'
+            }, {
+                updateTemplate: true,
+                newQuestionType: currentQuestionConfig.questionType,
+                newInputType: option.value as 'text' | 'code' | 'audio'
             });
 
             // Ensure question state is updated immediately in case we save right after changing
             console.log(`Answer type changed to: ${option.value}`);
         }
-    }, [handleConfigChange]);
+    }, [handleConfigChange, status, questions, currentQuestionIndex, onChange, currentQuestionConfig.questionType]);
 
     // Handle coding language change
     const handleCodingLanguageChange = useCallback((option: DropdownOption | DropdownOption[]) => {
@@ -1948,6 +1981,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const [selectedQuestionType, setSelectedQuestionType] = useState<DropdownOption>(questionTypeOptions[0]);
     const [selectedAnswerType, setSelectedAnswerType] = useState<DropdownOption>(answerTypeOptions[0]);
     const [selectedCodingLanguages, setSelectedCodingLanguages] = useState<DropdownOption[]>([codingLanguageOptions[0]]);
+    const [selectedPurpose, setSelectedPurpose] = useState<DropdownOption>(questionPurposeOptions[0]);
 
     // Update the selected options based on the current question's config
     useEffect(() => {
@@ -1960,6 +1994,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Set answer type based on config.inputType or default to 'text'
             setSelectedAnswerType(getAnswerTypeOption(currentConfig.inputType));
 
+            // Set purpose based on config.purpose or default to 'practice'
+            setSelectedPurpose(getPurposeOption(currentConfig.responseType));
+
             // Set coding languages based on config.codingLanguages or default to first option
             if (currentConfig.codingLanguages && currentConfig.codingLanguages.length > 0) {
                 const selectedLanguages = currentConfig.codingLanguages.map((langValue: string) => {
@@ -1970,7 +2007,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 setSelectedCodingLanguages([]);
             }
         }
-    }, [currentQuestionIndex, questions, getQuestionTypeOption, getAnswerTypeOption]);
+    }, [currentQuestionIndex, questions, getQuestionTypeOption, getAnswerTypeOption, getPurposeOption]);
 
     // Helper function to check if a scorecard is a published scorecard
     const isPublishedScorecard = (scorecardData: ScorecardTemplate): boolean => {
@@ -2164,6 +2201,17 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                                     <div className="flex items-center">
                                         <Dropdown
+                                            icon={<Sparkles size={16} />}
+                                            title="Purpose"
+                                            options={questionPurposeOptions}
+                                            selectedOption={selectedPurpose}
+                                            onChange={handlePurposeChange}
+                                            disabled={readOnly}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center">
+                                        <Dropdown
                                             icon={<HelpCircle size={16} />}
                                             title="Question Type"
                                             options={questionTypeOptions}
@@ -2173,22 +2221,19 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             disabledTooltip={status === 'published' ? "Question type cannot be changed for published questions" : ""}
                                         />
                                     </div>
-                                    {selectedQuestionType.value !== 'coding' ? (
-                                        <div className="mb-4 flex items-center">
-                                            <Dropdown
-                                                icon={<Pen size={16} />}
-                                                title="Answer Type"
-                                                options={answerTypeOptions}
-                                                selectedOption={selectedAnswerType}
-                                                onChange={handleAnswerTypeChange}
-                                                disabled={readOnly}
-                                            />
-                                        </div>
-                                    ) : (
+                                    <Dropdown
+                                        icon={<Pen size={16} />}
+                                        title="Answer Type"
+                                        options={answerTypeOptions}
+                                        selectedOption={selectedAnswerType}
+                                        onChange={handleAnswerTypeChange}
+                                        disabled={readOnly}
+                                    />
+                                    {selectedAnswerType.value == 'code' && (
                                         <div className="mb-4 flex items-center">
                                             <div className={`w-full ${highlightedField === 'codingLanguage' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-md' : ''}`}>
                                                 <Dropdown
-                                                    icon={<Pen size={16} />}
+                                                    icon={<Code size={16} />}
                                                     title="Languages"
                                                     options={codingLanguageOptions}
                                                     selectedOptions={selectedCodingLanguages}

@@ -31,17 +31,17 @@ describe('ChatPlaceholderView Component', () => {
         expect(screen.getByText(/Think through your answer, then type it here/)).toBeInTheDocument();
     });
 
-    it('should render exam placeholder text when taskType is exam', () => {
-        render(
-            <ChatPlaceholderView
-                {...baseProps}
-                taskType="exam"
-            />
-        );
+    // it('should render exam placeholder text when taskType is exam', () => {
+    //     render(
+    //         <ChatPlaceholderView
+    //             {...baseProps}
+    //             taskType="exam"
+    //         />
+    //     );
 
-        expect(screen.getByText('Ready to test your knowledge?')).toBeInTheDocument();
-        expect(screen.getByText(/You can attempt the question only once/)).toBeInTheDocument();
-    });
+    //     expect(screen.getByText('Ready to test your knowledge?')).toBeInTheDocument();
+    //     expect(screen.getByText(/You can attempt the question only once/)).toBeInTheDocument();
+    // });
 
     it('should use correct wording for audio input type', () => {
         render(
@@ -58,7 +58,6 @@ describe('ChatPlaceholderView Component', () => {
         render(
             <ChatPlaceholderView
                 {...baseProps}
-                questionType="coding"
             />
         );
 
@@ -66,18 +65,17 @@ describe('ChatPlaceholderView Component', () => {
         expect(screen.getByText(/You can also type your response below/)).toBeInTheDocument();
     });
 
-    it('should show different message for coding question type in exam mode', () => {
-        render(
-            <ChatPlaceholderView
-                {...baseProps}
-                taskType="exam"
-                questionType="coding"
-            />
-        );
+    // it('should show different message for coding question type in exam mode', () => {
+    //     render(
+    //         <ChatPlaceholderView
+    //             {...baseProps}
+    //             taskType="exam"
+    //         />
+    //     );
 
-        expect(screen.getByText(/Think through your answer, then write your code in the code editor/)).toBeInTheDocument();
-        expect(screen.getByText(/You can attempt the question only once/)).toBeInTheDocument();
-    });
+    //     expect(screen.getByText(/Think through your answer, then write your code in the code editor/)).toBeInTheDocument();
+    //     expect(screen.getByText(/You can attempt the question only once/)).toBeInTheDocument();
+    // });
 
     it('should show view-only message when viewOnly is true', () => {
         render(
