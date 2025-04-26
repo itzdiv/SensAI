@@ -110,7 +110,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
 
     // Add a new state variable to track which type of confirmation is being shown
-    const [confirmationType, setConfirmationType] = useState<'publish' | 'edit' | 'draft'>('draft');
+    const [confirmationType, setConfirmationType] = useState<'publish' | 'edit' | 'close' | 'draft'>('draft');
 
     // Add state for save confirmation dialog
     const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
@@ -243,9 +243,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                     // If there's no content and title hasn't changed, close without confirmation   
                     if (!hasContent && !isTitleChanged) {
-                        if (showPublishConfirmation) {
-                            onSetShowPublishConfirmation(false);
-                        }
                         onClose();
                         return;
                     }
@@ -307,7 +304,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         if (activeItem?.status === 'published' && isEditMode) {
             // For X button and backdrop click, we want to close the entire dialog after confirmation
             // Use a different confirmation type to differentiate from the Cancel button
-            setConfirmationType('draft'); // Use 'draft' type since it already closes the dialog
+            setConfirmationType('close'); // Use 'draft' type since it already closes the dialog
             setShowCloseConfirmation(true);
             return;
         }
@@ -332,9 +329,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
             // If there's no content and title hasn't changed, close without confirmation
             if (!hasContent && !isTitleChanged) {
-                if (showPublishConfirmation) {
-                    onSetShowPublishConfirmation(false);
-                }
                 onClose();
                 return;
             }
@@ -343,11 +337,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             setConfirmationType('draft');
             setShowCloseConfirmation(true);
             return;
-        }
-
-        // Case 3: Published items not in edit mode - just close
-        if (showPublishConfirmation) {
-            onSetShowPublishConfirmation(false);
         }
         onClose();
     };
@@ -359,8 +348,20 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         setShowCloseConfirmation(true);
     };
 
+    const handleConfirmSaveDraft = () => {
+        setShowCloseConfirmation(false);
+
+        // Save logic for draft: call save and then close dialog
+        if (activeItem?.type === 'material') {
+            learningMaterialEditorRef.current?.save();
+        } else if (activeItem?.type === 'quiz' || activeItem?.type === 'exam') {
+            quizEditorRef.current?.saveDraft();
+        }
+        onClose();
+    }
+
     // Handle confirmed close action
-    const handleConfirmClose = () => {
+    const handleConfirmDiscardChanges = () => {
         setShowCloseConfirmation(false);
 
         if (confirmationType === 'edit') {
@@ -377,15 +378,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             onCancelEditMode();
         } else {
             // For other confirmation types (draft items or X button click), close the entire dialog
-            if (showPublishConfirmation) {
-                onSetShowPublishConfirmation(false);
-            }
             onClose();
         }
     };
 
     // Handle cancel close action
-    const handleCancelClose = () => {
+    const handleCancelClosingDialog = () => {
         setShowCloseConfirmation(false);
     };
 
@@ -519,13 +517,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     };
 
     // Handle confirmed save action
-    const handleConfirmSave = () => {
+    const handleConfirmSavePublished = () => {
         setShowSaveConfirmation(false);
-
-        // Close the schedule picker if it's open
-        if (showSchedulePicker) {
-            setShowSchedulePicker(false);
-        }
 
         // Execute the actual save action based on item type
         if (activeItem?.type === 'material') {
@@ -533,10 +526,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             learningMaterialEditorRef.current?.save();
         } else if (activeItem?.type === 'quiz' || activeItem?.type === 'exam') {
             // Use the ref to call save directly
-            quizEditorRef.current?.save();
-        } else {
-            // For other item types, use the original save function
-            onSaveItem();
+            quizEditorRef.current?.savePublished();
         }
     };
 
@@ -544,6 +534,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     const handleCancelSave = () => {
         setShowSaveConfirmation(false);
     };
+
+    const isEditOrClose = confirmationType === 'edit' || confirmationType === 'close';
 
     return (
         <>
@@ -890,7 +882,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 isPreviewMode={quizPreviewMode}
                                 isDarkMode={true}
                                 readOnly={activeItem.status === 'published' && !isEditMode}
-                                onPublish={onPublishConfirm}
                                 taskId={activeItem.id}
                                 status={activeItem.status}
                                 taskType={activeItem.type as 'quiz' | 'exam'}
@@ -904,15 +895,11 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 onSaveSuccess={(updatedData) => {
                                     // Handle save success
                                     if (updatedData) {
-                                        console.log("Received updated data in CourseItemDialog after save:", updatedData);
-
                                         // Update the activeItem with the updated title and questions
                                         if (activeItem) {
                                             activeItem.title = updatedData.title;
                                             // Add the scheduled_publish_at value when saving
                                             activeItem.scheduled_publish_at = updatedData.scheduled_publish_at;
-
-                                            console.log("Updated activeItem:", activeItem);
 
                                             if (updatedData.questions) {
                                                 activeItem.questions = updatedData.questions;
@@ -929,8 +916,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 onPublishSuccess={(updatedData) => {
                                     // Handle publish success
                                     if (updatedData) {
-                                        console.log("Received updated data in CourseItemDialog:", updatedData);
-
+                                        // Properly update the UI state first
                                         // Properly update the UI state first
                                         // This will transform the publish button to edit button
                                         if (activeItem && updatedData.status === 'published') {
@@ -973,17 +959,18 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             {/* Close confirmation dialog */}
             <ConfirmationDialog
                 open={showCloseConfirmation}
-                title={confirmationType === 'edit' ? "Unsaved Changes" : "Unsaved Changes"}
+                title={isEditOrClose ? "Unsaved Changes" : "Save Your Progress"}
                 message={
-                    confirmationType === 'edit'
+                    isEditOrClose
                         ? "All your unsaved changes will be lost if you leave without saving. Are you sure you want to leave?"
-                        : "If you do not publish, all your progress will be lost. Are you sure you want to leave?"
+                        : "Would you like to save your progress before leaving? If you don't save, all your progress will be lost."
                 }
-                confirmButtonText={confirmationType === 'edit' ? "Discard Changes" : "Discard Changes"}
-                cancelButtonText={confirmationType === 'edit' ? "Continue Editing" : "Continue Editing"}
-                onConfirm={handleConfirmClose}
-                onCancel={handleCancelClose}
-                type="delete"
+                confirmButtonText={isEditOrClose ? "Discard Changes" : "Save"}
+                cancelButtonText={isEditOrClose ? "Continue Editing" : "Discard"}
+                onConfirm={isEditOrClose ? handleConfirmDiscardChanges : handleConfirmSaveDraft}
+                onCancel={isEditOrClose ? handleCancelClosingDialog : handleConfirmDiscardChanges}
+                onClickOutside={isEditOrClose ? handleCancelClosingDialog : () => setShowCloseConfirmation(false)}
+                type={isEditOrClose ? 'delete' : 'save'}
             />
 
             {/* Save confirmation dialog */}
@@ -993,7 +980,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 message="These changes will be reflected to learners immediately after saving. Are you sure you want to proceed?"
                 confirmButtonText="Save"
                 cancelButtonText="Continue Editing"
-                onConfirm={handleConfirmSave}
+                onConfirm={handleConfirmSavePublished}
                 onCancel={handleCancelSave}
                 type="publish"
             />

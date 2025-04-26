@@ -76,7 +76,6 @@ export default function LearningMaterialViewer({
             // Use AbortController to cancel any in-flight requests
             const controller = new AbortController();
 
-            console.log("Fetching task data for taskId:", taskId);
             fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`, {
                 signal: controller.signal
             })

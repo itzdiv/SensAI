@@ -414,7 +414,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
             setLoading(true);
             try {
-                console.log("Fetching cohort with ID:", cohortId);
                 const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}`;
                 console.log("Fetch URL:", url);
 

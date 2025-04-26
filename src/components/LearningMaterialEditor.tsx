@@ -102,7 +102,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Use AbortController to cancel any in-flight requests
             const controller = new AbortController();
 
-            console.log("Fetching task data for taskId:", taskId);
             fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}`, {
                 signal: controller.signal
             })
@@ -472,14 +471,15 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
             // Make POST request to update the learning material content, keeping the same status
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     title: currentTitle,
                     blocks: currentContent,
-                    scheduled_publish_at: currentScheduledPublishAt
+                    scheduled_publish_at: currentScheduledPublishAt,
+                    status: taskData?.status
                 }),
             });
 
@@ -527,8 +527,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
         save: handleSave,
         cancel: handleCancel,
         hasContent: () => {
-            console.log("Checking if editor has content");
-
             // First check the editorContent state
             const checkContent = (content: any[] | undefined) => {
                 if (!content || content.length === 0) return false;

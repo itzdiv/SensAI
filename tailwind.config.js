@@ -97,7 +97,7 @@ module.exports = {
           "60%": { width: "65%" },
           "80%": { width: "85%" },
           "100%": { width: "100%" }
-        }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -105,7 +105,8 @@ module.exports = {
         "gradient-fade": "gradient-fade 3.5s ease-in-out forwards",
         "celebration-reveal": "celebration-reveal 3.5s ease-in-out forwards",
         "gradient-x": "gradient-x 3s ease infinite",
-        "loadingBar": "loadingBar 4s cubic-bezier(0.4, 0, 0.2, 1) infinite"
+        "loadingBar": "loadingBar 4s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+        "question-highlight": "3s ease-in-out forwards"
       },
     },
   },

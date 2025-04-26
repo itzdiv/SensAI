@@ -1,7 +1,8 @@
 import { CriterionData, ScorecardTemplate } from "../components/ScorecardPickerDialog";
 
 export interface QuizEditorHandle {
-    save: () => Promise<void>;
+    saveDraft: () => Promise<void>;
+    savePublished: () => Promise<void>;
     cancel: () => void;
     hasContent: () => boolean;
     hasQuestionContent: () => boolean;

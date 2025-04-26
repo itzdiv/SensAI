@@ -89,6 +89,7 @@ export default function CourseModuleList({
     handleQuizContentChange = () => { },
     setShowPublishConfirmation = () => { },
 }: CourseModuleListProps) {
+    console.log("Modules", modules);
     // For editor mode where we need to keep track of expanded modules internally
     const [internalExpandedModules, setInternalExpandedModules] = useState<Record<string, boolean>>({});
 
