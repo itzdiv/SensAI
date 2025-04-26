@@ -168,6 +168,13 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 activeItem.questions = [];
             }
         } else if (isOpen) {
+            // Reset toast state when dialog opens to prevent lingering toasts
+            if (toastTimeoutRef.current) {
+                clearTimeout(toastTimeoutRef.current);
+                toastTimeoutRef.current = null;
+            }
+            setShowToast(false);
+
             // When dialog opens, ensure hasQuizQuestions is correctly initialized
             // For draft quizzes, always start with false (no questions)
             if (activeItem &&
@@ -687,40 +694,52 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                             {activeItem?.status === 'draft' &&
                                 ((activeItem?.type === 'quiz' && hasQuizQuestions) ||
                                     activeItem?.type === 'material') && (
-                                    <button
-                                        onClick={() => {
-                                            // For quizzes, validate before showing publish confirmation
-                                            if (activeItem?.type === 'quiz' && quizEditorRef.current) {
-                                                // Run validation before opening the publish confirmation
-                                                const isValid = quizEditorRef.current.validateBeforePublish();
-                                                if (!isValid) {
-                                                    return; // Don't show confirmation if validation fails
+                                    <>
+                                        {/* Save Draft button */}
+                                        <button
+                                            onClick={handleConfirmSaveDraft}
+                                            className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-yellow-500 hover:bg-[#222222] focus:border-gray-500 active:border-gray-500 rounded-full transition-colors cursor-pointer mr-3"
+                                            aria-label={`Save ${activeItem?.type} draft`}
+                                        >
+                                            <Check size={16} className="mr-2" />
+                                            Save Draft
+                                        </button>
+                                        {/* Existing Publish button */}
+                                        <button
+                                            onClick={() => {
+                                                // For quizzes, validate before showing publish confirmation
+                                                if (activeItem?.type === 'quiz' && quizEditorRef.current) {
+                                                    // Run validation before opening the publish confirmation
+                                                    const isValid = quizEditorRef.current.validateBeforePublish();
+                                                    if (!isValid) {
+                                                        return; // Don't show confirmation if validation fails
+                                                    }
                                                 }
-                                            }
 
-                                            // For learning materials, validate content exists
-                                            if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
-                                                const hasContent = learningMaterialEditorRef.current.hasContent();
-                                                if (!hasContent) {
-                                                    // Show error message
-                                                    displayToast(
-                                                        "Empty Learning Material",
-                                                        "Please add content before publishing",
-                                                        "🚫"
-                                                    );
-                                                    return; // Don't show confirmation if validation fails
+                                                // For learning materials, validate content exists
+                                                if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
+                                                    const hasContent = learningMaterialEditorRef.current.hasContent();
+                                                    if (!hasContent) {
+                                                        // Show error message
+                                                        displayToast(
+                                                            "Empty Learning Material",
+                                                            "Please add content before publishing",
+                                                            "🚫"
+                                                        );
+                                                        return; // Don't show confirmation if validation fails
+                                                    }
                                                 }
-                                            }
 
-                                            // If validation passes, show publish confirmation
-                                            onSetShowPublishConfirmation(true);
-                                        }}
-                                        className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
-                                        aria-label={`Publish ${activeItem?.type}`}
-                                    >
-                                        <Zap size={16} className="mr-2" />
-                                        Publish
-                                    </button>
+                                                // If validation passes, show publish confirmation
+                                                onSetShowPublishConfirmation(true);
+                                            }}
+                                            className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
+                                            aria-label={`Publish ${activeItem?.type}`}
+                                        >
+                                            <Zap size={16} className="mr-2" />
+                                            Publish
+                                        </button>
+                                    </>
                                 )}
 
                             {activeItem?.status === 'published' && isEditMode && !quizPreviewMode ? (
@@ -899,7 +918,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         onSaveItem();
 
                                         // Show toast notification for save success
-                                        displayToast("Saved", 'Your learning material has been updated');
+                                        displayToast("Saved", `Your learning material has been updated`);
                                     }
                                 }}
                             />
