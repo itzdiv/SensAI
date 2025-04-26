@@ -1791,7 +1791,32 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             return currentQuestionConfig;
         },
         validateScorecardCriteria: (scorecard: ScorecardTemplate | undefined, callbacks: any) =>
-            validateScorecardCriteria(scorecard, callbacks)
+            validateScorecardCriteria(scorecard, callbacks),
+        hasChanges: () => {
+            // If we don't have original questions to compare with, assume no changes
+            if (originalQuestionsRef.current.length === 0 && questions.length === 0) return false;
+
+            // Check if title has changed
+            const dialogTitleElement = document.querySelector('.dialog-content-editor')?.parentElement?.querySelector('h2');
+            const currentTitle = dialogTitleElement?.textContent || "";
+            const originalTitle = originalTitleRef.current || "";
+
+            if (currentTitle !== originalTitle) {
+                return true;
+            }
+
+            // Check if questions have changed (number, content, or configuration)
+            if (questions.length !== originalQuestionsRef.current.length) {
+                return true;
+            }
+
+            // Convert both to JSON strings for deep comparison
+            const currentQuestionsStr = JSON.stringify(questions);
+            const originalQuestionsStr = JSON.stringify(originalQuestionsRef.current);
+
+            // Return true if there are changes
+            return currentQuestionsStr !== originalQuestionsStr;
+        },
     }));
 
     // Update the MemoizedLearnerQuizView to include the correct answer

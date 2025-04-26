@@ -5,6 +5,7 @@ export interface QuizEditorHandle {
     savePublished: () => Promise<void>;
     cancel: () => void;
     hasContent: () => boolean;
+    hasChanges: () => boolean;
     hasQuestionContent: () => boolean;
     getCurrentQuestionType: () => 'objective' | 'subjective';
     getCurrentQuestionInputType: () => 'text' | 'code' | 'audio';

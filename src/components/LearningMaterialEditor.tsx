@@ -29,6 +29,7 @@ export interface LearningMaterialEditorHandle {
     save: () => Promise<void>;
     cancel: () => void;
     hasContent: () => boolean;
+    hasChanges: () => boolean;
 }
 
 interface LearningMaterialEditorProps {
@@ -564,6 +565,29 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             }
 
             return false;
+        },
+        hasChanges: () => {
+            // If we don't have original data to compare with, assume no changes
+            if (!originalDataRef.current) return false;
+
+            // Check if title has changed
+            const dialogTitleElement = document.querySelector('.dialog-content-editor')?.parentElement?.querySelector('h2');
+            const currentTitle = dialogTitleElement?.textContent || "";
+            const originalTitle = originalDataRef.current.title || "";
+
+            if (currentTitle !== originalTitle) {
+                return true;
+            }
+
+            // Check if content has changed
+            const originalContent = originalDataRef.current.blocks || [];
+
+            // Convert both to JSON strings for deep comparison
+            const currentContentStr = JSON.stringify(editorContent);
+            const originalContentStr = JSON.stringify(originalContent);
+
+            // Return true if there are changes
+            return currentContentStr !== originalContentStr;
         }
     }));
 

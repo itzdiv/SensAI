@@ -219,12 +219,23 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 e.preventDefault();
                 e.stopPropagation();
 
+                // Check if there are actual changes
+                const hasChanges = activeItem.type === 'material'
+                    ? learningMaterialEditorRef.current?.hasChanges() || false
+                    : quizEditorRef.current?.hasChanges() || false;
+
                 // If we're in edit mode for a published item
                 if (activeItem?.status === 'published') {
-                    // Show the confirmation dialog instead
-                    setConfirmationType('exit_edit_publish');
-                    setShowCloseConfirmation(true);
+                    // Only show confirmation if there are changes
+                    if (hasChanges) {
+                        setConfirmationType('exit_edit_publish');
+                        setShowCloseConfirmation(true);
+                    } else {
+                        // No changes, just exit edit mode
+                        onCancelEditMode();
+                    }
                 } else {
+                    // For draft items
                     // Check if the editor/quiz has any content using the appropriate ref
                     const hasContent = activeItem.type === 'material'
                         ? learningMaterialEditorRef.current?.hasContent() || false
@@ -246,9 +257,14 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                         return;
                     }
 
-                    // Set confirmation type for draft items
-                    setConfirmationType('exit_draft');
-                    setShowCloseConfirmation(true);
+                    // Only show confirmation if there are changes
+                    if (hasChanges) {
+                        setConfirmationType('exit_draft');
+                        setShowCloseConfirmation(true);
+                    } else {
+                        // No changes, just close
+                        onClose();
+                    }
                     return;
                 }
             }
@@ -261,7 +277,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         return () => {
             document.removeEventListener('keydown', handleKeyDown, true);
         };
-    }, [activeItem, isEditMode]);
+    }, [activeItem, isEditMode, showCloseConfirmation, onClose, onCancelEditMode, dialogContentRef, dialogTitleRef]);
 
     // Add a cleanup effect for the toast timeout when the component unmounts
     useEffect(() => {
@@ -299,12 +315,23 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Function to handle closing the dialog
     const handleCloseRequest = () => {
+        // Check if there are actual changes
+        const hasChanges = activeItem.type === 'material'
+            ? learningMaterialEditorRef.current?.hasChanges() || false
+            : quizEditorRef.current?.hasChanges() || false;
+
         // Case 1: Published learning material in edit mode 
         if (activeItem?.status === 'published' && isEditMode) {
-            // For X button and backdrop click, we want to close the entire dialog after confirmation
-            // Use a different confirmation type to differentiate from the Cancel button
-            setConfirmationType('close');
-            setShowCloseConfirmation(true);
+            // Only show confirmation if there are changes
+            if (hasChanges) {
+                // For X button and backdrop click, we want to close the entire dialog after confirmation
+                // Use a different confirmation type to differentiate from the Cancel button
+                setConfirmationType('close');
+                setShowCloseConfirmation(true);
+            } else {
+                // No changes, just close
+                onClose();
+            }
             return;
         }
 
@@ -331,9 +358,15 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 return;
             }
 
-            // Set confirmation type for draft items
-            setConfirmationType('exit_draft');
-            setShowCloseConfirmation(true);
+            // Only show confirmation if there are changes
+            if (hasChanges) {
+                // Set confirmation type for draft items
+                setConfirmationType('exit_draft');
+                setShowCloseConfirmation(true);
+            } else {
+                // No changes, just close
+                onClose();
+            }
             return;
         }
         onClose();
@@ -341,9 +374,20 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Add a handler for the Cancel button in published items' edit mode
     const handleCancelEditClick = () => {
-        // Show confirmation for published items in edit mode
-        setConfirmationType('exit_edit_publish');
-        setShowCloseConfirmation(true);
+        // Check if there are actual changes
+        const hasChanges = activeItem.type === 'material'
+            ? learningMaterialEditorRef.current?.hasChanges() || false
+            : quizEditorRef.current?.hasChanges() || false;
+
+        // Only show confirmation if there are changes
+        if (hasChanges) {
+            // Show confirmation for published items in edit mode
+            setConfirmationType('exit_edit_publish');
+            setShowCloseConfirmation(true);
+        } else {
+            // No changes, just exit edit mode
+            onCancelEditMode();
+        }
     };
 
     const handleConfirmSaveDraft = () => {
