@@ -6,7 +6,8 @@ export interface QuizEditorHandle {
     cancel: () => void;
     hasContent: () => boolean;
     hasQuestionContent: () => boolean;
-    getCurrentQuestionType: () => 'objective' | 'subjective' | 'coding';
+    getCurrentQuestionType: () => 'objective' | 'subjective';
+    getCurrentQuestionInputType: () => 'text' | 'code' | 'audio';
     hasCorrectAnswer: () => boolean;
     hasCodingLanguages: () => boolean;
     hasScorecard: () => boolean;
@@ -25,11 +26,11 @@ export interface QuizEditorHandle {
 
 export interface QuizQuestionConfig {
     inputType: 'text' | 'code' | 'audio';
-    responseType: 'chat' | 'report';
+    responseType: 'chat' | 'exam';
     correctAnswer?: any[];
     codingLanguages?: string[]; // For multiple coding languages
     audioMaxDuration?: number; // For audio input type in seconds
-    questionType: 'objective' | 'subjective' | 'coding';
+    questionType: 'objective' | 'subjective';
     scorecardData?: ScorecardTemplate;
     knowledgeBaseBlocks: any[]; // Add knowledge base content blocks
     linkedMaterialIds: string[]; // Add IDs of linked learning materials
@@ -56,7 +57,7 @@ export interface QuizEditorProps {
     onPublishCancel?: () => void;
     isEditMode?: boolean;
     onSaveSuccess?: (updatedData?: any) => void;
-    taskType?: 'quiz' | 'exam';
+    taskType?: 'quiz';
     currentQuestionId?: string;
     onQuestionChange?: (questionId: string) => void;
     onSubmitAnswer?: (questionId: string, answer: string) => void;

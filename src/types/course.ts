@@ -22,19 +22,7 @@ export interface Quiz {
   isGenerating?: boolean;
 }
 
-export interface Exam {
-  id: string;
-  title: string;
-  position: number;
-  type: 'exam';
-  numQuestions?: number;
-  questions: QuizQuestion[];
-  status?: string; // Add status field to track draft/published state
-  scheduled_publish_at: string | null;
-  isGenerating?: boolean;
-}
-
-export type ModuleItem = LearningMaterial | Quiz | Exam;
+export type ModuleItem = LearningMaterial | Quiz;
 
 export interface Module {
   id: string;

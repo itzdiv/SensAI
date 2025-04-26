@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Clipboard, Check, Loader2 } from "lucide-react";
-import { Module, ModuleItem, Quiz, Exam } from "@/types/course";
+import { Module, ModuleItem, Quiz } from "@/types/course";
 import { QuizQuestion } from "@/types/quiz"; // Import from types instead
 import CourseItemDialog from "@/components/CourseItemDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
@@ -18,7 +18,6 @@ interface CourseModuleListProps {
     onDeleteItem?: (moduleId: string, itemId: string) => void;
     onAddLearningMaterial?: (moduleId: string) => Promise<void>;
     onAddQuiz?: (moduleId: string) => Promise<void>;
-    onAddExam?: (moduleId: string) => Promise<void>;
     onMoveModuleUp?: (moduleId: string) => void;
     onMoveModuleDown?: (moduleId: string) => void;
     onDeleteModule?: (moduleId: string) => void;
@@ -27,7 +26,7 @@ interface CourseModuleListProps {
     saveModuleTitle?: (moduleId: string) => void; // Function to save module title
     cancelModuleEditing?: (moduleId: string) => void; // Function to cancel module title editing
     completedTaskIds?: Record<string, boolean>; // Added prop for completed task IDs
-    completedQuestionIds?: Record<string, Record<string, boolean>>; // Add prop for partially completed quiz/exam questions
+    completedQuestionIds?: Record<string, Record<string, boolean>>; // Add prop for partially completed quiz questions
     schoolId?: string; // Add school ID for fetching scorecards
     courseId?: string; // Add courseId for fetching learning materials
 
@@ -59,7 +58,6 @@ export default function CourseModuleList({
     onDeleteItem,
     onAddLearningMaterial,
     onAddQuiz,
-    onAddExam,
     onMoveModuleUp,
     onMoveModuleDown,
     onDeleteModule,
@@ -89,7 +87,6 @@ export default function CourseModuleList({
     handleQuizContentChange = () => { },
     setShowPublishConfirmation = () => { },
 }: CourseModuleListProps) {
-    console.log("Modules", modules);
     // For editor mode where we need to keep track of expanded modules internally
     const [internalExpandedModules, setInternalExpandedModules] = useState<Record<string, boolean>>({});
 
@@ -474,8 +471,6 @@ export default function CourseModuleList({
         switch (type) {
             case 'material': return 'learning material';
             case 'quiz': return 'quiz';
-            case 'exam': return 'exam';
-            default: return 'task';
         }
     };
 
@@ -717,7 +712,7 @@ export default function CourseModuleList({
                                         >
                                             <div className={`flex items-center mr-4 sm:mr-2 ${completedItems[item.id]
                                                 ? "text-gray-400"
-                                                : (item.type === 'quiz' || item.type === 'exam') &&
+                                                : (item.type === 'quiz') &&
                                                     completedQuestionIds[item.id] &&
                                                     Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
                                                     ? "text-yellow-500"
@@ -737,7 +732,7 @@ export default function CourseModuleList({
                                             <div className="flex-1">
                                                 <div className={`text-base font-light ${completedItems[item.id]
                                                     ? "line-through text-white"
-                                                    : (item.type === 'quiz' || item.type === 'exam') &&
+                                                    : (item.type === 'quiz') &&
                                                         completedQuestionIds[item.id] &&
                                                         Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
                                                         ? "text-yellow-500"
@@ -745,8 +740,8 @@ export default function CourseModuleList({
                                                     } outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none mr-2`}>
                                                     {item.title}
 
-                                                    {/* Always display question count for quizzes/exams (except drafts) */}
-                                                    {(item.type === 'quiz' || item.type === 'exam') && item.status !== 'draft' && (
+                                                    {/* Always display question count for quizzes (except drafts) */}
+                                                    {item.type === 'quiz' && item.status !== 'draft' && (
                                                         <span className={`inline-block ml-2 text-sm font-normal ${!completedItems[item.id] &&
                                                             completedQuestionIds[item.id] &&
                                                             Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
@@ -755,9 +750,9 @@ export default function CourseModuleList({
                                                             }`}>
                                                             ({completedQuestionIds[item.id]
                                                                 ? mode === 'view' && !completedItems[item.id] && Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
-                                                                    ? `${Object.values(completedQuestionIds[item.id]).filter(Boolean).length} / ${(item as Quiz | Exam).numQuestions}`
+                                                                    ? `${Object.values(completedQuestionIds[item.id]).filter(Boolean).length} / ${(item as Quiz).numQuestions}`
                                                                     : `${Object.keys(completedQuestionIds[item.id]).length} question${Object.keys(completedQuestionIds[item.id]).length === 1 ? "" : "s"}`
-                                                                : `${(item as Quiz | Exam).numQuestions} question${(item as Quiz | Exam).numQuestions === 1 ? "" : "s"}`})
+                                                                : `${(item as Quiz).numQuestions} question${(item as Quiz).numQuestions === 1 ? "" : "s"}`})
                                                         </span>
                                                     )}
                                                 </div>
@@ -871,7 +866,7 @@ export default function CourseModuleList({
                                                     Learning Material
                                                 </button>
                                             </Tooltip>
-                                            <Tooltip content="Create a practice quiz where AI gives feedback to learners on their answers" position="top">
+                                            <Tooltip content="Create a quiz for practice or assessment" position="top">
                                                 <button
                                                     onClick={async () => {
                                                         if (onAddQuiz) {
@@ -886,23 +881,6 @@ export default function CourseModuleList({
                                                 >
                                                     <Plus size={14} className="mr-1" />
                                                     Quiz
-                                                </button>
-                                            </Tooltip>
-                                            <Tooltip content="Create an exam where learners are not given any feedback" position="top">
-                                                <button
-                                                    onClick={async () => {
-                                                        if (onAddExam) {
-                                                            try {
-                                                                await onAddExam(module.id);
-                                                            } catch (error) {
-                                                                console.error("Failed to add exam:", error);
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="flex items-center px-3 py-1.5 text-sm text-gray-300 hover:text-white border border-gray-400 rounded-full transition-colors cursor-pointer"
-                                                >
-                                                    <Plus size={14} className="mr-1" />
-                                                    Exam
                                                 </button>
                                             </Tooltip>
                                         </div>

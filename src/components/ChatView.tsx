@@ -28,7 +28,7 @@ interface ChatViewProps {
     showPreparingReport: boolean;
     isChatHistoryLoaded: boolean;
     isTestMode: boolean;
-    taskType: 'quiz' | 'exam' | 'learning_material';
+    taskType: 'quiz' | 'learning_material';
     currentQuestionConfig?: any;
     isSubmitting: boolean;
     currentAnswer: string;
@@ -80,7 +80,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     const [executionTime, setExecutionTime] = useState('');
 
     // Determine if this is a coding question
-    const isCodingQuestion = currentQuestionConfig?.questionType === 'coding';
+    const isCodingQuestion = currentQuestionConfig?.inputType === 'code';
 
     // Get coding languages from question config
     const codingLanguages = currentQuestionConfig?.codingLanguages || ['javascript'];
@@ -101,7 +101,7 @@ const ChatView: React.FC<ChatViewProps> = ({
         // Don't set viewing code in viewOnly mode
         if (isCodingQuestion && !viewOnly) {
             // For completed exam questions, always show chat view to see the confirmation
-            if (taskType === 'exam' && isQuestionCompleted) {
+            if (currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) {
                 setIsViewingCode(false);
             } else {
                 setIsViewingCode(true);
@@ -346,7 +346,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                             isTestMode={isTestMode}
                             inputType={currentQuestionConfig?.inputType}
                             viewOnly={viewOnly}
-                            questionType={currentQuestionConfig?.questionType}
+                            responseType={currentQuestionConfig?.responseType}
                         />
                     ) : (
                         <div className="flex-1 overflow-y-auto messages-container">
@@ -395,7 +395,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                                 </div>
                             )}
 
-                            {!(taskType === 'exam' && isQuestionCompleted) && (
+                            {!(currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) && (
                                 /* Input area - conditional render based on input type */
                                 <>
                                     {currentQuestionConfig?.inputType === 'audio' ? (
@@ -408,7 +408,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                                         </div>
                                     ) : (
                                         /* Hide the text input for coding questions in exam mode */
-                                        !(taskType === 'exam' && isCodingQuestion) && (
+                                        !(currentQuestionConfig?.responseType === 'exam' && isCodingQuestion) && (
                                             <div className="relative flex items-center bg-[#111111] rounded-3xl py-1 overflow-hidden border border-[#222222]">
                                                 <div className="flex-1 flex items-center">
                                                     <textarea
@@ -615,7 +615,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             {/* Toggle button for coding questions */}
             {!viewOnly && isCodingQuestion &&
                 // Hide toggle for exam questions that are completed
-                !(taskType === 'exam' && isQuestionCompleted) && (
+                !(currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) && (
                     <div className="flex justify-end mb-4">
                         <div className="code-toggle-switch">
                             <div

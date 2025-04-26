@@ -110,12 +110,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
 
     // Add a new state variable to track which type of confirmation is being shown
-    const [confirmationType, setConfirmationType] = useState<'publish' | 'edit' | 'close' | 'draft'>('draft');
+    const [confirmationType, setConfirmationType] = useState<'exit_edit_publish' | 'close' | 'exit_draft'>('exit_draft');
 
     // Add state for save confirmation dialog
     const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
 
-    // State to track if quiz/exam has questions (for publish/preview button visibility)
+    // State to track if quiz has questions (for publish/preview button visibility)
     const [hasQuizQuestions, setHasQuizQuestions] = useState(false);
 
     // Add a ref for the date picker container
@@ -159,9 +159,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             // Reset toast state when dialog closes to prevent stuck toasts
             setShowToast(false);
 
-            // Make sure to clear questions from active item when the dialog closes for draft quizzes/exams
+            // Make sure to clear questions from active item when the dialog closes for draft quizzes
             if (activeItem &&
-                (activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+                activeItem.type === 'quiz' &&
                 activeItem.status === 'draft') {
 
                 console.log('Cleaning up draft quiz questions on dialog close');
@@ -171,7 +171,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             // When dialog opens, ensure hasQuizQuestions is correctly initialized
             // For draft quizzes, always start with false (no questions)
             if (activeItem &&
-                (activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+                activeItem.type === 'quiz' &&
                 activeItem.status === 'draft') {
 
                 // Reset to false when dialog opens for draft quizzes
@@ -181,7 +181,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 console.log('Clearing questions for draft quiz on dialog open');
                 activeItem.questions = [];
             } else if (activeItem &&
-                (activeItem.type === 'quiz' || activeItem.type === 'exam') &&
+                activeItem.type === 'quiz' &&
                 activeItem.status === 'published') {
 
                 // For published quizzes, initialize based on actual data
@@ -222,7 +222,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 // If we're in edit mode for a published item
                 if (activeItem?.status === 'published') {
                     // Show the confirmation dialog instead
-                    setConfirmationType('edit');
+                    setConfirmationType('exit_edit_publish');
                     setShowCloseConfirmation(true);
                 } else {
                     // Check if the editor/quiz has any content using the appropriate ref
@@ -237,7 +237,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                     // Set default title based on item type
                     let defaultTitle = "New Learning Material";
                     if (activeItem.type === 'quiz') defaultTitle = "New Quiz";
-                    if (activeItem.type === 'exam') defaultTitle = "New Exam";
 
                     const isTitleChanged = currentTitle !== defaultTitle && currentTitle.trim() !== '';
 
@@ -248,7 +247,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                     }
 
                     // Set confirmation type for draft items
-                    setConfirmationType('draft');
+                    setConfirmationType('exit_draft');
                     setShowCloseConfirmation(true);
                     return;
                 }
@@ -304,7 +303,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         if (activeItem?.status === 'published' && isEditMode) {
             // For X button and backdrop click, we want to close the entire dialog after confirmation
             // Use a different confirmation type to differentiate from the Cancel button
-            setConfirmationType('close'); // Use 'draft' type since it already closes the dialog
+            setConfirmationType('close');
             setShowCloseConfirmation(true);
             return;
         }
@@ -323,7 +322,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             // Set default title based on item type
             let defaultTitle = "New Learning Material";
             if (activeItem.type === 'quiz') defaultTitle = "New Quiz";
-            if (activeItem.type === 'exam') defaultTitle = "New Exam";
 
             const isTitleChanged = currentTitle !== defaultTitle && currentTitle.trim() !== '';
 
@@ -334,7 +332,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             }
 
             // Set confirmation type for draft items
-            setConfirmationType('draft');
+            setConfirmationType('exit_draft');
             setShowCloseConfirmation(true);
             return;
         }
@@ -344,7 +342,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // Add a handler for the Cancel button in published items' edit mode
     const handleCancelEditClick = () => {
         // Show confirmation for published items in edit mode
-        setConfirmationType('edit');
+        setConfirmationType('exit_edit_publish');
         setShowCloseConfirmation(true);
     };
 
@@ -354,7 +352,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         // Save logic for draft: call save and then close dialog
         if (activeItem?.type === 'material') {
             learningMaterialEditorRef.current?.save();
-        } else if (activeItem?.type === 'quiz' || activeItem?.type === 'exam') {
+        } else if (activeItem?.type === 'quiz') {
             quizEditorRef.current?.saveDraft();
         }
         onClose();
@@ -364,12 +362,12 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     const handleConfirmDiscardChanges = () => {
         setShowCloseConfirmation(false);
 
-        if (confirmationType === 'edit') {
+        if (confirmationType === 'exit_edit_publish') {
             // For published items in edit mode, just exit edit mode without closing the dialog
             if (activeItem?.type === 'material') {
                 // Use the ref to call cancel directly to revert any changes
                 learningMaterialEditorRef.current?.cancel();
-            } else if (activeItem?.type === 'quiz' || activeItem?.type === 'exam') {
+            } else if (activeItem?.type === 'quiz') {
                 // Use the ref to call cancel directly to revert any changes
                 quizEditorRef.current?.cancel();
             }
@@ -410,8 +408,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
             // Get the current question type and check for empty correct answer or missing scorecard
             const currentQuestionType = quizEditorRef.current.getCurrentQuestionType();
+            const currentQuestionInputType = quizEditorRef.current.getCurrentQuestionInputType();
 
-            if (currentQuestionType === 'coding') {
+            if (currentQuestionInputType === 'code') {
                 const hasCodingLanguages = quizEditorRef.current.hasCodingLanguages();
                 if (!hasCodingLanguages) {
                     // Show toast notification for missing coding languages
@@ -420,7 +419,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 }
             }
 
-            if (currentQuestionType === 'objective' || currentQuestionType === 'coding') {
+            if (currentQuestionType === 'objective') {
                 // For objective questions, check if correct answer is empty
                 const hasCorrectAnswer = quizEditorRef.current.hasCorrectAnswer();
                 if (!hasCorrectAnswer) {
@@ -489,8 +488,8 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Handle save button click - show confirmation
     const handleSaveClick = () => {
-        // For quizzes and exams, validate before showing save confirmation
-        if ((activeItem?.type === 'quiz' || activeItem?.type === 'exam') && quizEditorRef.current) {
+        // For quizzes, validate before showing save confirmation
+        if (activeItem?.type === 'quiz' && quizEditorRef.current) {
             // Run validation before opening the save confirmation
             const isValid = quizEditorRef.current.validateBeforePublish();
             if (!isValid) {
@@ -524,7 +523,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         if (activeItem?.type === 'material') {
             // Use the ref to call save directly
             learningMaterialEditorRef.current?.save();
-        } else if (activeItem?.type === 'quiz' || activeItem?.type === 'exam') {
+        } else if (activeItem?.type === 'quiz') {
             // Use the ref to call save directly
             quizEditorRef.current?.savePublished();
         }
@@ -535,23 +534,21 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
         setShowSaveConfirmation(false);
     };
 
-    const isEditOrClose = confirmationType === 'edit' || confirmationType === 'close';
+    const isClosingDraft = confirmationType === 'exit_draft';
 
     return (
         <>
             <div
-                className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                className="fixed inset-0 z-50 bg-[#111111] flex flex-col"
                 onClick={handleDialogBackdropClick}
             >
                 <div
                     ref={dialogContentRef}
                     style={{
                         backgroundColor: '#1A1A1A',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                        borderColor: '#1A1A1A',
-                        border: '1px solid #1A1A1A'
+                        border: 'none'
                     }}
-                    className="w-full max-w-6xl h-[90vh] rounded-lg shadow-2xl flex flex-col transform transition-all duration-300 ease-in-out scale-100 translate-y-0"
+                    className="w-full h-full flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Dialog Header */}
@@ -565,7 +562,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 contentEditable={(activeItem?.status !== 'published' || isEditMode)}
                                 suppressContentEditableWarning
                                 onInput={(e) => {
-                                    // For both learning materials and quizzes/exams, allow editing title 
+                                    // For both learning materials and quizzes, allow editing title 
                                     // but don't propagate changes upward yet (will be handled during save)
                                     // The current title will be stored in the DOM element
                                     // and will be sent to the API during save/publish
@@ -615,14 +612,14 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     }
                                 }}
                                 className={`text-2xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
-                                data-placeholder={activeItem?.type === 'material' ? 'New Learning Material' : activeItem?.type === 'quiz' ? 'New Quiz' : 'New Exam'}
+                                data-placeholder={activeItem?.type === 'material' ? 'New Learning Material' : 'New Quiz'}
                             >
                                 {activeItem?.title}
                             </h2>
                         </div>
                         <div className="flex items-center space-x-3">
                             {/* Preview Mode Toggle for Quizzes/Exams */}
-                            {(activeItem?.type === 'quiz' || activeItem?.type === 'exam') && hasQuizQuestions && (
+                            {activeItem?.type === 'quiz' && hasQuizQuestions && (
                                 <button
                                     onClick={toggleQuizPreviewMode}
                                     className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-blue-500 hover:bg-[#222222] focus:border-blue-500 active:border-blue-500 rounded-full transition-colors cursor-pointer"
@@ -645,12 +642,11 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                             {/* Publish button for all item types */}
                             {activeItem?.status === 'draft' &&
                                 ((activeItem?.type === 'quiz' && hasQuizQuestions) ||
-                                    (activeItem?.type === 'exam' && hasQuizQuestions) ||
                                     activeItem?.type === 'material') && (
                                     <button
                                         onClick={() => {
-                                            // For quizzes and exams, validate before showing publish confirmation
-                                            if ((activeItem?.type === 'quiz' || activeItem?.type === 'exam') && quizEditorRef.current) {
+                                            // For quizzes, validate before showing publish confirmation
+                                            if (activeItem?.type === 'quiz' && quizEditorRef.current) {
                                                 // Run validation before opening the publish confirmation
                                                 const isValid = quizEditorRef.current.validateBeforePublish();
                                                 if (!isValid) {
@@ -683,7 +679,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     </button>
                                 )}
 
-                            {activeItem?.status === 'published' && isEditMode ? (
+                            {activeItem?.status === 'published' && isEditMode && !quizPreviewMode ? (
                                 <>
                                     {scheduledDate && (
                                         <div className="flex items-center mr-3">
@@ -774,16 +770,17 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                         {/* Close button */}
                         <button
                             onClick={handleCloseRequest}
-                            className="ml-2 p-2 text-gray-400 hover:text-white rounded-full hover:bg-[#333333] transition-colors cursor-pointer"
+                            className="ml-2 p-2 text-white hover:text-white rounded-full hover:bg-[#333333] transition-colors cursor-pointer"
                             aria-label="Close dialog"
                         >
-                            <X size={20} />
+                            <X size={24} />
                         </button>
                     </div>
 
                     {/* Dialog Content */}
                     <div
                         className="flex-1 overflow-y-auto dialog-content-editor"
+                        style={{ height: 'calc(100vh - 65px)' }} // Adjust height to account for header
                         onClick={(e) => {
                             // Ensure the click event doesn't bubble up
                             e.stopPropagation();
@@ -862,7 +859,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     }
                                 }}
                             />
-                        ) : activeItem?.type === 'quiz' || activeItem?.type === 'exam' ? (
+                        ) : activeItem?.type === 'quiz' ? (
                             <DynamicQuizEditor
                                 ref={quizEditorRef}
                                 key={`quiz-${activeItem.id}-${isEditMode}`}
@@ -884,7 +881,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                 readOnly={activeItem.status === 'published' && !isEditMode}
                                 taskId={activeItem.id}
                                 status={activeItem.status}
-                                taskType={activeItem.type as 'quiz' | 'exam'}
+                                taskType={activeItem.type}
                                 showPublishConfirmation={showPublishConfirmation}
                                 onPublishCancel={onPublishCancel}
                                 onValidationError={(message, description) => {
@@ -941,8 +938,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         onPublishConfirm();
 
                                         // Show toast notification
-                                        const itemTypeName = activeItem.type === 'quiz' ? 'quiz' : 'exam';
-                                        const publishMessage = updatedData.scheduled_publish_at ? `Your ${itemTypeName} has been scheduled for publishing` : `Your ${itemTypeName} has been published`;
+                                        const publishMessage = updatedData.scheduled_publish_at ? `Your quiz has been scheduled for publishing` : `Your quiz has been published`;
                                         displayToast("Published", publishMessage);
                                     }
 
@@ -959,18 +955,18 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             {/* Close confirmation dialog */}
             <ConfirmationDialog
                 open={showCloseConfirmation}
-                title={isEditOrClose ? "Unsaved Changes" : "Save Your Progress"}
+                title={isClosingDraft ? "Save Your Progress" : "Unsaved Changes"}
                 message={
-                    isEditOrClose
-                        ? "All your unsaved changes will be lost if you leave without saving. Are you sure you want to leave?"
-                        : "Would you like to save your progress before leaving? If you don't save, all your progress will be lost."
+                    isClosingDraft
+                        ?
+                        "Would you like to save your progress before leaving? If you don't save, all your progress will be lost." : "All your unsaved changes will be lost if you leave without saving. Are you sure you want to leave?"
                 }
-                confirmButtonText={isEditOrClose ? "Discard Changes" : "Save"}
-                cancelButtonText={isEditOrClose ? "Continue Editing" : "Discard"}
-                onConfirm={isEditOrClose ? handleConfirmDiscardChanges : handleConfirmSaveDraft}
-                onCancel={isEditOrClose ? handleCancelClosingDialog : handleConfirmDiscardChanges}
-                onClickOutside={isEditOrClose ? handleCancelClosingDialog : () => setShowCloseConfirmation(false)}
-                type={isEditOrClose ? 'delete' : 'save'}
+                confirmButtonText={isClosingDraft ? "Save" : "Discard Changes"}
+                cancelButtonText={isClosingDraft ? "Discard" : "Continue Editing"}
+                onConfirm={isClosingDraft ? handleConfirmSaveDraft : handleConfirmDiscardChanges}
+                onCancel={isClosingDraft ? handleConfirmDiscardChanges : handleCancelClosingDialog}
+                onClickOutside={isClosingDraft ? () => setShowCloseConfirmation(false) : handleCancelClosingDialog}
+                type={isClosingDraft ? 'save' : 'delete'}
             />
 
             {/* Save confirmation dialog */}

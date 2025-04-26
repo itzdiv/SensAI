@@ -338,20 +338,16 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
 
                             {/* Cards Layout */}
                             {(courseMetrics.task_type_metrics?.quiz ||
-                                courseMetrics.task_type_metrics?.learning_material ||
-                                courseMetrics.task_type_metrics?.exam) && (() => {
+                                courseMetrics.task_type_metrics?.learning_material) && (() => {
                                     // Calculate number of available task types
                                     const availableTypes = [
                                         courseMetrics.task_type_metrics?.quiz,
                                         courseMetrics.task_type_metrics?.learning_material,
-                                        courseMetrics.task_type_metrics?.exam
                                     ].filter(Boolean).length;
 
                                     // Render with the appropriate grid class based on count
                                     return (
-                                        <div className={`grid grid-cols-1 ${availableTypes === 1 ? 'md:grid-cols-1' :
-                                            availableTypes === 2 ? 'md:grid-cols-2' :
-                                                'md:grid-cols-3'
+                                        <div className={`grid grid-cols-1 ${availableTypes === 1 ? 'md:grid-cols-1' : 'md:grid-cols-2'
                                             } gap-4`}>
 
                                             {/* Learning Material Card */}
@@ -371,16 +367,6 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                     count={courseMetrics.task_type_metrics?.quiz?.count}
                                                     completionRate={courseMetrics.task_type_metrics?.quiz?.completion_rate}
                                                     color="indigo"
-                                                />
-                                            )}
-
-                                            {/* Exam Card */}
-                                            {courseMetrics.task_type_metrics?.exam && (
-                                                <TaskTypeMetricCard
-                                                    title="Exam"
-                                                    count={courseMetrics.task_type_metrics?.exam?.count}
-                                                    completionRate={courseMetrics.task_type_metrics?.exam?.completion_rate}
-                                                    color="teal"
                                                 />
                                             )}
                                         </div>
@@ -477,7 +463,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                             }
 
                             // Function to get completion percentage for a student and task type
-                            const getCompletionPercentage = (studentId: string, taskType: 'learning_material' | 'quiz' | 'exam') => {
+                            const getCompletionPercentage = (studentId: string, taskType: 'learning_material' | 'quiz') => {
                                 if (!courseMetrics.task_type_metrics[taskType]) return null;
 
                                 const completions = courseMetrics.task_type_metrics[taskType]?.completions || {};
@@ -511,9 +497,6 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                     } else if (sortColumn === 'quiz') {
                                         valueA = getCompletionPercentage(a, 'quiz');
                                         valueB = getCompletionPercentage(b, 'quiz');
-                                    } else if (sortColumn === 'exam') {
-                                        valueA = getCompletionPercentage(a, 'exam');
-                                        valueB = getCompletionPercentage(b, 'exam');
                                     }
 
                                     // Handle null values (put them at the end)
@@ -570,23 +553,6 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                             <ArrowUp size={14} className="ml-1" />
                                                         )}
                                                         {sortColumn === 'quiz' && sortDirection === 'desc' && (
-                                                            <ArrowDown size={14} className="ml-1" />
-                                                        )}
-                                                    </div>
-                                                </th>
-                                            )}
-                                            {courseMetrics.task_type_metrics?.exam && (
-                                                <th
-                                                    className="text-left text-gray-400 p-4 font-normal cursor-pointer hover:bg-black/30 select-none"
-                                                    onClick={() => handleSort('exam')}
-                                                >
-                                                    <div className="flex items-center">
-                                                        <span className="text-teal-400 mr-1">●</span>
-                                                        <span>Exam</span>
-                                                        {sortColumn === 'exam' && sortDirection === 'asc' && (
-                                                            <ArrowUp size={14} className="ml-1" />
-                                                        )}
-                                                        {sortColumn === 'exam' && sortDirection === 'desc' && (
                                                             <ArrowDown size={14} className="ml-1" />
                                                         )}
                                                     </div>
