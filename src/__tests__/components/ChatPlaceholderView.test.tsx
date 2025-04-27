@@ -8,7 +8,8 @@ describe('ChatPlaceholderView Component', () => {
         taskType: 'quiz' as const,
         isChatHistoryLoaded: true,
         isTestMode: false,
-        questionType: 'text'
+        inputType: 'text',
+
     };
 
     it('should render a loading spinner when chat history is not loaded', () => {
@@ -58,6 +59,7 @@ describe('ChatPlaceholderView Component', () => {
         render(
             <ChatPlaceholderView
                 {...baseProps}
+                inputType="code"
             />
         );
 
@@ -65,17 +67,18 @@ describe('ChatPlaceholderView Component', () => {
         expect(screen.getByText(/You can also type your response below/)).toBeInTheDocument();
     });
 
-    // it('should show different message for coding question type in exam mode', () => {
-    //     render(
-    //         <ChatPlaceholderView
-    //             {...baseProps}
-    //             taskType="exam"
-    //         />
-    //     );
+    it('should show different message for coding question type in exam mode', () => {
+        render(
+            <ChatPlaceholderView
+                {...baseProps}
+                inputType="code"
+                responseType="exam"
+            />
+        );
 
-    //     expect(screen.getByText(/Think through your answer, then write your code in the code editor/)).toBeInTheDocument();
-    //     expect(screen.getByText(/You can attempt the question only once/)).toBeInTheDocument();
-    // });
+        expect(screen.getByText(/Think through your answer, then write your code in the code editor/)).toBeInTheDocument();
+        expect(screen.getByText(/You can attempt the question only once/)).toBeInTheDocument();
+    });
 
     it('should show view-only message when viewOnly is true', () => {
         render(

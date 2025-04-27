@@ -34,7 +34,7 @@ describe('ConfirmationDialog Component', () => {
         );
 
         expect(screen.getByText('Confirm deletion')).toBeInTheDocument();
-        expect(screen.getByText('Are you sure you want to delete this item? This action cannot be undone.')).toBeInTheDocument();
+        expect(screen.getByText('Are you sure you want to delete? This action cannot be undone.')).toBeInTheDocument();
         expect(screen.getByText('Delete')).toBeInTheDocument();
         expect(screen.getByText('Cancel')).toBeInTheDocument();
     });

@@ -37,7 +37,8 @@ describe('CourseCard Component', () => {
         role: 'learner',
         org: {
             slug: 'test-org'
-        }
+        },
+        cohort_id: 123
     };
 
     beforeEach(() => {
@@ -68,7 +69,7 @@ describe('CourseCard Component', () => {
     it('should generate a link to school path for learner courses', () => {
         render(<CourseCard course={courseWithRole} />);
         const link = screen.getByRole('link');
-        expect(link).toHaveAttribute('href', '/school/test-org');
+        expect(link).toHaveAttribute('href', '/school/test-org?course_id=789&cohort_id=123');
     });
 
     it('should generate a link to general course path when no school or org context is available', () => {
