@@ -414,7 +414,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                                                     <textarea
                                                         id="no-border-textarea"
                                                         ref={textareaRef}
-                                                        placeholder={taskType === 'quiz' ? "Type your question here" : "Type your answer here"}
+                                                        placeholder={taskType === 'quiz' ? "Type your answer here" : "Type your question here"}
                                                         className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
                                                         value={currentAnswer}
                                                         onChange={handleInputChange as any}
