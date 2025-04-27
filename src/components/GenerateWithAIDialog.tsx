@@ -82,7 +82,6 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
 
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
-        console.log(numPages)
         setFileValidating(false);
 
         if (numPages > 100) {

@@ -414,20 +414,15 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         lang.toLowerCase() === 'nodejs'
     );
 
-    // console.log('Original languages:', languages);
-    // console.log('Has React languages:', hasReact);
-
     // When only React is selected, don't normalize languages (skip the mapping to JavaScript)
     let normalizedLanguages: string[];
 
     if (hasReact) {
         // When React is the only language, skip normalization and just use React
         normalizedLanguages = ['react'];
-        console.log('Using only React tab');
     } else if (hasNodejs) {
         // When Node.js is the only language, skip normalization and just use Node.js
         normalizedLanguages = ['nodejs'];
-        console.log('Using only Node.js tab');
     } else {
         // Otherwise normalize languages as usual
         normalizedLanguages = languages.map(lang =>
@@ -442,7 +437,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
 
     // Helper method to setup code state with defaults
     const setupCodeState = (initial: Record<string, string>): Record<string, string> => {
-        console.log('Setting up code state with:', initial);
         const state: Record<string, string> = {};
 
         // Add entries for all valid languages
@@ -592,9 +586,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
             }
         });
 
-        // Add debug logging
-        console.log('Detected input calls:', totalInputCalls);
-
         return totalInputCalls;
     };
 
@@ -612,7 +603,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         // Check for Python input validation
         if (activeLanguage === 'python') {
             const requiredInputs = countPythonInputs(code['python']);
-            console.log('Required inputs:', requiredInputs);
 
             if (requiredInputs > 0) {
                 const providedInputs = countProvidedInputs(stdInput);
@@ -645,7 +635,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         }
 
         setIsRunning(true);
-        console.log('Running code for activeLanguage:', activeLanguage);
 
         // If on mobile, show the preview
         if (isMobileView) {
@@ -655,7 +644,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         try {
             // For React code
             if (activeLanguage === 'react') {
-                console.log('Running React code');
                 // Create a basic HTML template with React and ReactDOM loaded from CDN with specific version
                 const reactTemplate = `
                 <!DOCTYPE html>
@@ -851,9 +839,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 if (result.status_id >= 3) {
                     break;
                 }
-
-                // If still processing, continue polling
-                console.log('Code still executing, waiting...');
             }
 
             // Step 3: Handle the result
@@ -1220,7 +1205,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                         <button
                             key={lang}
                             onClick={() => {
-                                console.log('Setting active language to:', lang);
                                 setActiveLanguage(lang);
                             }}
                             className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${activeLanguage === lang
@@ -1242,7 +1226,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                         <button
                             key={lang}
                             onClick={() => {
-                                console.log('Setting active language to:', lang);
                                 setActiveLanguage(lang);
                             }}
                             className={`px-3 py-1 text-xs font-medium transition-colors cursor-pointer ${activeLanguage === lang

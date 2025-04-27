@@ -381,7 +381,6 @@ export default function LearnerQuizView({
                         } catch (error) {
                             // If parsing fails, assume it's the old format (plain text)
                             // Keep the original content as is - it's already set in chatMessage
-                            console.log('Message is in old format (plain text), using as is:', message.content);
                         }
                     }
 

@@ -31,10 +31,8 @@ export const useAuth = () => {
       
       // Log authentication exactly once per unique user ID
       if (userId && !globalAuthState.knownUserIds.has(userId)) {
-        console.log("User authenticated with ID:", userId);
         globalAuthState.knownUserIds.add(userId);
       } else if (!userId && !globalAuthState.hasLoggedAuthentication) {
-        console.error("User authenticated but missing ID. User object:", session.user);
         globalAuthState.hasLoggedAuthentication = true;
       }
     }

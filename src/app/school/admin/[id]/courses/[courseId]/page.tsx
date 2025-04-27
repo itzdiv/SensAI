@@ -342,6 +342,100 @@ export default function CreateCourse() {
         ));
     };
 
+    // Add these new helper functions after the toggleModule function and before the addLearningMaterial function
+    // Helper function to add an item to a module's items array at a specific position
+    const addItemToState = (moduleId: string, newItem: ModuleItem, position: number) => {
+        setActiveItem(newItem);
+        setActiveModuleId(moduleId);
+
+        setModules(modules.map(module => {
+            if (module.id === moduleId) {
+                // Insert the new item at the correct position and update positions of items below
+                const items = [
+                    ...module.items.slice(0, position),
+                    newItem,
+                    ...module.items.slice(position).map(item => ({
+                        ...item,
+                        position: item.position + 1
+                    }))
+                ];
+                return {
+                    ...module,
+                    items: items
+                };
+            }
+            return module;
+        }));
+
+        return newItem;
+    };
+
+    const addLearningMaterialToState = (moduleId: string, taskData: any, position: number) => {
+        const newItem: LearningMaterial = {
+            id: taskData.id.toString(),
+            title: taskData.title || "New Learning Material",
+            position: position,
+            type: 'material',
+            content: [], // Empty content, the editor will initialize with default content
+            status: 'draft',
+            scheduled_publish_at: null
+        };
+
+        return addItemToState(moduleId, newItem, position);
+    };
+
+    const addQuizToState = (moduleId: string, taskData: any, position: number) => {
+        const newItem: Quiz = {
+            id: taskData.id.toString(),
+            title: taskData.title || "New Quiz",
+            position: position,
+            type: 'quiz',
+            questions: taskData.questions || [],
+            status: 'draft',
+            scheduled_publish_at: null
+        };
+
+        return addItemToState(moduleId, newItem, position);
+    };
+
+    // Add handleDuplicateItem function to handle task duplication
+    const handleDuplicateItem = async (moduleId: string, taskData: any, position: number) => {
+        try {
+            // Find the original module for placement
+            const module = modules.find(m => m.id === moduleId);
+            if (!module) return;
+
+            // Update the UI based on the task type
+            if (taskData.type === "learning_material") {
+                addLearningMaterialToState(moduleId, taskData, position);
+            } else if (taskData.type === "quiz") {
+                addQuizToState(moduleId, taskData, position);
+            }
+
+            // Auto-hide toast after 3 seconds
+            setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+            }, 3000);
+
+        } catch (error) {
+            console.error("Error handling duplicated item:", error);
+
+            // Show error toast
+            setToast({
+                show: true,
+                title: 'Cloning Failed',
+                description: 'There was an error duplicating the task',
+                emoji: '❌'
+            });
+
+            // Auto-hide toast after 3 seconds
+            setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+            }, 3000);
+        }
+    };
+
+    // Modify the existing addLearningMaterial function to use the new helper
     const addLearningMaterial = async (moduleId: string) => {
         try {
             // Make API request to create a new learning material
@@ -366,37 +460,16 @@ export default function CreateCourse() {
 
             // Get the learning material ID from the response
             const data = await response.json();
-            console.log("Learning material created successfully:", data);
 
-            // Update the UI only after the API request is successful
-            setModules(modules.map(module => {
-                if (module.id === moduleId) {
-                    const newItem: LearningMaterial = {
-                        id: data.id.toString(), // Use the ID from the API
-                        title: "New Learning Material",
-                        position: module.items.length,
-                        type: 'material',
-                        content: [], // Empty content, the editor will initialize with default content
-                        status: 'draft',
-                        scheduled_publish_at: null
-                    };
-
-                    setActiveItem(newItem);
-                    setActiveModuleId(moduleId);
-
-                    return {
-                        ...module,
-                        items: [...module.items, newItem]
-                    };
-                }
-                return module;
-            }));
+            // Update the UI using the abstracted helper function
+            addLearningMaterialToState(moduleId, data, modules.find(m => m.id === moduleId)?.items.length || 0);
         } catch (error) {
             console.error("Error creating learning material:", error);
             // You might want to show an error message to the user here
         }
     };
 
+    // Modify the existing addQuiz function to use the new helper
     const addQuiz = async (moduleId: string) => {
         try {
             // Make API request to create a new quiz
@@ -420,35 +493,9 @@ export default function CreateCourse() {
 
             // Get the quiz ID from the response
             const data = await response.json();
-            console.log("Quiz created successfully:", data);
 
-            // Update the UI only after the API request is successful
-            setModules(modules.map(module => {
-                if (module.id === moduleId) {
-                    const newItem: Quiz = {
-                        id: data.id.toString(), // Use the ID from the API
-                        title: "New Quiz",
-                        position: module.items.length,
-                        type: 'quiz',
-                        questions: [{
-                            id: `question-${Date.now()}`,
-                            content: [],
-                            config: { ...defaultQuestionConfig }
-                        }],
-                        status: 'draft',
-                        scheduled_publish_at: null
-                    };
-
-                    setActiveItem(newItem);
-                    setActiveModuleId(moduleId);
-
-                    return {
-                        ...module,
-                        items: [...module.items, newItem]
-                    };
-                }
-                return module;
-            }));
+            // Update the UI using the abstracted helper function
+            addQuizToState(moduleId, data, modules.find(m => m.id === moduleId)?.items.length || 0);
         } catch (error) {
             console.error("Error creating quiz:", error);
             // You might want to show an error message to the user here
@@ -591,65 +638,6 @@ export default function CreateCourse() {
         setIsEditMode(false);
     };
 
-    // Handle dialog title change
-    const handleDialogTitleChange = (e: React.FormEvent<HTMLHeadingElement>) => {
-        if (!activeItem || !activeModuleId) return;
-
-        // Skip title updates for learning materials - they manage their own titles
-        // and only emit changes after publishing
-        if (activeItem.type === 'material') return;
-
-        const newTitle = e.currentTarget.textContent || "";
-
-        // Update the title in the API - only for quizzes and exams
-        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${activeItem.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                title: newTitle
-            }),
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Failed to update title: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Update the active item
-                setActiveItem({
-                    ...activeItem,
-                    title: newTitle
-                });
-
-                // Update the modules state
-                setModules(prevModules =>
-                    prevModules.map(module => {
-                        if (module.id === activeModuleId) {
-                            return {
-                                ...module,
-                                items: module.items.map(item => {
-                                    if (item.id === activeItem.id) {
-                                        return {
-                                            ...item,
-                                            title: newTitle
-                                        };
-                                    }
-                                    return item;
-                                })
-                            };
-                        }
-                        return module;
-                    })
-                );
-            })
-            .catch(error => {
-                console.error("Error updating title:", error);
-            });
-    };
-
     // Add a function to update quiz questions
     const updateQuizQuestions = (moduleId: string, itemId: string, questions: QuizQuestion[]) => {
         setModules(prevModules =>
@@ -688,18 +676,12 @@ export default function CreateCourse() {
             return;
         }
 
-        console.log("handleConfirmPublish called with activeItem:", activeItem);
-        console.log("Scheduled publish date from activeItem:", activeItem.scheduled_publish_at);
-
         // For learning materials and quizzes, the API call is now handled in their respective components
         // We need to update the modules list to reflect the status change
         // The title update is handled in the CourseItemDialog's onPublishSuccess callback
 
         // Update the module item in the modules list with the updated status and title
         updateModuleItemAfterPublish(activeModuleId, activeItem.id, 'published', activeItem.title, activeItem.scheduled_publish_at);
-
-        console.log("Module item updated with status 'published' and title:", activeItem.title);
-        console.log("Module item updated with scheduled_publish_at:", activeItem.scheduled_publish_at);
 
         // Hide the confirmation dialog
         setShowPublishConfirmation(false);
@@ -860,7 +842,6 @@ export default function CreateCourse() {
                 .then(data => {
                     // Update the course title in the UI
                     setCourseTitle(newTitle);
-                    console.log("Course updated successfully:", data);
                 })
                 .catch(err => {
                     console.error("Error updating course:", err);
@@ -1374,7 +1355,6 @@ export default function CreateCourse() {
         // Set up WebSocket connection for real-time updates
         try {
             const websocketUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/^http/, 'ws')}/ws/course/${courseId}/generation`;
-            console.log('Connecting to WebSocket at:', websocketUrl);
 
             // Create new WebSocket and store in ref
             wsRef.current = new WebSocket(websocketUrl);
@@ -1402,7 +1382,6 @@ export default function CreateCourse() {
             wsRef.current.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log('Received WebSocket message:', data);
 
                     if (data.event === 'module_created') {
                         // Add the new module to the list of modules
@@ -1593,8 +1572,6 @@ export default function CreateCourse() {
 
             // For now, we'll just log the data
             // In a real implementation, this would be an API call to start the generation process
-            console.log('Generate course with AI:', data);
-
             let presigned_url = '';
             let file_key = '';
 
@@ -1675,7 +1652,6 @@ export default function CreateCourse() {
                     }
 
                     console.log('File uploaded successfully to S3');
-                    console.log(uploadResponse);
                 } catch (error) {
                     console.error('Error uploading file to S3:', error);
                     throw error;
@@ -1710,8 +1686,6 @@ export default function CreateCourse() {
                     }),
                 });
 
-                console.log('1')
-
                 if (!response.ok) {
                     // Close WebSocket on API error
                     if (wsRef.current) {
@@ -1721,10 +1695,7 @@ export default function CreateCourse() {
                     throw new Error(`Failed to generate course: ${response.status}`);
                 }
 
-                console.log('2')
-
                 const result = await response.json();
-                console.log('Course generation initiated successfully:', result);
 
                 // We'll set a listener for the course structure completion
                 // instead of immediately setting it as complete
@@ -1935,11 +1906,11 @@ export default function CreateCourse() {
                             saveItem={saveItem}
                             cancelEditMode={cancelEditMode}
                             enableEditMode={enableEditMode}
-                            handleDialogTitleChange={handleDialogTitleChange}
                             handleQuizContentChange={handleQuizContentChange}
                             setShowPublishConfirmation={setShowPublishConfirmation}
                             schoolId={schoolId}
                             courseId={courseId}
+                            onDuplicateItem={handleDuplicateItem}
                         />
                     </div>
 

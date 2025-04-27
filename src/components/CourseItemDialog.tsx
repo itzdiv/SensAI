@@ -57,7 +57,6 @@ interface CourseItemDialogProps {
     onSaveItem: () => void;
     onCancelEditMode: () => void;
     onEnableEditMode: () => void;
-    onDialogTitleChange: (e: React.FormEvent<HTMLHeadingElement>) => void;
     onQuizContentChange: (questions: QuizQuestion[]) => void;
     focusEditor: () => void;
     schoolId?: string; // School ID for fetching scorecards
@@ -80,7 +79,6 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     onSaveItem,
     onCancelEditMode,
     onEnableEditMode,
-    onDialogTitleChange,
     onQuizContentChange,
     focusEditor,
     schoolId,

@@ -17,9 +17,6 @@ export const authOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log("JWT Callback - Token before:", JSON.stringify(token));
-      console.log("JWT Callback - User:", JSON.stringify(user));
-      
       // If signing in for the first time, save user info in token
       if (account && user) {
         token.accessToken = account.access_token;
@@ -29,15 +26,13 @@ export const authOptions = {
         if (account.provider === 'google') {
           try {
             const result = await registerUserWithBackend(user, account);
-            console.log("Backend auth result:", JSON.stringify(result));
             
             // Extract the ID from the result
             if (result && result.id) {
-              console.log("Setting userId in token:", result.id);
               // Store the backend userId directly in the token
               token.userId = result.id;
             } else {
-              console.error("Backend response missing ID field:", result);
+              console.error("Backend response missing ID field");
             }
           } catch (error) {
             console.error("Error storing backend user ID:", error);
@@ -45,19 +40,14 @@ export const authOptions = {
         }
       }
       
-      console.log("JWT Callback - Token after:", JSON.stringify(token));
       return token;
     },
     
-    async session({ session, token }) {
-      console.log("Session Callback - Session before:", JSON.stringify(session));
-      console.log("Session Callback - Token:", JSON.stringify(token));
-      
+    async session({ session, token }) {      
       // Send properties to the client
       if (session.user) {
         // Use the backend user ID directly as the main ID
         if (token.userId) {
-          console.log("Setting user.id in session:", token.userId);
           session.user.id = String(token.userId); // Ensure ID is stored as string
         } else {
           console.log("No userId in token!");
@@ -69,7 +59,6 @@ export const authOptions = {
         }
       }
       
-      console.log("Session Callback - Session after:", JSON.stringify(session));
       return session;
     },
     

@@ -377,16 +377,12 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Use the current editor content
             const currentContent = editorContent.length > 0 ? editorContent : (taskData?.blocks || []);
 
-            console.log("currentContent", currentContent);
-
             // Add scheduled publishing data if selected
             const publishData: any = {
                 title: currentTitle,
                 blocks: currentContent,
                 scheduled_publish_at: scheduledPublishAt
             };
-
-            console.log("publishData", publishData);
 
             // Make POST request to publish the learning material content
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
@@ -412,14 +408,8 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                 scheduled_publish_at: scheduledPublishAt // Include scheduled date
             };
 
-            // Log to verify the scheduled_publish_at value
-            console.log("Publishing task with data:", publishedTaskData);
-            console.log("Scheduled publish at:", publishedTaskData.scheduled_publish_at);
-
             // Update our local state with the data from the API
             setTaskData(publishedTaskData);
-
-            console.log(scheduledPublishAt ? "Learning material scheduled for publishing" : "Learning material published successfully");
 
             // First set publishing to false to avoid state updates during callbacks
             setIsPublishing(false);
@@ -468,8 +458,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             // Use the scheduledPublishAt prop instead of taskData.scheduled_publish_at
             const currentScheduledPublishAt = scheduledPublishAt !== undefined ? scheduledPublishAt : (taskData?.scheduled_publish_at || null);
 
-            console.log("Saving with scheduled_publish_at:", currentScheduledPublishAt);
-
             // Make POST request to update the learning material content, keeping the same status
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/learning_material`, {
                 method: 'PUT',
@@ -499,8 +487,6 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
 
             // Update our local state with the data from the API
             setTaskData(updatedData);
-
-            console.log("Learning material saved successfully");
 
             // Call the onSaveSuccess callback if provided
             if (onSaveSuccess) {

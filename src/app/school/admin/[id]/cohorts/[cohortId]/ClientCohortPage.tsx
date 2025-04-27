@@ -403,8 +403,6 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     };
 
     useEffect(() => {
-        console.log("useEffect running with cohortId:", cohortId);
-
         const fetchCohort = async () => {
             if (!cohortId || cohortId === 'undefined') {
                 console.error("Invalid cohortId:", cohortId);
@@ -415,17 +413,13 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             setLoading(true);
             try {
                 const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}`;
-                console.log("Fetch URL:", url);
 
                 const cohortResponse = await fetch(url);
-                console.log("Response status:", cohortResponse.status);
-
                 if (!cohortResponse.ok) {
                     throw new Error(`API error: ${cohortResponse.status}`);
                 }
 
                 const cohortData = await cohortResponse.json();
-                console.log("Cohort data received:", cohortData);
 
                 setCohort(cohortData);
                 setLoading(false);

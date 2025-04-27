@@ -72,14 +72,6 @@ export const EditorProvider: React.FC<EditorProviderProps> = ({
     }, []);
 
     const updateBlockContent = useCallback((id: string, content: string) => {
-        console.log('Updating block content:', id, content);
-
-        // Check if the content appears to be reversed (for debugging)
-        // This helps identify if the reversal is happening before or after this point
-        const firstChar = content.charAt(0);
-        const lastChar = content.charAt(content.length - 1);
-        console.log('First character:', firstChar, 'Last character:', lastChar);
-
         setBlocks(prevBlocks =>
             prevBlocks.map(block =>
                 block.id === id ? { ...block, content } : block

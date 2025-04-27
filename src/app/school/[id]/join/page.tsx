@@ -56,8 +56,6 @@ export default function JoinCohortPage() {
                     }),
                 });
 
-                console.log(response)
-
                 if (!response.ok) {
                     // Check for 400 status code (already in cohort)
                     if (response.status === 400) {
