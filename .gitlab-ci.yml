@@ -29,7 +29,7 @@ test-and-upload-coverage:
     - chmod +x codecov
 
     # 3 — Upload the LCOV report
-    - ./codecov upload-process -f coverage/lcov.info --git-service gitlab
+    - ./codecov upload-process -f coverage/lcov.info --git-service gitlab -C "$(git rev-parse HEAD)"
   artifacts:
     paths:
       - coverage/                     # lets you download the HTML report
