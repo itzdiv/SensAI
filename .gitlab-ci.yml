@@ -22,7 +22,7 @@ test-and-upload-coverage:
     - npm run test:coverage -- --maxWorkers=2
 
     # 2 — Download Codecov uploader (bash uploader is deprecated)
-    - curl -Os https://cli.codecov.io/v10.4.0/macos/codecov
+    - curl -Os https://cli.codecov.io/v10.4.0/linux/codecov
     - chmod +x codecov
 
     # 3 — Upload the LCOV report
