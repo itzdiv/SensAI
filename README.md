@@ -38,12 +38,18 @@ The app will be available at `http://localhost:3000`.
 
 SensAI uses Jest and React Testing Library for testing. The test suite includes unit tests and component tests to ensure code quality and prevent regressions. Codecov is used to track the coverage of the tests.
 
-### Running Tests
+- Run all tests (and generate a coverage report):
+  ```
+  npm run test:ci
+  ```
 
-- Run all tests:
+- (optional) Upload the coverage report to Codecov:
   ```
-  npm test
+  curl -Os https://cli.codecov.io/v10.4.0/macos/codecov
+  chmod +x codecov
+  ./codecov upload-process -f coverage/lcov.info
   ```
+
 
 ## Community
 We are building a community of creators, builders, teachers, learners, parents, entrepreneurs, non-profits and volunteers who are excited about the future of AI and education. If you identify as one and want to be part of it, consider [joining our community](https://chat.whatsapp.com/LmiulDbWpcXIgqNK6fZyxe).

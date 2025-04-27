@@ -11,27 +11,23 @@ cache:
     - node_modules/
 
 # Job for running tests and uploading coverage
-test:
+variables:
+  NEXT_TELEMETRY_DISABLED: "1"   # keep CI quiet
+
+test-and-upload-coverage:
   stage: test
-  before_script:
-    - apk add --no-cache curl bash git
-    - npm ci
   script:
-    - npm run test:ci
-    - curl -Os https://uploader.codecov.io/latest/linux/codecov
+    # 1 — Install & test
+    - npm ci
+    - npm run test:coverage -- --maxWorkers=2
+
+    # 2 — Download Codecov uploader (bash uploader is deprecated)
+    - curl -Os https://cli.codecov.io/v10.4.0/macos/codecov
     - chmod +x codecov
-    - ./codecov -t ${CODECOV_TOKEN} -f coverage/lcov.info
-  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+
+    # 3 — Upload the LCOV report
+    - ./codecov upload-process -f coverage/lcov.info
   artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
     paths:
-      - coverage/
-      - jest-results.json
+      - coverage/                     # lets you download the HTML report
     expire_in: 1 week
-  # Run on main branch or when merge request is created/updated to main
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
-    - if: $CI_COMMIT_BRANCH == "main" 
