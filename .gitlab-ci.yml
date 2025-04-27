@@ -17,15 +17,18 @@ variables:
 test-and-upload-coverage:
   stage: test
   script:
-    # 1 — Install & test
+    # 0 — Install curl
+    - apk add --no-cache curl
+    
+    # 1 — Install & test
     - npm ci
     - npm run test:coverage -- --maxWorkers=2
 
-    # 2 — Download Codecov uploader (bash uploader is deprecated)
+    # 2 — Download Codecov uploader (bash uploader is deprecated)
     - curl -Os https://cli.codecov.io/v10.4.0/linux/codecov
     - chmod +x codecov
 
-    # 3 — Upload the LCOV report
+    # 3 — Upload the LCOV report
     - ./codecov upload-process -f coverage/lcov.info
   artifacts:
     paths:
