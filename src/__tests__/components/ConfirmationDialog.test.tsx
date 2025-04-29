@@ -6,6 +6,8 @@ describe('ConfirmationDialog Component', () => {
     // Mock functions for callbacks
     const mockOnConfirm = jest.fn();
     const mockOnCancel = jest.fn();
+    const mockOnClose = jest.fn();
+    const mockOnClickOutside = jest.fn();
 
     beforeEach(() => {
         // Reset mocks before each test
@@ -52,6 +54,22 @@ describe('ConfirmationDialog Component', () => {
         expect(screen.getByText('Ready to publish?')).toBeInTheDocument();
         expect(screen.getByText('Make sure your content is complete and reviewed for errors before publishing')).toBeInTheDocument();
         expect(screen.getByText('Publish Now')).toBeInTheDocument();
+    });
+
+    it('should render with default save props when type is save', () => {
+        render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                open={true}
+                type="save"
+            />
+        );
+
+        expect(screen.getByText('Save changes?')).toBeInTheDocument();
+        expect(screen.getByText('Do you want to save your changes?')).toBeInTheDocument();
+        expect(screen.getByText('Save')).toBeInTheDocument();
+        expect(screen.getByText('Cancel')).toBeInTheDocument();
     });
 
     it('should use custom title, message and button text when provided', () => {
@@ -157,5 +175,141 @@ describe('ConfirmationDialog Component', () => {
         );
 
         expect(screen.getByText('Confirm deletion')).toBeInTheDocument();
+    });
+
+    it('should call onClickOutside when provided and backdrop is clicked', () => {
+        render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                onClickOutside={mockOnClickOutside}
+                open={true}
+            />
+        );
+
+        // Click on the backdrop (the fixed div)
+        fireEvent.click(screen.getByText('Confirm deletion').parentElement?.parentElement?.parentElement!);
+        expect(mockOnClickOutside).toHaveBeenCalledTimes(1);
+        expect(mockOnCancel).not.toHaveBeenCalled();
+    });
+
+    it('should render children when provided', () => {
+        render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                open={true}
+            >
+                <div data-testid="custom-content">Custom Dialog Content</div>
+            </ConfirmationDialog>
+        );
+
+        expect(screen.getByTestId('custom-content')).toBeInTheDocument();
+        expect(screen.getByText('Custom Dialog Content')).toBeInTheDocument();
+    });
+
+    it('should render close button when showCloseButton is true', () => {
+        render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                open={true}
+                showCloseButton={true}
+            />
+        );
+
+        // The close button has an X icon, so we need to find it by its role and position
+        const closeButton = document.querySelector('button.absolute.top-4.right-4');
+        expect(closeButton).toBeInTheDocument();
+    });
+
+    it('should call onClose when close button is clicked if provided', () => {
+        render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                onClose={mockOnClose}
+                open={true}
+                showCloseButton={true}
+            />
+        );
+
+        const closeButton = document.querySelector('button.absolute.top-4.right-4');
+        fireEvent.click(closeButton!);
+        expect(mockOnClose).toHaveBeenCalledTimes(1);
+        expect(mockOnCancel).not.toHaveBeenCalled();
+    });
+
+    it('should call onCancel when close button is clicked if onClose is not provided', () => {
+        render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                open={true}
+                showCloseButton={true}
+            />
+        );
+
+        const closeButton = document.querySelector('button.absolute.top-4.right-4');
+        fireEvent.click(closeButton!);
+        expect(mockOnCancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('should apply correct button styling based on type', () => {
+        // Test delete button styling
+        const { unmount: unmountDelete } = render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                open={true}
+                type="delete"
+            />
+        );
+
+        let confirmButton = screen.getByText('Delete').closest('button');
+        expect(confirmButton).toHaveClass('bg-red-800');
+        unmountDelete();
+
+        // Test publish button styling
+        const { unmount: unmountPublish } = render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                open={true}
+                type="publish"
+            />
+        );
+
+        confirmButton = screen.getByText('Publish Now').closest('button');
+        expect(confirmButton).toHaveClass('bg-green-800');
+        unmountPublish();
+
+        // Test save button styling
+        const { unmount: unmountSave } = render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                open={true}
+                type="save"
+            />
+        );
+
+        confirmButton = screen.getByText('Save').closest('button');
+        expect(confirmButton).toHaveClass('bg-yellow-500');
+        expect(confirmButton).toHaveClass('text-black');
+        unmountSave();
+
+        // Test custom button styling
+        render(
+            <ConfirmationDialog
+                onConfirm={mockOnConfirm}
+                onCancel={mockOnCancel}
+                open={true}
+                type="custom"
+            />
+        );
+
+        confirmButton = screen.getByText('Delete').closest('button');
+        expect(confirmButton).toHaveClass('bg-blue-600');
     });
 }); 

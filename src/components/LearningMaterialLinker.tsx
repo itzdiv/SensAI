@@ -313,7 +313,7 @@ const LearningMaterialLinker = ({
                                 )}
                             </div>
 
-                            <div className="max-h-64 overflow-y-auto py-2 px-2">
+                            <div className="max-h-48 overflow-y-auto py-2 px-2">
                                 {isLoadingLearningMaterials ? (
                                     <div className="flex justify-center items-center py-4">
                                         <div className="w-6 h-6 border-2 border-t-purple-500 border-r-purple-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>

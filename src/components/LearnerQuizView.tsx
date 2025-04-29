@@ -1506,7 +1506,7 @@ export default function LearnerQuizView({
     // Effect to start pulsing animation after entrance animation completes
     useEffect(() => {
         // Check if user has clicked the FAB before
-        const hasClickedFAB = safeLocalStorage.getItem('hasClickedViewModeButton') === 'true';
+        const hasClickedFAB = safeLocalStorage.getItem('hasClickedQuizViewToggleButton') === 'true';
 
         if (hasClickedFAB) {
             // If user has clicked before, don't show animations
@@ -1970,8 +1970,8 @@ export default function LearnerQuizView({
             {/* Mobile view floating button */}
             <button
                 onClick={toggleMobileMenu}
-                className={`fixed right-6 w-14 h-14 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none mobile-view-button ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
-                style={{ bottom: '160px' }}
+                className={`fixed right-4 w-14 h-14 rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none mobile-view-button ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
+                style={{ bottom: '150px' }}
                 aria-label="View options"
             >
                 {isMobileMenuOpen ? (
@@ -1999,7 +1999,7 @@ export default function LearnerQuizView({
 
             {/* Mobile view menu */}
             {isMobileMenuOpen && (
-                <div className="fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '240px' }} ref={mobileMenuRef}>
+                <div className="fixed right-4 flex flex-col gap-4 items-end z-20" style={{ bottom: '220px' }} ref={mobileMenuRef}>
                     {/* Question Only Button */}
                     <div className="flex items-center gap-3">
                         <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
