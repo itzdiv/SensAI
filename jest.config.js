@@ -25,7 +25,7 @@ module.exports = {
     '^(?!.*\\.(js|jsx|ts|tsx|css|json)$)': '<rootDir>/test/config/fileTransform.js',
   },
   transformIgnorePatterns: [
-    '/node_modules/',
+    '/node_modules/(?!(react-markdown|remark-gfm|unist|unified|bail|is-plain-obj|trough|vfile|remark|remark-parse|mdast-util|micromark|decode-named-character-reference|character-entities|property-information|space-separated-tokens|comma-separated-tokens|hast-util|html-void-elements|estree-util|devlop)/)',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
   moduleNameMapper: {

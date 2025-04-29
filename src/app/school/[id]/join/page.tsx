@@ -131,7 +131,7 @@ export default function JoinCohortPage() {
                             You have been successfully added to the cohort
                         </p>
                         <p className="text-gray-400 mb-8">
-                            Redirecting you to the school page...
+                            Taking you to the school...
                         </p>
                     </>
                 )}

@@ -215,7 +215,7 @@ export default function CreateSchool() {
                 duration: 4,
                 ease: "easeInOut",
                 repeat: Infinity,
-                repeatType: "loop"
+                repeatType: "loop" as const
             }
         }
     };
@@ -227,40 +227,38 @@ export default function CreateSchool() {
 
     return (
         <>
-            <Header showCreateCourseButton={false} />
-
             <div className="flex min-h-screen flex-col bg-black text-white">
-                {/* Close button */}
-                <div className="absolute top-20 right-1/4 z-10">
+                {/* Close button - repositioned for better mobile experience */}
+                <div className="absolute top-5 right-4 sm:right-6 md:right-8 lg:right-12 z-10">
                     <button
                         onClick={handleGoBack}
-                        className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition-colors focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-900 flex items-center justify-center hover:bg-gray-800 transition-colors focus:outline-none focus:ring-0 focus:border-0 cursor-pointer"
                         aria-label="Close and return to home"
                     >
-                        <X className="w-5 h-5 text-white" />
+                        <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </button>
                 </div>
 
-                <main className="container mx-auto px-4 py-8 max-w-3xl">
+                <main className="container mt-10 sm:mt-20 mx-auto px-4 sm:px-6 py-8 max-w-3xl">
                     {isLoadingSchools ? (
                         <div className="flex justify-center items-center py-12">
                             <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                         </div>
                     ) : (
                         <>
-                            <h1 className="text-3xl font-light mb-8 text-center">Create Your School</h1>
+                            <h1 className="text-3xl font-light mb-6 sm:mb-8 text-center">Create Your School</h1>
 
-                            <form onSubmit={handleSubmit} className="space-y-8">
+                            <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                                 {/* School Name */}
                                 <div>
-                                    <h2 className="text-2xl font-light mb-2">School Name</h2>
-                                    <p className="text-gray-400 text-sm mb-2">This is usually your name or the name of your business.</p>
+                                    <h2 className="text-xl sm:text-2xl font-light mb-2">School Name</h2>
+                                    <p className="text-gray-400 text-sm mb-2">This is usually your name or the name of your organization.</p>
                                     <input
                                         id="schoolName"
                                         type="text"
                                         value={schoolName}
                                         onChange={(e) => setSchoolName(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-md bg-[#161925] border border-gray-800 text-white focus:outline-none focus:ring-1 focus:ring-white"
+                                        className="w-full px-3 sm:px-4 py-3 rounded-md bg-[#161925] border border-gray-800 text-white focus:outline-none focus:ring-1 focus:ring-white"
                                         required
                                         maxLength={40}
                                     />
@@ -271,10 +269,10 @@ export default function CreateSchool() {
 
                                 {/* School URL */}
                                 <div>
-                                    <h2 className="text-2xl font-light mb-2">School URL</h2>
-                                    <p className="text-gray-400 text-sm mb-2">This is how your school will be accessed online.</p>
-                                    <div className="flex">
-                                        <div className={`bg-[#161925] px-4 py-3 rounded-l-md text-gray-300 border border-gray-800 ${slugError ? 'border-red-500' : ''}`}>
+                                    <h2 className="text-xl sm:text-2xl font-light mb-2">School Link</h2>
+                                    <p className="text-gray-400 text-sm mb-2">This is how your school will be accessed online by your learners</p>
+                                    <div className="flex flex-col sm:flex-row">
+                                        <div className={`bg-[#161925] px-3 sm:px-4 py-3 rounded-t-md sm:rounded-l-md sm:rounded-tr-none text-gray-300 border border-gray-800 sm:text-sm md:text-base overflow-x-auto whitespace-nowrap ${slugError ? 'border-red-500' : ''}`}>
                                             {baseUrl}
                                         </div>
                                         <input
@@ -282,28 +280,28 @@ export default function CreateSchool() {
                                             type="text"
                                             value={slug}
                                             onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                                            className={`flex-1 px-4 py-3 rounded-r-md bg-[#161925] border border-gray-800 border-l-0 text-white focus:outline-none focus:ring-1 focus:ring-white ${slugError ? 'border-red-500' : ''}`}
+                                            className={`flex-1 px-3 sm:px-4 py-3 rounded-b-md sm:rounded-r-md sm:rounded-bl-none bg-[#161925] border border-gray-800 sm:border-l-0 border-t-0 sm:border-t text-white focus:outline-none focus:ring-1 focus:ring-white ${slugError ? 'border-red-500' : ''}`}
                                             required
                                             pattern="[a-z0-9-]+"
                                             title="Only lowercase letters, numbers, and hyphens are allowed"
                                             maxLength={121}
                                         />
                                     </div>
-                                    <div className="flex justify-between text-sm mt-1">
+                                    <div className="flex flex-col sm:flex-row justify-between text-sm mt-1">
                                         {slugError && (
-                                            <p className="text-red-500">{slugError}</p>
+                                            <p className="text-red-500 mb-1 sm:mb-0">{slugError}</p>
                                         )}
-                                        <div className={`text-gray-400 ${slugError ? 'ml-auto' : 'w-full text-right'}`}>
+                                        <div className={`text-gray-400 ${slugError ? 'sm:ml-auto' : 'w-full text-right'}`}>
                                             {slug.length}/121
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Submit Button */}
-                                <div className="pt-6 flex justify-center">
+                                <div className="pt-4 sm:pt-6 flex justify-center">
                                     <button
                                         type="submit"
-                                        className="px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+                                        className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
                                         disabled={isSubmitting}
                                     >
                                         {isSubmitting ? 'Creating...' : 'Create School'}
@@ -317,12 +315,12 @@ export default function CreateSchool() {
 
             {/* Success Dialog with Framer Motion animations */}
             {showSuccessDialog && (
-                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center overflow-hidden">
-                    {/* Shooting Stars using Framer Motion */}
+                <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center overflow-hidden px-4">
+                    {/* Shooting Stars using Framer Motion - adjusted for mobile */}
                     {Array.from({ length: 8 }).map((_, i) => {
                         const top = Math.random() * 40; // Random starting position
                         const left = Math.random() * 100 + 50; // Random starting position
-                        const width = Math.random() * 140 + 60; // Between 60px and 200px
+                        const width = Math.random() * 100 + 40; // Adjusted for mobile: Between 40px and 140px
                         const delay = Math.random() * 2; // Random delay
 
                         return (
@@ -350,10 +348,10 @@ export default function CreateSchool() {
                         );
                     })}
 
-                    {/* Floating Orbs using Framer Motion */}
-                    {Array.from({ length: 10 }).map((_, i) => {
-                        const left = (i % 5) * 20 + 10; // 5 orbs per row, evenly spaced
-                        const size = 8 + (i % 3) * 4; // 8px, 12px, or 16px
+                    {/* Floating Orbs using Framer Motion - reduced quantity for mobile */}
+                    {Array.from({ length: 6 }).map((_, i) => {
+                        const left = (i % 3) * 30 + 10; // 3 orbs per row, evenly spaced
+                        const size = 6 + (i % 3) * 3; // Smaller sizes for mobile: 6px, 9px, or 12px
                         const delay = i * 0.4; // Sequential delays
                         const hue = i % 2 === 0 ? 210 + (i * 5) : 180 - (i * 3); // Blues/purples
 
@@ -379,7 +377,7 @@ export default function CreateSchool() {
                                     delay,
                                     duration: 4,
                                     repeat: Infinity,
-                                    repeatType: "loop",
+                                    repeatType: "loop" as const,
                                     ease: "easeInOut"
                                 }}
                             />
@@ -391,15 +389,15 @@ export default function CreateSchool() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.5 }}
-                        className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[2px] rounded-lg max-w-md w-full mx-4 relative z-60"
+                        className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[2px] rounded-lg max-w-md w-full mx-auto relative z-60"
                     >
-                        <div className="bg-black rounded-lg p-8 flex flex-col items-center text-center">
-                            <h2 className="text-4xl font-light text-white mb-4">Your School is Ready!</h2>
-                            <p className="text-xl font-light text-white mb-8">An epic journey begins now</p>
+                        <div className="bg-black rounded-lg p-6 sm:p-8 flex flex-col items-center text-center">
+                            <h2 className="text-3xl sm:text-4xl font-light text-white mb-3 sm:mb-4">Your School is Ready!</h2>
+                            <p className="text-lg sm:text-xl font-light text-white mb-6 sm:mb-8">An epic journey begins now</p>
 
                             <button
                                 onClick={navigateToSchool}
-                                className="px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
+                                className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                             >
                                 Open My School
                             </button>

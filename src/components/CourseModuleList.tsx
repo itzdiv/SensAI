@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Clipboard, Check, Loader2, Copy } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownExpand, Plus, HelpCircle, Trash, Clipboard, Check, Loader2, Copy, FileText, Brain, BookOpen, PenSquare, FileQuestion, ClipboardList } from "lucide-react";
 import { Module, ModuleItem, Quiz } from "@/types/course";
 import { QuizQuestion } from "@/types/quiz"; // Import from types instead
 import CourseItemDialog from "@/components/CourseItemDialog";
@@ -755,17 +755,38 @@ export default function CourseModuleList({
                                                 }`}
                                             onClick={() => onOpenItem && !item.isGenerating && onOpenItem(module.id, item.id)}
                                         >
-                                            <div className={`flex items-center mr-4 sm:mr-2 ${completedItems[item.id]
-                                                ? "text-gray-400"
-                                                : (item.type === 'quiz') &&
-                                                    completedQuestionIds[item.id] &&
-                                                    Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
-                                                    ? "text-yellow-500"
-                                                    : "text-gray-400"
+                                            <div className={`flex items-center justify-center mr-4 sm:mr-2 ${completedItems[item.id]
+                                                ? "opacity-50"
+                                                : "opacity-100"
                                                 }`}>
-                                                {item.type === 'material' ? <BookOpen size={16} /> :
-                                                    item.type === 'quiz' ? <HelpCircle size={16} /> :
-                                                        <Clipboard size={16} />}
+                                                {/* Enhanced visual distinction with color and better icons */}
+                                                {item.type === 'material' ? (
+                                                    <div className={`w-7 h-7 rounded-md flex items-center justify-center ${completedItems[item.id]
+                                                        ? "bg-green-500/15"
+                                                        : "bg-blue-500/15"
+                                                        }`}>
+                                                        <BookOpen size={16} className={`${completedItems[item.id]
+                                                            ? "text-green-500"
+                                                            : "text-blue-400"
+                                                            }`} />
+                                                    </div>
+                                                ) : (
+                                                    <div className={`w-7 h-7 rounded-md flex items-center justify-center ${completedItems[item.id]
+                                                        ? "bg-green-500/15"
+                                                        : (completedQuestionIds[item.id] &&
+                                                            Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
+                                                            ? "bg-yellow-500/15"
+                                                            : "bg-purple-500/15")
+                                                        }`}>
+                                                        <ClipboardList size={16} className={completedItems[item.id]
+                                                            ? "text-green-500"
+                                                            : completedQuestionIds[item.id] &&
+                                                                Object.keys(completedQuestionIds[item.id]).some(qId => completedQuestionIds[item.id][qId] === true)
+                                                                ? "text-yellow-500"
+                                                                : "text-white"
+                                                        } />
+                                                    </div>
+                                                )}
 
                                                 {/* Add a small generating indicator if the item is still being generated */}
                                                 {item.isGenerating && (
@@ -952,10 +973,10 @@ export default function CourseModuleList({
                         )}
                     </div>
                 ))}
-            </div>
+            </div >
 
             {/* Add CourseItemDialog inside the CourseModuleList component */}
-            <CourseItemDialog
+            < CourseItemDialog
                 isOpen={isDialogOpen}
                 activeItem={activeItem}
                 activeModuleId={activeModuleId}
@@ -978,8 +999,9 @@ export default function CourseModuleList({
             />
 
             {/* Module deletion confirmation dialog */}
-            <ConfirmationDialog
-                open={moduleToDelete !== null}
+            < ConfirmationDialog
+                open={moduleToDelete !== null
+                }
                 title="Are you sure you want to delete this module?"
                 message="All tasks within this module will be permanently removed. This action cannot be undone."
                 confirmButtonText="Delete Module"
@@ -989,17 +1011,19 @@ export default function CourseModuleList({
             />
 
             {/* Task deletion confirmation dialog */}
-            {taskToDelete && (
-                <ConfirmationDialog
-                    open={taskToDelete !== null}
-                    title={`Are you sure you want to delete this ${getItemTypeName(taskToDelete.itemType)}?`}
-                    message={`This ${getItemTypeName(taskToDelete.itemType)} will be permanently removed. This action cannot be undone.`}
-                    confirmButtonText={`Delete`}
-                    onConfirm={handleConfirmTaskDelete}
-                    onCancel={handleCancelTaskDelete}
-                    type="delete"
-                />
-            )}
+            {
+                taskToDelete && (
+                    <ConfirmationDialog
+                        open={taskToDelete !== null}
+                        title={`Are you sure you want to delete this ${getItemTypeName(taskToDelete.itemType)}?`}
+                        message={`This ${getItemTypeName(taskToDelete.itemType)} will be permanently removed. This action cannot be undone.`}
+                        confirmButtonText={`Delete`}
+                        onConfirm={handleConfirmTaskDelete}
+                        onCancel={handleCancelTaskDelete}
+                        type="delete"
+                    />
+                )
+            }
         </>
     );
 } 

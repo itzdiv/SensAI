@@ -147,9 +147,9 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
         );
     }
 
-    if (!isLoadingMetrics && (!courseMetrics || Object.keys(courseMetrics).length === 0)) {
+    if (!isLoadingMetrics && (courseMetrics === null || !courseMetrics || Object.keys(courseMetrics).length === 0)) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 rounded-lg">
+            <div className="flex flex-col items-center justify-center py-20 rounded-lg" data-testid="empty-course-state">
                 <h2 className="text-4xl font-light mb-4">Empty Course</h2>
                 <p className="text-gray-400 mb-8">Add tasks to this course to view usage data and metrics</p>
             </div>
@@ -177,6 +177,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                             <div className="relative inline-block">
                                 <button
                                     id="course-dropdown-button"
+                                    data-testid="course-dropdown-button"
                                     className="flex items-center justify-between min-w-[240px] px-4 py-2 bg-[#111] rounded-md hover:bg-[#222] transition-colors cursor-pointer"
                                     onClick={() => {
                                         const dropdown = document.getElementById('course-dropdown');

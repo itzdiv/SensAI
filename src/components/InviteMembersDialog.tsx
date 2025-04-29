@@ -70,7 +70,7 @@ export default function InviteMembersDialog({ open, onClose, onInvite }: InviteM
         if (!value.trim()) {
             newErrors[index] = 'Email is required';
         } else if (!validateEmail(value)) {
-            newErrors[index] = 'Invalid email';
+            newErrors[index] = 'Please enter a valid email';
         } else {
             newErrors[index] = '';
         }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ModuleItem, Module } from "@/types/course";
 import CourseModuleList from "./CourseModuleList";
 import dynamic from "next/dynamic";
-import { X, CheckCircle, BookOpen, HelpCircle, Clipboard, ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { X, CheckCircle, BookOpen, HelpCircle, Clipboard, ChevronLeft, ChevronRight, Menu, FileText, Brain, ClipboardList, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import confetti from "canvas-confetti";
 import SuccessSound from "./SuccessSound";
@@ -1021,23 +1021,32 @@ export default function LearnerCourseView({
                                                 }`}
                                             onClick={() => openTaskItem(activeModuleId, item.id)}
                                         >
-                                            <div className={`flex items-center mr-2 ${completedTasks[item.id]
-                                                ? "text-green-500"
-                                                : (item.type === 'quiz') &&
-                                                    // Match the same condition for the icon color
-                                                    localCompletedQuestionIds[item.id] &&
-                                                    Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
-                                                    ? "text-yellow-500"
-                                                    : "text-gray-400"
-                                                }`}>
-                                                {completedTasks[item.id]
-                                                    ? <CheckCircle size={14} />
-                                                    : item.type === 'material'
-                                                        ? <BookOpen size={14} />
-                                                        : item.type === 'quiz'
-                                                            ? <HelpCircle size={14} />
-                                                            : <Clipboard size={14} />
-                                                }
+                                            <div className={`flex items-center mr-2}`}>
+                                                {completedTasks[item.id] ? (
+                                                    <div className="w-7 h-7 rounded-md flex items-center justify-center">
+                                                        <CheckCircle size={16} className="text-green-500" />
+                                                    </div>
+                                                ) : item.type === 'material' ? (
+                                                    <div className="w-7 h-7 rounded-md flex items-center justify-center">
+                                                        <BookOpen size={16} className="text-blue-400" />
+                                                    </div>
+                                                ) : (
+                                                    <div className={`w-7 h-7 rounded-md flex items-center justify-center`}>
+                                                        <ClipboardList size={16} className={
+                                                            localCompletedQuestionIds[item.id] &&
+                                                                Object.keys(localCompletedQuestionIds[item.id]).some(qId => localCompletedQuestionIds[item.id][qId] === true)
+                                                                ? "text-yellow-500"
+                                                                : "text-purple-500"
+                                                        } />
+                                                    </div>
+                                                )}
+
+                                                {/* Add a small generating indicator if the item is still being generated */}
+                                                {item.isGenerating && (
+                                                    <div className="ml-2 animate-pulse">
+                                                        <Loader2 size={12} className="animate-spin text-gray-400" />
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className={`flex-1 text-sm ${completedTasks[item.id]
                                                 ? "text-green-500"
@@ -1179,7 +1188,7 @@ export default function LearnerCourseView({
 
                             {/* Dialog Content */}
                             <div
-                                className="flex-1 overflow-y-auto p-0 dialog-content-editor relative"
+                                className="flex-1 overflow-y-auto p-0 dialog-content-editor relative lg:pb-0 pb-[60px]"
                                 style={{ height: 'calc(100vh - 140px)' }}
                             >
                                 {isLoading ? (
@@ -1246,6 +1255,37 @@ export default function LearnerCourseView({
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Mobile Navigation Footer - Only visible on mobile */}
+            {isDialogOpen && activeItem && (
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#111111] border-t border-gray-800 z-50 px-4 py-3 flex justify-between items-center max-h-[60px]">
+                    {!isFirstTask() && getPreviousTaskInfo() ? (
+                        <button
+                            onClick={goToPreviousTask}
+                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white bg-[#222222] cursor-pointer"
+                            aria-label="Previous task"
+                        >
+                            <ChevronLeft size={16} className="mr-1" />
+                            <span className="max-w-[100px] truncate">{getPreviousTaskInfo()?.title}</span>
+                        </button>
+                    ) : (
+                        <div></div>
+                    )}
+
+                    {!isLastTask() && getNextTaskInfo() ? (
+                        <button
+                            onClick={goToNextTask}
+                            className="flex items-center px-4 py-2 text-sm rounded-md transition-colors text-white bg-[#222222] cursor-pointer"
+                            aria-label="Next task"
+                        >
+                            <span className="max-w-[100px] truncate">{getNextTaskInfo()?.title}</span>
+                            <ChevronRight size={16} className="ml-1" />
+                        </button>
+                    ) : (
+                        <div></div>
+                    )}
                 </div>
             )}
 

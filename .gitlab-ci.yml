@@ -4,6 +4,11 @@ image: node:20-alpine
 stages:
   - test
 
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+    - if: $CI_COMMIT_BRANCH == "main"
+    
 # Cache dependencies to speed up builds
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -29,7 +34,11 @@ test-and-upload-coverage:
     - chmod +x codecov
 
     # 3 — Upload the LCOV report
-    - ./codecov upload-process -f coverage/lcov.info --git-service gitlab
+    - |
+      # Pick the right variable for every pipeline type
+      BRANCH_NAME="${CI_COMMIT_REF_NAME:-$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}"
+    
+      ./codecov upload-process -f coverage/lcov.info --git-service gitlab --branch "$BRANCH_NAME" --sha "$CI_COMMIT_SHA"
   artifacts:
     paths:
       - coverage/                     # lets you download the HTML report
