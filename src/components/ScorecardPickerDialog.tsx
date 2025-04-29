@@ -267,7 +267,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         if (!hasSchoolScorecards || activeTab !== 'yours') return null;
 
         return (
-            <div className="max-h-[240px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
+            <div className="max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
                 {schoolScorecards.map((template) => (
                     <div
                         key={template.id}

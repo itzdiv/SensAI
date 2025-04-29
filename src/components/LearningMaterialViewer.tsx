@@ -3,7 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useEffect, useRef, useState, useCallback } from "react";
-import { MessageCircle, X, CheckCircle, HelpCircle } from "lucide-react";
+import { MessageCircle, X, CheckCircle, HelpCircle, MoreVertical, Menu, MoreHorizontal, Settings, PlusCircle, ListChecks } from "lucide-react";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -107,7 +107,7 @@ export default function LearningMaterialViewer({
 
     // Check localStorage on component mount
     useEffect(() => {
-        const hasClicked = safeLocalStorage.getItem('hasClickedFabButton') === 'true';
+        const hasClicked = safeLocalStorage.getItem('hasClickedLMActionsButton') === 'true';
         setHasClickedFabButton(hasClicked);
     }, []);
 
@@ -421,7 +421,7 @@ export default function LearningMaterialViewer({
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                <div data-testid="loading-spinner" className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
             </div>
         );
     }
@@ -734,7 +734,8 @@ export default function LearningMaterialViewer({
                                     toggleMobileMenu();
                                 }
                             }}
-                            className={`fixed right-6 bottom-6 mobile-action-toggle-button mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
+                            className={`fixed right-6 bottom-12 mobile-action-toggle-button mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-lg z-20 cursor-pointer transition-transform duration-300 focus:outline-none ${showButtonEntrance ? 'button-entrance' : ''} ${showButtonPulse ? 'button-pulse' : ''}`}
+                            style={{ bottom: '100px' }}
                             aria-label={isMobileMenuOpen ? "Close menu" : "Ask a doubt"}
                         >
                             {isMobileMenuOpen ? (
@@ -744,16 +745,15 @@ export default function LearningMaterialViewer({
                                     {/* 
                                   In mobile view:
                                   - Show MessageCircle directly if onMarkComplete is not defined
-                                  - Show HelpCircle as toggle icon if onMarkComplete exists
+                                  - Show ListChecks as toggle icon if onMarkComplete exists (representing task actions)
                                 */}
                                     <span className="lg:hidden">
                                         {!onMarkComplete ? (
                                             <MessageCircle className="h-6 w-6" />
                                         ) : (
-                                            <HelpCircle className="h-6 w-6" strokeWidth={2.5} fill="rgba(147, 51, 234, 0.1)" />
+                                            <ListChecks className="h-6 w-6" strokeWidth={2} />
                                         )}
-                                    </span>
-                                    <span className="hidden lg:flex lg:items-center">
+                                    </span>                                    <span className="hidden lg:flex lg:items-center">
                                         <MessageCircle className="h-5 w-5 mobile-icon" />
                                         <span className="lg:ml-2">Ask a doubt</span>
                                     </span>
@@ -773,7 +773,7 @@ export default function LearningMaterialViewer({
 
                         {/* Mobile menu - only shown on smaller screens and when onMarkComplete exists */}
                         {isMobileMenuOpen && onMarkComplete && (
-                            <div className="lg:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '100px' }} ref={mobileMenuRef}>
+                            <div className="lg:hidden fixed right-6 flex flex-col gap-4 items-end z-20" style={{ bottom: '170px' }} ref={mobileMenuRef}>
                                 {/* Ask a doubt button */}
                                 <div className="flex items-center gap-3">
                                     <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
@@ -784,7 +784,7 @@ export default function LearningMaterialViewer({
                                             setIsMobileMenuOpen(false);
                                             handleAskDoubt();
                                         }}
-                                        className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                                        className="mobile-action-button rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
                                         aria-label="Ask a doubt"
                                     >
                                         <MessageCircle className="h-6 w-6" />
@@ -801,7 +801,7 @@ export default function LearningMaterialViewer({
                                             setIsMobileMenuOpen(false);
                                             onMarkComplete();
                                         }}
-                                        className="mobile-action-button rounded-full bg-purple-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
+                                        className="mobile-action-button rounded-full bg-green-700 text-white flex items-center justify-center shadow-md cursor-pointer hover:bg-purple-600 transition-colors"
                                         aria-label="Mark as complete"
                                     >
                                         <CheckCircle className="h-6 w-6" />
@@ -814,4 +814,5 @@ export default function LearningMaterialViewer({
             }
         </div>
     );
-} 
+}
+

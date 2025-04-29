@@ -315,7 +315,16 @@ export function Header({
                         >
                             {mobileActionsOpen ?
                                 <X className="h-6 w-6" /> :
-                                <Plus className="h-6 w-6" />
+                                hasOwnedSchool ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                                        <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+                                        <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+                                        <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+                                        <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+                                    </svg>
+                                ) : (
+                                    <Plus className="h-6 w-6" />
+                                )
                             }
                         </button>
 
@@ -348,22 +357,9 @@ export function Header({
                                     </div>
                                 )}
 
-                                {/* Create Course Button */}
-                                {/* <div className="flex items-center gap-3">
-                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                        Create a Course
-                                    </span>
-                                    <button
-                                        onClick={handleCreateCourseButtonClick}
-                                        className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
-                                        aria-label="Create a course"
-                                    >
-                                        <Book className="h-6 w-6" />
-                                    </button>
-                                </div> */}
 
                                 {/* Go To School Button - only shown if hasOwnedSchool is true */}
-                                {hasOwnedSchool && (
+                                {hasOwnedSchool ? (
                                     <div className="flex items-center gap-3">
                                         <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
                                             Go To School
@@ -376,7 +372,18 @@ export function Header({
                                             <School className="h-6 w-6" />
                                         </button>
                                     </div>
-                                )}
+                                ) : /* Create Course Button */ <div className="flex items-center gap-3">
+                                    <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
+                                        Create a Course
+                                    </span>
+                                    <button
+                                        onClick={handleCreateCourseButtonClick}
+                                        className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-md cursor-pointer"
+                                        aria-label="Create a course"
+                                    >
+                                        <Book className="h-6 w-6" />
+                                    </button>
+                                </div>}
                             </div>
                         )}
                     </div>

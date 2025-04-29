@@ -2303,7 +2303,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     </div>
                                 </div>
 
-                                <div className="w-full flex">
+                                <div className="w-full h-full flex">
                                     {/* Show content based on active tab */}
                                     {activeEditorTab === 'question' ? (
                                         <div className="w-full">

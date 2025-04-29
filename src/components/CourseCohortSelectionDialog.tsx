@@ -196,7 +196,7 @@ export const CourseCohortSelectionDialog = ({
             <div className="max-h-72 overflow-y-auto py-2 px-2">
                 {showLoading ? (
                     <div className="flex justify-center items-center py-6">
-                        <div className="w-8 h-8 border-2 border-t-green-500 border-r-green-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                        <div className="w-8 h-8 border-2 border-t-green-500 border-r-green-500 border-b-transparent border-l-transparent rounded-full animate-spin" data-testid="loading-spinner"></div>
                     </div>
                 ) : hasError ? (
                     <div className="p-4 text-center">
