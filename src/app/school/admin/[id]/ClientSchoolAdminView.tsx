@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/header";
 import { Edit, Save, Users, BookOpen, Layers, Building, ChevronDown, Trash2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import CourseCard from "@/components/CourseCard";
 import CohortCard from "@/components/CohortCard";
 import InviteMembersDialog from "@/components/InviteMembersDialog";
@@ -27,6 +28,7 @@ type TabType = 'courses' | 'cohorts' | 'members';
 
 export default function ClientSchoolAdminView({ id }: { id: string }) {
     const router = useRouter();
+    const { data: session } = useSession();
     const [school, setSchool] = useState<School | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('courses');
@@ -37,6 +39,8 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
     const [isCreateCourseDialogOpen, setIsCreateCourseDialogOpen] = useState(false);
     const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
     const schoolNameRef = useRef<HTMLHeadingElement>(null);
+    // Add state for selected members
+    const [selectedMembers, setSelectedMembers] = useState<TeamMember[]>([]);
     // Add state for toast notifications
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState({
@@ -220,28 +224,45 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         }
     };
 
+    // Check if a member is the current user
+    const isCurrentUser = (member: TeamMember) => {
+        return session?.user?.id === member.id.toString();
+    };
+
     const handleDeleteMember = (member: TeamMember) => {
+        // Don't allow deleting yourself
+        if (isCurrentUser(member)) return;
+
         setMemberToDelete(member);
+        setSelectedMembers([]);
         setIsDeleteConfirmOpen(true);
     };
 
+    // Handle multiple members deletion
+    const handleDeleteSelectedMembers = () => {
+        setMemberToDelete(null);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    // Updated to handle both single and multiple member deletion
     const confirmDeleteMember = async () => {
-        if (!memberToDelete) return;
+        const membersToDelete = memberToDelete ? [memberToDelete] : selectedMembers;
+        if (membersToDelete.length === 0) return;
 
         try {
-            // Make API call to delete member
+            // Make API call to delete member(s)
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${id}/members`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    user_ids: [memberToDelete.id]
+                    user_ids: membersToDelete.map(member => member.id)
                 }),
             });
 
             if (!response.ok) {
-                throw new Error('Failed to delete member');
+                throw new Error('Failed to delete member(s)');
             }
 
             // Refresh school data to get updated members list
@@ -259,19 +280,60 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
 
             // Show toast notification for successful deletion
             setToastMessage({
-                title: 'Member removed',
-                description: `${memberToDelete.email} has been removed from your team`,
-                emoji: '✓'
+                title: 'The tribe has shrunk!',
+                description: membersToDelete.length === 1
+                    ? `${membersToDelete[0].email} has been removed from your team`
+                    : `${membersToDelete.length} members have been removed from your team`,
+                emoji: '😢'
             });
             setShowToast(true);
 
         } catch (error) {
-            console.error('Error deleting member:', error);
+            console.error('Error deleting member(s):', error);
             // Here you would typically show an error message to the user
         } finally {
             setIsDeleteConfirmOpen(false);
             setMemberToDelete(null);
+            setSelectedMembers([]);
         }
+    };
+
+    // Handle member selection toggle
+    const handleMemberSelection = (member: TeamMember) => {
+        // Don't allow selecting yourself
+        if (isCurrentUser(member)) return;
+
+        setSelectedMembers(prevSelected => {
+            // Check if this member is already selected
+            const isSelected = prevSelected.some(m => m.id === member.id);
+
+            // If selected, remove it; if not, add it
+            return isSelected
+                ? prevSelected.filter(m => m.id !== member.id)
+                : [...prevSelected, member];
+        });
+    };
+
+    // Handle "select all" functionality
+    const handleSelectAllMembers = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            // Filter out owner members and current user since they can't be deleted
+            const selectableMembers = school?.members.filter(member =>
+                member.role !== 'owner' && !isCurrentUser(member)
+            ) || [];
+            setSelectedMembers(selectableMembers);
+        } else {
+            setSelectedMembers([]);
+        }
+    };
+
+    // Check if all selectable members are selected
+    const areAllMembersSelected = () => {
+        if (!school) return false;
+        const selectableMembers = school.members.filter(member =>
+            member.role !== 'owner' && !isCurrentUser(member)
+        );
+        return selectableMembers.length > 0 && selectedMembers.length === selectableMembers.length;
     };
 
     const handleCreateCohort = async (cohort: any) => {
@@ -562,19 +624,39 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                             {/* Team Tab */}
                             {activeTab === 'members' && (
                                 <div>
-                                    <div className="flex justify-start items-center mb-6">
+                                    <div className="flex justify-start items-center mb-6 gap-4">
                                         <button
                                             className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
                                             onClick={() => setIsInviteDialogOpen(true)}
                                         >
                                             Invite Members
                                         </button>
+                                        {selectedMembers.length > 0 && (
+                                            <button
+                                                className="px-6 py-3 bg-red-800 text-white text-sm font-medium rounded-full hover:bg-red-900 transition-colors focus:outline-none cursor-pointer flex items-center"
+                                                onClick={handleDeleteSelectedMembers}
+                                            >
+                                                <Trash2 size={16} className="mr-2" />
+                                                Remove ({selectedMembers.length})
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div className="overflow-hidden rounded-lg border border-gray-800">
                                         <table className="min-w-full divide-y divide-gray-800">
                                             <thead className="bg-gray-900">
                                                 <tr>
+                                                    <th scope="col" className="w-10 px-3 py-3 text-left">
+                                                        <div className="flex items-center justify-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none bg-[#111111] cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent"
+                                                                checked={areAllMembersSelected()}
+                                                                onChange={handleSelectAllMembers}
+                                                                title="Select all members"
+                                                            />
+                                                        </div>
+                                                    </th>
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
                                                 </tr>
@@ -582,12 +664,24 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                             <tbody className="bg-[#111] divide-y divide-gray-800">
                                                 {school.members.map(member => (
                                                     <tr key={member.id}>
+                                                        <td className="w-10 px-4 py-4 whitespace-nowrap">
+                                                            <div className="flex justify-center">
+                                                                {member.role !== 'owner' && !isCurrentUser(member) && (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none bg-[#111111] cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent"
+                                                                        checked={selectedMembers.some(m => m.id === member.id)}
+                                                                        onChange={() => handleMemberSelection(member)}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{member.email}</td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm flex justify-between items-center">
                                                             <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium ${member.role === 'owner' ? 'bg-purple-900 text-purple-200' : 'bg-gray-800 text-gray-300'}`}>
                                                                 {member.role === 'owner' ? 'Owner' : 'Admin'}
                                                             </span>
-                                                            {member.role !== 'owner' && (
+                                                            {member.role !== 'owner' && !isCurrentUser(member) && (
                                                                 <button
                                                                     onClick={() => handleDeleteMember(member)}
                                                                     className="flex items-center gap-1 text-gray-400 hover:text-red-500 transition-colors focus:outline-none cursor-pointer"
@@ -619,8 +713,11 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             {/* Delete Member Confirmation Dialog */}
             <ConfirmationDialog
                 show={isDeleteConfirmOpen}
-                title="Remove Member"
-                message={`Are you sure you want to remove ${memberToDelete?.email} from this organization?`}
+                title={memberToDelete || selectedMembers.length == 1 ? "Remove Member" : "Remove Selected Members"}
+                message={memberToDelete
+                    ? `Are you sure you want to remove ${memberToDelete.email} from this organization?`
+                    : `Are you sure you want to remove ${selectedMembers.length} ${selectedMembers.length === 1 ? 'member' : 'members'} from this organization?`
+                }
                 confirmButtonText="Remove"
                 onConfirm={confirmDeleteMember}
                 onCancel={() => setIsDeleteConfirmOpen(false)}

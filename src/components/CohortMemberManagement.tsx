@@ -266,6 +266,9 @@ export default function CohortMemberManagement({
 
     const [memberToDelete, setMemberToDelete] = useState<CohortMember | null>(null);
 
+    // Add state for selected members
+    const [selectedMembers, setSelectedMembers] = useState<CohortMember[]>([]);
+
     // Get filtered members based on role
     const members = cohort?.members?.filter(member => member.role === role) || [];
 
@@ -279,13 +282,49 @@ export default function CohortMemberManagement({
         successToastEmoji: role === 'learner' ? '📧' : '👩‍🏫',
     };
 
+    // Handle individual member selection
+    const handleMemberSelection = (member: CohortMember) => {
+        setSelectedMembers(prevSelected => {
+            // Check if this member is already selected
+            const isSelected = prevSelected.some(m => m.id === member.id);
+
+            // If selected, remove it; if not, add it
+            return isSelected
+                ? prevSelected.filter(m => m.id !== member.id)
+                : [...prevSelected, member];
+        });
+    };
+
+    // Handle "select all" functionality
+    const handleSelectAllMembers = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedMembers(members);
+        } else {
+            setSelectedMembers([]);
+        }
+    };
+
+    // Check if all members are selected
+    const areAllMembersSelected = () => {
+        return members.length > 0 && selectedMembers.length === members.length;
+    };
+
     const handleDeleteMember = (member: CohortMember) => {
         setMemberToDelete(member);
+        setSelectedMembers([]);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    // Add function to handle multiple members deletion
+    const handleDeleteSelectedMembers = () => {
+        setMemberToDelete(null);
         setIsDeleteConfirmOpen(true);
     };
 
     const confirmDeleteMember = async () => {
-        if (!memberToDelete || !cohortId) return;
+        // Updated to handle both single and multiple member deletion
+        const membersToDelete = memberToDelete ? [memberToDelete] : selectedMembers;
+        if (!membersToDelete.length || !cohortId) return;
 
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/members`, {
@@ -294,7 +333,7 @@ export default function CohortMemberManagement({
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    member_ids: [memberToDelete.id]
+                    member_ids: membersToDelete.map(member => member.id)
                 }),
             });
 
@@ -303,14 +342,18 @@ export default function CohortMemberManagement({
             }
 
             // Update the cohort state in the parent component
-            const updatedMembers = cohort.members.filter(member => member.id !== memberToDelete.id);
+            const updatedMembers = cohort.members.filter(
+                member => !membersToDelete.some(m => m.id === member.id)
+            );
             updateCohort(updatedMembers);
 
-            // Show success toast
+            // Show success toast with appropriate message based on number of members deleted
             onShowToast(
                 'Scaling it down',
-                `Removed ${memberToDelete.email} from the cohort`,
-                memberToDelete.role === 'learner' ? '👋' : '👨‍🏫'
+                membersToDelete.length === 1
+                    ? `Removed ${membersToDelete[0].email} from the cohort`
+                    : `Removed ${membersToDelete.length} ${role}s from the cohort`,
+                role === 'learner' ? '👋' : '👨‍🏫'
             );
         } catch (error) {
             console.error('Error deleting member:', error);
@@ -326,6 +369,7 @@ export default function CohortMemberManagement({
         } finally {
             setIsDeleteConfirmOpen(false);
             setMemberToDelete(null);
+            setSelectedMembers([]);
         }
     };
 
@@ -415,13 +459,22 @@ export default function CohortMemberManagement({
     return (
         <div>
             {members.length > 0 && (
-                <div className="flex justify-start items-center mb-6">
+                <div className="flex justify-start items-center mb-6 gap-4">
                     <button
                         className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
                         onClick={() => setIsAddMemberOpen(true)}
                     >
                         {roleText.buttonText}
                     </button>
+                    {selectedMembers.length > 0 && (
+                        <button
+                            className="px-6 py-3 bg-red-800 text-white text-sm font-medium rounded-full hover:bg-red-900 transition-colors focus:outline-none cursor-pointer flex items-center"
+                            onClick={handleDeleteSelectedMembers}
+                        >
+                            <Trash2 size={16} className="mr-2" />
+                            Remove ({selectedMembers.length})
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -430,12 +483,33 @@ export default function CohortMemberManagement({
                     <table className="min-w-full divide-y divide-gray-800">
                         <thead className="bg-gray-900">
                             <tr>
+                                <th scope="col" className="w-10 px-3 py-3 text-left">
+                                    <div className="flex items-center justify-center">
+                                        <input
+                                            type="checkbox"
+                                            className="h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none bg-[#111111] cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent"
+                                            checked={areAllMembersSelected()}
+                                            onChange={handleSelectAllMembers}
+                                            title={`Select all ${role}s`}
+                                        />
+                                    </div>
+                                </th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
                             </tr>
                         </thead>
                         <tbody className="bg-[#111] divide-y divide-gray-800">
                             {members.map(member => (
                                 <tr key={member.id}>
+                                    <td className="w-10 px-4 py-4 whitespace-nowrap">
+                                        <div className="flex justify-center">
+                                            <input
+                                                type="checkbox"
+                                                className="h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none bg-[#111111] cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent"
+                                                checked={selectedMembers.some(m => m.id === member.id)}
+                                                onChange={() => handleMemberSelection(member)}
+                                            />
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300 flex justify-between items-center">
                                         {member.email}
                                         <button
@@ -476,8 +550,13 @@ export default function CohortMemberManagement({
             {/* Delete Confirmation Dialog */}
             <ConfirmationDialog
                 open={isDeleteConfirmOpen}
-                title={`Remove ${memberToDelete?.role === 'learner' ? 'Learner' : 'Mentor'}`}
-                message={`Are you sure you want to remove ${memberToDelete?.email} from this cohort?`}
+                title={memberToDelete || selectedMembers.length === 1
+                    ? `Remove ${memberToDelete?.role === 'learner' ? 'Learner' : 'Mentor'}`
+                    : `Remove Selected ${role === 'learner' ? 'Learners' : 'Mentors'}`}
+                message={memberToDelete
+                    ? `Are you sure you want to remove ${memberToDelete?.email} from this cohort?`
+                    : `Are you sure you want to remove ${selectedMembers.length} ${role}${selectedMembers.length === 1 ? '' : 's'} from this cohort?`
+                }
                 confirmButtonText="Remove"
                 onConfirm={confirmDeleteMember}
                 onCancel={() => setIsDeleteConfirmOpen(false)}
