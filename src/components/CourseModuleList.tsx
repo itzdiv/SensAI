@@ -531,7 +531,7 @@ export default function CourseModuleList({
                         <div className="flex flex-col">
                             {/* Module header with title and buttons */}
                             <div
-                                className="flex items-center cursor-pointer p-4 pb-3"
+                                className="flex items-start cursor-pointer p-4 pb-3"
                                 onClick={(e) => handleModuleClick(e, module.id)}
                             >
                                 <button
@@ -546,17 +546,17 @@ export default function CourseModuleList({
                                             }));
                                         }
                                     }}
-                                    className="mr-2 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                    className="hidden sm:block mr-2 text-gray-400 hover:text-white transition-colors cursor-pointer"
                                     aria-label={getIsExpanded(module.id) ? "Collapse module" : "Expand module"}
                                 >
                                     {getIsExpanded(module.id) ? <ChevronDownExpand size={18} /> : <ChevronRight size={18} />}
                                 </button>
-                                <div className="flex-1 mr-4">
+                                <div className="flex-1 mr-2 sm:mr-4">
                                     {mode === 'edit' && module.isEditing ? (
                                         <h2
                                             contentEditable
                                             suppressContentEditableWarning
-                                            className="text-xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none"
+                                            className="text-lg sm:text-xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none"
                                             data-module-id={module.id}
                                             data-placeholder="New Module"
                                             onClick={(e) => e.stopPropagation()}
@@ -565,7 +565,7 @@ export default function CourseModuleList({
                                         </h2>
                                     ) : (
                                         <h2
-                                            className="text-xl font-light text-white cursor-pointer"
+                                            className="text-lg sm:text-xl font-light text-white cursor-pointer"
                                         >
                                             {module.title || "New Module"}
                                         </h2>
@@ -695,12 +695,12 @@ export default function CourseModuleList({
                                         {getIsExpanded(module.id) ? (
                                             <>
                                                 <ChevronUp size={16} className="mr-1" />
-                                                <span>Collapse</span>
+                                                <span className="hidden sm:inline">Collapse</span>
                                             </>
                                         ) : (
                                             <>
                                                 <ChevronDown size={16} className="mr-1" />
-                                                <span>Expand</span>
+                                                <span className="hidden sm:inline">Expand</span>
                                             </>
                                         )}
                                     </button>
