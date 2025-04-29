@@ -336,6 +336,14 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
         return selectableMembers.length > 0 && selectedMembers.length === selectableMembers.length;
     };
 
+    // Check if there are any members that can be selected/deleted
+    const hasSelectableMembers = () => {
+        if (!school) return false;
+        return school.members.some(member =>
+            member.role !== 'owner' && !isCurrentUser(member)
+        );
+    };
+
     const handleCreateCohort = async (cohort: any) => {
         try {
             // Important: Navigate before closing the dialog to prevent flash of school page
@@ -648,13 +656,15 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                 <tr>
                                                     <th scope="col" className="w-10 px-3 py-3 text-left">
                                                         <div className="flex items-center justify-center">
-                                                            <input
-                                                                type="checkbox"
-                                                                className="h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none bg-[#111111] cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent"
-                                                                checked={areAllMembersSelected()}
-                                                                onChange={handleSelectAllMembers}
-                                                                title="Select all members"
-                                                            />
+                                                            {hasSelectableMembers() && (
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="h-5 w-5 rounded-md border-2 border-purple-600 text-white appearance-none checked:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-30 focus:outline-none bg-[#111111] cursor-pointer transition-all duration-200 ease-in-out hover:border-purple-500 relative before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-y-1/2 before:-translate-x-1/2 before:w-2.5 before:h-2.5 before:opacity-0 before:bg-white checked:before:opacity-100 checked:before:scale-100 before:scale-0 before:rounded-sm before:transition-all before:duration-200 checked:border-transparent"
+                                                                    checked={areAllMembersSelected()}
+                                                                    onChange={handleSelectAllMembers}
+                                                                    title="Select all members"
+                                                                />
+                                                            )}
                                                         </div>
                                                     </th>
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
