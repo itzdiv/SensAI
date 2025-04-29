@@ -2183,7 +2183,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             )}
 
             {/* Content area with animation when a new question is added */}
-            <div className={`flex flex-1 gap-4 mt-4 ${newQuestionAdded ? 'animate-new-question' : ''} ${isPreviewMode ? 'h-full' : ''}`}>
+            <div className={`flex flex-1 gap-4 ${!isPreviewMode && (questions.length == 1 && status === 'published') ? 'mt-4' : ''} ${newQuestionAdded ? 'animate-new-question' : ''} ${isPreviewMode ? 'h-full' : ''}`}>
                 {isPreviewMode ? (
                     <>
                         <div
