@@ -165,7 +165,7 @@ export function Header({
     // Get appropriate button text based on conditions
     const getButtonText = () => {
         if (hasOwnedSchool) {
-            return "Go To School";
+            return "Open School";
         } else {
             return "Create a Course";
         }
@@ -362,7 +362,7 @@ export function Header({
                                 {hasOwnedSchool ? (
                                     <div className="flex items-center gap-3">
                                         <span className="bg-black text-white py-2 px-4 rounded-full text-sm shadow-md">
-                                            Go To School
+                                            Open School
                                         </span>
                                         <button
                                             onClick={handleGoToSchoolClick}

@@ -1,6 +1,6 @@
 services:
   frontend-dev:
-    image: dalmiamanhv/sensai-frontend:dev
+    image: adalmia/sensai-frontend:dev
     ports:
       - "8502:3000"
     depends_on:
@@ -11,7 +11,7 @@ services:
       - sensai-network-dev
 
   backend-dev:
-    image: dalmiamanhv/sensai-ai:v2-dev
+    image: adalmia/sensai-ai:v2-dev
     working_dir: /src
     command: bash -c "python /src/startup.py && uvicorn api.main:app --host 0.0.0.0 --port 8001"
     volumes:
@@ -28,7 +28,7 @@ services:
       - sensai-network-dev
 
   public-api-dev:
-    image: dalmiamanhv/sensai-ai:v2-dev
+    image: adalmia/sensai-ai:v2-dev
     working_dir: /src
     command: bash -c "python /src/startup.py && uvicorn api.public:app --host 0.0.0.0 --port 8001"
     volumes:
