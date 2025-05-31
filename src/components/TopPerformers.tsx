@@ -53,7 +53,7 @@ export default function TopPerformers({
             const data = await response.json();
 
             // Set the performers data
-            const performersData: Performer[] = data.stats.map((stat: any, index: number) => {
+            const validPerformers: Performer[] = (data.stats || []).map((stat: any, index: number) => {
                 const userName = [stat.user.first_name, stat.user.last_name].filter(Boolean).join(' ');
                 return {
                     name: userName,
@@ -64,7 +64,9 @@ export default function TopPerformers({
                 };
             });
 
-            const validPerformers = performersData.filter(performer => performer.streakDays > 0 || performer.tasksSolved > 0);
+            console.log(validPerformers);
+
+            // const validPerformers = performersData.filter(performer => performer.streakDays > 0 || performer.tasksSolved > 0);
 
             // Get top performers but filter out those with 0 streak days
             let topPerformers = validPerformers.slice(0, 3); // Take top 3 of those
@@ -302,8 +304,16 @@ export default function TopPerformers({
                     </div>
                 ) : (
                     // No performers and no current user - show empty state
-                    <div className="p-8 text-center text-gray-400">
-                        No performers data available
+                    <div className="py-12 px-8 text-center">
+                        <div className="flex justify-center mb-6">
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-800/40 to-gray-900/60 flex items-center justify-center border border-gray-700/30">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <h4 className="text-lg font-light text-white mb-2">No learners in the cohort yet</h4>
+                        <p className="text-gray-400 text-sm">Top performers will appear once learners are added</p>
                     </div>
                 )}
 

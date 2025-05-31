@@ -410,7 +410,7 @@ export default function LearnerCohortView({
                                 schoolId={schoolId}
                                 cohortId={cohortId}
                                 view='learner'
-                                onEmptyData={handleEmptyPerformersData}
+                            // onEmptyData={handleEmptyPerformersData}
                             />
                         )}
                     </div>

@@ -104,6 +104,9 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     const [editedCohortName, setEditedCohortName] = useState('');
     const cohortNameRef = useRef<HTMLHeadingElement>(null);
 
+    // Add state for school slug
+    const [schoolSlug, setSchoolSlug] = useState<string>('');
+
     // Function to switch to learners tab and open invite dialog
     const handleOpenLearnerInviteDialog = () => {
         setTab('learners');
@@ -402,6 +405,25 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
         }
     };
 
+    // Function to copy invite link and show toast
+    const handleInviteLearners = async () => {
+        const inviteLink = `${window.location.origin}/school/${schoolSlug}/join?cohortId=${cohortId}`;
+
+        try {
+            await navigator.clipboard.writeText(inviteLink);
+            setToastTitle('Invite link copied');
+            setToastDescription('Share this link with your learners to let them join this cohort');
+            setToastEmoji('🔗');
+            setShowToast(true);
+        } catch (error) {
+            console.error('Failed to copy invite link:', error);
+            setToastTitle('Error');
+            setToastDescription('Failed to copy invite link. Please try again.');
+            setToastEmoji('❌');
+            setShowToast(true);
+        }
+    };
+
     useEffect(() => {
         const fetchCohort = async () => {
             if (!cohortId || cohortId === 'undefined') {
@@ -423,6 +445,17 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
                 setCohort(cohortData);
                 setLoading(false);
+
+                // Fetch school details to get the slug
+                try {
+                    const schoolResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${schoolId}`);
+                    if (schoolResponse.ok) {
+                        const schoolData = await schoolResponse.json();
+                        setSchoolSlug(schoolData.slug);
+                    }
+                } catch (error) {
+                    console.error("Error fetching school details:", error);
+                }
 
                 // Fetch courses in cohort
                 try {
@@ -564,6 +597,14 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                 >
                                                     <Pencil size={16} />
                                                     <span>Edit</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={handleInviteLearners}
+                                                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors cursor-pointer"
+                                                >
+                                                    <Mail size={16} />
+                                                    <span>Invite Learners</span>
                                                 </button>
 
                                                 {/* Link Course button and dropdown */}
@@ -757,8 +798,9 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             <CoursePublishSuccessBanner
                 isOpen={showCoursePublishBanner}
                 onClose={closeCoursePublishBanner}
-                cohortCount={1}
-                cohortNames={[cohort?.name || '']}
+                cohortId={parseInt(cohortId)}
+                cohortName={cohort?.name || ''}
+                schoolSlug={schoolSlug}
                 courseCount={courseLinkDetails.courseCount}
                 courseNames={courseLinkDetails.courseNames}
                 source="cohort"

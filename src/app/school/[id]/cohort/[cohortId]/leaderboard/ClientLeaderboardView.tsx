@@ -43,7 +43,7 @@ export default function ClientLeaderboardView({
                 const data = await response.json();
 
                 // Transform API response to match Performer interface
-                const performersData: Performer[] = data.stats.map((stat: any, index: number) => {
+                const performersData: Performer[] = (data.stats || []).map((stat: any, index: number) => {
                     const userName = [stat.user.first_name, stat.user.last_name].filter(Boolean).join(' ') || stat.user.email;
                     return {
                         name: userName,
@@ -53,6 +53,8 @@ export default function ClientLeaderboardView({
                         userId: stat.user.id // Keep track of user ID for identifying current user
                     };
                 });
+
+                console.log(performersData);
 
                 setPerformers(performersData);
                 setLoading(false);
@@ -146,8 +148,16 @@ export default function ClientLeaderboardView({
                         </button>
                     </div>
                 ) : performers.length === 0 ? (
-                    <div className="text-center my-12">
-                        <p className="text-gray-400 mb-4">No leaderboard data available yet.</p>
+                    <div className="text-center py-16 px-8">
+                        <div className="flex justify-center mb-8">
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gray-800/40 to-gray-900/60 flex items-center justify-center border border-gray-700/30">
+                                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <h3 className="text-2xl font-light text-white mb-3">No learners in the cohort yet</h3>
+                        <p className="text-gray-400 text-base max-w-md mx-auto leading-relaxed">The leaderboard will appear once learners are added</p>
                     </div>
                 ) : (
                     <div className="bg-[#121212] rounded-lg border border-gray-800 overflow-hidden">

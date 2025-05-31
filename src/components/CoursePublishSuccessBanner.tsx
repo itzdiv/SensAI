@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 
 interface CoursePublishSuccessBannerProps {
     isOpen: boolean;
     onClose: () => void;
-    cohortCount: number;
-    cohortNames?: string[];
+    cohortId: number | null;
+    cohortName: string;
+    schoolSlug: string;
     courseCount?: number;
     courseNames?: string[];
     // Source indicates where the banner was triggered from
@@ -14,12 +16,15 @@ interface CoursePublishSuccessBannerProps {
 const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
     isOpen,
     onClose,
-    cohortCount,
-    cohortNames = [],
+    cohortId,
+    cohortName,
+    schoolSlug,
     courseCount = 0,
     courseNames = [],
     source = 'course' // Default to course page as the source
 }) => {
+    const [isCopied, setIsCopied] = useState(false);
+
     if (!isOpen) return null;
 
     // Determine message based on source
@@ -28,8 +33,25 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
         ? "Courses are now live"
         : "Your course is now live";
     const description = isCohortSource
-        ? `Learners in this cohort will now see ${courseCount === 1 ? "this course" : `these courses`} on their home page`
-        : `Learners in ${cohortCount === 1 ? "this cohort" : "these cohorts"} will now see this course on their home page`;
+        ? `Learners added to this cohort will now see ${courseCount === 1 ? "this course" : `these courses`} on their home page`
+        : `Learners added to this cohort will now see this course on their home page`;
+
+    // Generate the invite link
+    const inviteLink = `${window.location.origin}/school/${schoolSlug}/join?cohortId=${cohortId}`;
+
+    const handleCopyInviteLink = async () => {
+        try {
+            await navigator.clipboard.writeText(inviteLink);
+            setIsCopied(true);
+
+            // Reset the copied state after 2 seconds
+            setTimeout(() => {
+                setIsCopied(false);
+            }, 2000);
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+        }
+    };
 
     return (
         <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -75,8 +97,30 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
                         </div>
                     </div>
 
-                    {/* Button */}
-                    <div className="animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+                    {/* Buttons */}
+                    <div className="space-y-3 animate-fadeIn" style={{ animationDelay: '0.5s' }}>
+                        {/* Copy Invite Link Button */}
+                        <button
+                            onClick={handleCopyInviteLink}
+                            className={`w-full py-3 border font-medium rounded-md transition-colors duration-300 cursor-pointer group flex items-center justify-center ${isCopied
+                                ? 'border-green-300 text-green-700 bg-green-50'
+                                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                        >
+                            {isCopied ? (
+                                <>
+                                    <Check size={16} className="mr-2" />
+                                    Copied
+                                </>
+                            ) : (
+                                <>
+                                    <Copy size={16} className="mr-2" />
+                                    Copy Invite Link
+                                </>
+                            )}
+                        </button>
+
+                        {/* Back Button */}
                         <button
                             onClick={onClose}
                             className="w-full py-3 border border-black text-black font-medium rounded-md hover:bg-black hover:text-white transition-colors duration-300 cursor-pointer group"

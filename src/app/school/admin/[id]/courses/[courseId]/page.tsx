@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles, Loader2 } from "lucide-react";
+import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles, Loader2, Share } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { useRouter, useParams } from "next/navigation";
@@ -44,6 +44,7 @@ export default function CreateCourse() {
     const params = useParams();
     const schoolId = params.id as string;
     const courseId = params.courseId as string;
+    const [schoolSlug, setSchoolSlug] = useState<string>('');
 
     const [courseTitle, setCourseTitle] = useState("Loading course...");
     const [modules, setModules] = useState<Module[]>([]);
@@ -65,8 +66,6 @@ export default function CreateCourse() {
     const [cohortSearchQuery, setCohortSearchQuery] = useState('');
     const [filteredCohorts, setFilteredCohorts] = useState<any[]>([]);
     const [cohortError, setCohortError] = useState<string | null>(null);
-    // Add state for temporarily selected cohorts
-    const [tempSelectedCohorts, setTempSelectedCohorts] = useState<any[]>([]);
     // Add state for course cohorts
     const [courseCohorts, setCourseCohorts] = useState<any[]>([]);
     const [isLoadingCourseCohorts, setIsLoadingCourseCohorts] = useState(false);
@@ -91,8 +90,8 @@ export default function CreateCourse() {
     // Add state for celebratory banner
     const [showCelebratoryBanner, setShowCelebratoryBanner] = useState(false);
     const [celebrationDetails, setCelebrationDetails] = useState({
-        cohortCount: 0,
-        cohortNames: [] as string[]
+        cohortId: 0,
+        cohortName: ''
     });
 
     // Add a new state for direct create cohort dialog
@@ -125,6 +124,9 @@ export default function CreateCourse() {
     const isGeneratingCourseRef = useRef(false);
     const totalTasksToGenerateRef = useRef(0);
     const generatedTasksCountRef = useRef(0);
+
+    // Add state for selected cohort
+    const [selectedCohort, setSelectedCohort] = useState<any | null>(null);
 
     // Update the refs whenever the state changes
     useEffect(() => {
@@ -208,6 +210,21 @@ export default function CreateCourse() {
 
         // Also fetch cohorts assigned to this course
         fetchCourseCohorts();
+
+        // Fetch school details to get the slug
+        const fetchSchoolDetails = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/organizations/${schoolId}`);
+                if (response.ok) {
+                    const schoolData = await response.json();
+                    setSchoolSlug(schoolData.slug);
+                }
+            } catch (error) {
+                console.error("Error fetching school details:", error);
+            }
+        };
+
+        fetchSchoolDetails();
     }, [courseId]);
 
     // Check for dark mode
@@ -984,15 +1001,12 @@ export default function CreateCourse() {
         // Always filter the existing cohorts client-side
         if (cohorts.length > 0) {
             if (query.trim() === '') {
-                // Filter out temporarily selected cohorts
-                setFilteredCohorts(cohorts.filter(cohort =>
-                    !tempSelectedCohorts.some(tc => tc.id === cohort.id)
-                ));
+                // Show all available cohorts
+                setFilteredCohorts(cohorts);
             } else {
-                // Filter by search query and exclude temporarily selected cohorts
+                // Filter by search query
                 const filtered = cohorts.filter(cohort =>
-                    cohort.name.toLowerCase().includes(query.toLowerCase()) &&
-                    !tempSelectedCohorts.some(tc => tc.id === cohort.id)
+                    cohort.name.toLowerCase().includes(query.toLowerCase())
                 );
                 setFilteredCohorts(filtered);
             }
@@ -1034,10 +1048,8 @@ export default function CreateCourse() {
 
             setCohorts(availableCohorts);
 
-            // Filter out any temporarily selected cohorts
-            setFilteredCohorts(availableCohorts.filter((cohort: { id: number; name: string }) =>
-                !tempSelectedCohorts.some(tc => tc.id === cohort.id)
-            ));
+            // Set all available cohorts as filtered cohorts initially
+            setFilteredCohorts(availableCohorts);
 
             setIsLoadingCohorts(false);
         } catch (error) {
@@ -1049,37 +1061,13 @@ export default function CreateCourse() {
 
     // Function to select a cohort
     const selectCohort = (cohort: any) => {
-        // Check if already selected
-        if (tempSelectedCohorts.some(c => c.id === cohort.id)) {
-            return; // Already selected, do nothing
-        }
-
-        // Add to temporary selection
-        setTempSelectedCohorts([...tempSelectedCohorts, cohort]);
-
-        // Remove from filtered cohorts immediately for better UX
-        setFilteredCohorts(prev => prev.filter(c => c.id !== cohort.id));
+        // Set the selected cohort (replacing any previous selection)
+        setSelectedCohort(cohort);
     };
 
-    // Function to remove cohort from temporary selection
-    const removeTempCohort = (cohortId: number) => {
-        // Find the cohort to remove
-        const cohortToRemove = tempSelectedCohorts.find(cohort => cohort.id === cohortId);
-
-        // Remove from temp selection
-        setTempSelectedCohorts(tempSelectedCohorts.filter(cohort => cohort.id !== cohortId));
-
-        // Add back to filtered cohorts if it matches the current search
-        if (cohortToRemove &&
-            (cohortSearchQuery.trim() === '' ||
-                cohortToRemove.name.toLowerCase().includes(cohortSearchQuery.toLowerCase()))) {
-            setFilteredCohorts(prev => [...prev, cohortToRemove]);
-        }
-    };
-
-    // Update to publish to all selected cohorts with a single API call
-    const publishCourseToSelectedCohorts = async () => {
-        if (tempSelectedCohorts.length === 0) {
+    // Update to publish to selected cohort
+    const publishCourseToSelectedCohort = async () => {
+        if (!selectedCohort) {
             setShowPublishDialog(false);
             return;
         }
@@ -1090,13 +1078,8 @@ export default function CreateCourse() {
             // Show loading state
             setIsLoadingCohorts(true);
 
-            // Extract all cohort IDs from the selected cohorts
-            const cohortIds = tempSelectedCohorts.map(cohort => cohort.id);
-            // Extract cohort names for the celebration banner
-            const cohortNames = tempSelectedCohorts.map(cohort => cohort.name);
-
-            // Link the course to the selected cohorts
-            await linkCourseToCohorts(cohortIds, cohortNames);
+            // Link the course to the selected cohort
+            await linkCourseToCohort(selectedCohort.id, selectedCohort.name);
         } catch (error) {
             console.error("Error publishing course:", error);
             setCohortError("Failed to publish course. Please try again later.");
@@ -1106,7 +1089,7 @@ export default function CreateCourse() {
     };
 
     // Create a reusable function for linking a course to cohorts
-    const linkCourseToCohorts = async (cohortIds: number[], cohortNames: string[]) => {
+    const linkCourseToCohort = async (cohortId: number, cohortName: string) => {
         // Make a single API call with all cohort IDs
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`, {
             method: 'POST',
@@ -1114,7 +1097,7 @@ export default function CreateCourse() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                cohort_ids: cohortIds
+                cohort_ids: [cohortId]
             }),
         });
 
@@ -1123,10 +1106,10 @@ export default function CreateCourse() {
             throw new Error(`Failed to link course to cohorts: ${response.status}`);
         }
 
-        // Update cohort details for the celebration
+        // Update cohort details for the celebration - use the first cohort for single cohort display
         setCelebrationDetails({
-            cohortCount: cohortIds.length,
-            cohortNames: cohortNames
+            cohortId: cohortId,
+            cohortName: cohortName
         });
 
         if (showPublishDialog) {
@@ -1137,7 +1120,7 @@ export default function CreateCourse() {
         setShowCelebratoryBanner(true);
 
         // Reset selection
-        setTempSelectedCohorts([]);
+        setSelectedCohort(null);
 
         // Refresh the displayed cohorts
         fetchCourseCohorts();
@@ -1238,7 +1221,45 @@ export default function CreateCourse() {
     };
 
     // Update to handle dialog opening from either button
-    const openCohortSelectionDialog = (origin: 'publish' | 'add') => {
+    const openCohortSelectionDialog = async (origin: 'publish' | 'add') => {
+        // For publish action, check if we need to auto-create a cohort
+        if (origin === 'publish') {
+            try {
+                // First, fetch all cohorts for the organization to check if any exist
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/?org_id=${schoolId}`);
+
+                if (response.ok) {
+                    const allCohorts = await response.json();
+
+                    // If no cohorts exist at all, auto-create one and publish
+                    if (allCohorts.length === 0) {
+                        await handleAutoCreateAndPublish();
+                        return;
+                    }
+
+                    // Check cohorts already assigned to this course
+                    const courseCohortResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`);
+                    let assignedCohortIds: number[] = [];
+
+                    if (courseCohortResponse.ok) {
+                        const courseCohortData = await courseCohortResponse.json();
+                        assignedCohortIds = courseCohortData.map((cohort: { id: number }) => cohort.id);
+                    }
+
+                    // Filter out cohorts that are already assigned to the course
+                    const availableCohorts = allCohorts.filter((cohort: { id: number }) =>
+                        !assignedCohortIds.includes(cohort.id)
+                    );
+
+                    // If all cohorts are already assigned, show the dialog (don't auto-create)
+                    // The dialog will handle showing the appropriate message and create button
+                }
+            } catch (error) {
+                console.error("Error checking cohorts:", error);
+                // Fall back to showing the dialog if there's an error
+            }
+        }
+
         // Toggle dialog if clicking the same button that opened it
         if (showPublishDialog && dialogOrigin === origin) {
             // Close the dialog if it's already open with the same origin
@@ -1248,8 +1269,50 @@ export default function CreateCourse() {
             // Open the dialog with the new origin
             setDialogOrigin(origin);
             setShowPublishDialog(true);
-            setTempSelectedCohorts([]); // Reset selected cohorts
+            setSelectedCohort(null); // Reset selected cohort
             fetchCohorts();
+        }
+    };
+
+    // Add new function to handle auto-create and publish
+    const handleAutoCreateAndPublish = async () => {
+        try {
+            // Create a new cohort with the name "New Cohort"
+            const createResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: "New Cohort",
+                    org_id: parseInt(schoolId)
+                }),
+            });
+
+            if (!createResponse.ok) {
+                throw new Error(`Failed to create cohort: ${createResponse.status}`);
+            }
+
+            const newCohort = await createResponse.json();
+
+            // Link the course to the newly created cohort
+            await linkCourseToCohort(newCohort.id, newCohort.name);
+
+        } catch (error) {
+            console.error("Error auto-creating cohort and publishing:", error);
+
+            // Show error toast
+            setToast({
+                show: true,
+                title: 'Publishing Failed',
+                description: 'Failed to create cohort and publish course. Please try again.',
+                emoji: '❌'
+            });
+
+            // Auto-hide toast after 5 seconds
+            setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+            }, 5000);
         }
     };
 
@@ -1283,7 +1346,7 @@ export default function CreateCourse() {
             setShowCreateCohortDialog(false);
 
             // Link the course to the newly created cohort using the reusable function
-            await linkCourseToCohorts([cohort.id], [cohort.name]);
+            await linkCourseToCohort(cohort.id, cohort.name);
 
 
         } catch (error) {
@@ -1740,6 +1803,42 @@ export default function CreateCourse() {
         }
     };
 
+    // Add handler for copying cohort invite link
+    const handleCopyCohortInviteLink = async (cohortId: number, cohortName: string) => {
+        try {
+            const inviteLink = `${window.location.origin}/school/${schoolSlug}/join?cohortId=${cohortId}`;
+            await navigator.clipboard.writeText(inviteLink);
+
+            // Show success toast
+            setToast({
+                show: true,
+                title: 'Link copied',
+                description: `Share this link with your learners to let them join this cohort`,
+                emoji: '📋'
+            });
+
+            // Auto-hide toast after 3 seconds
+            setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+            }, 3000);
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+
+            // Show error toast
+            setToast({
+                show: true,
+                title: 'Copy failed',
+                description: 'Unable to copy invite link to clipboard',
+                emoji: '❌'
+            });
+
+            // Auto-hide toast after 3 seconds
+            setTimeout(() => {
+                setToast(prev => ({ ...prev, show: false }));
+            }, 3000);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-black">
             {/* Use the reusable Header component with showCreateCourseButton set to false */}
@@ -1764,7 +1863,7 @@ export default function CreateCourse() {
                         {/* Back to Courses button */}
                         <Link
                             href={`/school/admin/${schoolId}#courses`}
-                            className="flex items-center text-gray-400 hover:text-white transition-colors mb-4"
+                            className="inline-flex items-center text-gray-400 hover:text-white transition-colors mb-4"
                         >
                             <ArrowLeft size={16} className="mr-2 text-sm" />
                             Back To Courses
@@ -1853,19 +1952,7 @@ export default function CreateCourse() {
                                             </span>
                                             <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Preview</span>
                                         </button>
-                                        {hasAnyItems() && courseCohorts.length === 0 && (
-                                            <div className="relative">
-                                                <button
-                                                    ref={publishButtonRef}
-                                                    data-dropdown-toggle="true"
-                                                    className="flex items-center px-6 py-2 text-sm font-medium text-white bg-[#016037] border-0 hover:bg-[#017045] outline-none rounded-full transition-all cursor-pointer shadow-md"
-                                                    onClick={() => openCohortSelectionDialog('publish')}
-                                                >
-                                                    <span className="mr-2 text-base">🚀</span>
-                                                    <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Publish</span>
-                                                </button>
-                                            </div>
-                                        )}
+
                                     </>
                                 )}
                             </div>
@@ -1915,50 +2002,65 @@ export default function CreateCourse() {
                     </div>
 
                     {/* Display cohorts assigned to this course */}
-                    {!isLoadingCourseCohorts && courseCohorts.length > 0 && (
-                        <div>
+                    {hasAnyItems() && (
+                        <div className="mt-10">
                             <div className="relative">
                                 <button
-                                    ref={addCohortButtonRef}
+                                    ref={publishButtonRef}
                                     data-dropdown-toggle="true"
                                     className="flex items-center px-6 py-2 text-sm font-medium text-white bg-[#016037] border-0 hover:bg-[#017045] outline-none rounded-full transition-all cursor-pointer shadow-md"
-                                    onClick={() => openCohortSelectionDialog('add')}
+                                    onClick={() => openCohortSelectionDialog('publish')}
                                 >
-                                    <span className="mr-2 text-base"><UsersRound size={16} /></span>
-                                    <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Add to Cohorts</span>
+                                    <span className="mr-2 text-base">🚀</span>
+                                    <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Share with learners</span>
                                 </button>
                             </div>
-                            <div className="mt-10">
-                                <h2 className="text-sm font-light text-gray-400 mb-3 ">Cohorts</h2>
-                                <div className="flex flex-wrap gap-3">
-                                    {courseCohorts.map((cohort: { id: number; name: string }) => (
-                                        <div
-                                            key={cohort.id}
-                                            className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
-                                        >
-                                            <Tooltip content="Open" position="top">
-                                                <button
-                                                    onClick={() => window.open(`/school/admin/${schoolId}/cohorts/${cohort.id}`, '_blank')}
-                                                    className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
-                                                    aria-label="Open cohort page"
-                                                >
-                                                    <ExternalLink size={16} />
-                                                </button>
-                                            </Tooltip>
-                                            <span className="text-white text-sm font-light">{cohort.name}</span>
-                                            <Tooltip content="Remove" position="top">
-                                                <button
-                                                    onClick={() => initiateCohortRemoval(cohort.id, cohort.name)}
-                                                    className="text-gray-400 hover:text-white cursor-pointer flex items-center ml-2"
-                                                    aria-label="Remove cohort from course"
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                            </Tooltip>
-                                        </div>
-                                    ))}
+
+                            {!isLoadingCourseCohorts && courseCohorts.length > 0 && (
+                                <div className="mt-10">
+                                    <h2 className="text-sm font-light text-gray-400 mb-1">Cohorts</h2>
+                                    <p className="text-xs text-gray-500 mb-3 mr-4">
+                                        Invite learners to a cohort by clicking the share button beside the cohort name
+                                    </p>
+                                    <div className="flex flex-wrap gap-3">
+                                        {courseCohorts.map((cohort: { id: number; name: string }) => (
+                                            <div
+                                                key={cohort.id}
+                                                className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
+                                            >
+                                                <Tooltip content="Open" position="top">
+                                                    <button
+                                                        onClick={() => window.open(`/school/admin/${schoolId}/cohorts/${cohort.id}`, '_blank')}
+                                                        className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
+                                                        aria-label="Open cohort page"
+                                                    >
+                                                        <ExternalLink size={16} />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="Copy invite link" position="top">
+                                                    <button
+                                                        onClick={() => handleCopyCohortInviteLink(cohort.id, cohort.name)}
+                                                        className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
+                                                        aria-label="Copy cohort invite link"
+                                                    >
+                                                        <Share size={16} />
+                                                    </button>
+                                                </Tooltip>
+                                                <span className="text-white text-sm font-light">{cohort.name}</span>
+                                                <Tooltip content="Remove" position="top">
+                                                    <button
+                                                        onClick={() => initiateCohortRemoval(cohort.id, cohort.name)}
+                                                        className="text-gray-400 hover:text-white cursor-pointer flex items-center ml-2"
+                                                        aria-label="Remove cohort from course"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </Tooltip>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -2053,14 +2155,13 @@ export default function CreateCourse() {
                 onClose={closeCohortDialog}
                 originButtonRef={dialogOrigin === 'publish' ? publishButtonRef : addCohortButtonRef}
                 isPublishing={dialogOrigin === 'publish'}
-                onConfirm={publishCourseToSelectedCohorts}
+                onConfirm={publishCourseToSelectedCohort}
                 showLoading={isLoadingCohorts}
                 hasError={!!cohortError}
                 errorMessage={cohortError || ''}
                 onRetry={fetchCohorts}
                 cohorts={cohorts}
-                tempSelectedCohorts={tempSelectedCohorts}
-                onRemoveCohort={removeTempCohort}
+                selectedCohort={selectedCohort}
                 onSelectCohort={selectCohort}
                 onSearchChange={handleCohortSearch}
                 searchQuery={cohortSearchQuery}
@@ -2070,6 +2171,7 @@ export default function CreateCourse() {
                 courseId={courseId}
                 onCohortCreated={handleCohortCreated}
                 onOpenCreateCohortDialog={openCreateCohortDialog}
+                onAutoCreateAndPublish={handleAutoCreateAndPublish}
             />
 
             {/* Confirmation Dialog for Cohort Removal */}
@@ -2099,8 +2201,9 @@ export default function CreateCourse() {
             <CoursePublishSuccessBanner
                 isOpen={showCelebratoryBanner}
                 onClose={closeCelebratoryBanner}
-                cohortCount={celebrationDetails.cohortCount}
-                cohortNames={celebrationDetails.cohortNames}
+                cohortId={celebrationDetails.cohortId}
+                cohortName={celebrationDetails.cohortName}
+                schoolSlug={schoolSlug}
             />
 
             {/* Add the standalone CreateCohortDialog */}
