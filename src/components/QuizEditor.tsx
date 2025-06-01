@@ -2653,7 +2653,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                         setShowScorecardDeleteConfirm(true);
                                                     }}
                                                     new={currentQuestionConfig.scorecardData?.new}
-                                                    readOnly={status === 'published'}
+                                                    readOnly={readOnly}
                                                     linked={isLinkedScorecard(currentQuestionConfig.scorecardData)}
                                                     scorecardId={currentQuestionConfig.scorecardData?.id}
                                                     allQuestions={questions}

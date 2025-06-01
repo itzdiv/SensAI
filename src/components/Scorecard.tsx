@@ -5,6 +5,7 @@ import './scorecard-styles.css'; // We'll create this CSS file
 import SimpleTooltip from './SimpleTooltip';
 import Toast from './Toast'; // Import the Toast component
 import Tooltip from './Tooltip'; // Import the Tooltip component
+import { useEditorContentOrSelectionChange } from '@blocknote/react';
 
 interface ScorecardProps {
     name: string;
@@ -153,6 +154,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
 
     // Function to start editing a cell
     const startEditing = (rowIndex: number, field: 'name' | 'description' | 'maxScore' | 'minScore') => {
+        if (readOnly) return;
+
         const value = field === 'maxScore' || field === 'minScore'
             ? criteria[rowIndex][field].toString()
             : criteria[rowIndex][field] || '';
@@ -275,6 +278,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     // Determine if save button should be shown
     const shouldShowSaveButton = !isNew && hasChanges && onSave;
 
+    console.log(readOnly)
+
     // Determine if banner should be shown
     const shouldShowBanner = !readOnly && isNew && (linked || isUsedByMultipleQuestions);
 
@@ -292,18 +297,18 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
             <div className="w-full bg-[#2F2F2F] rounded-lg shadow-xl p-2">
                 {/* Linked Scorecard Banner */}
                 {shouldShowBanner && (
-                    <div className="mb-3 bg-[#2A2A2A] border border-red-400/50 rounded-lg p-4">
+                    <div className="mb-3 bg-[#2A2A2A] border border-blue-400/50 rounded-lg p-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-6">
                                 <div className="flex-shrink-0">
-                                    <RefreshCw size={16} className="text-red-400" />
+                                    <RefreshCw size={16} className="text-blue-400" />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-red-300 mb-1">Synced Scorecard</div>
-                                    <div className="text-xs text-red-200">
+                                    <div className="text-sm font-medium text-blue-300 mb-1">Synced Scorecard</div>
+                                    <div className="text-xs text-blue-200">
                                         This scorecard is synced across multiple questions - any changes made here will apply to all questions in this quiz using this scorecard
                                     </div>
-                                    <div className="text-xs text-red-200">
+                                    <div className="text-xs text-blue-200">
                                         To update this scorecard only for this question without affecting others, duplicate it and make changes to it
                                     </div>
                                 </div>
@@ -330,7 +335,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             value={nameValue}
                             onChange={(e) => setNameValue(e.target.value)}
                             placeholder="Scorecard Name"
-                            className={`text-white text-lg font-normal bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-b focus:border-white/50 w-full max-w-full`}
+                            className={`text-white text-lg font-normal bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-b focus:border-white/50 w-full max-w-full ${readOnly ? 'cursor-default' : ''}`}
                             style={{ caretColor: 'white' }}
                             onBlur={(e) => onNameChange && onNameChange(e.target.value)}
                             onKeyDown={(e) => {
@@ -339,6 +344,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                     onNameChange(e.currentTarget.value);
                                 }
                             }}
+                            disabled={readOnly}
                         />
 
                         <div className="ml-4 flex items-center space-x-2">
@@ -356,7 +362,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             )}
 
                             {/* Duplicate scorecard button - only show for linked scorecards */}
-                            {onDuplicate && (
+                            {onDuplicate && !readOnly && (
                                 <Tooltip content="Duplicate" position="bottom">
                                     <button
                                         onClick={onDuplicate}
@@ -369,7 +375,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             )}
 
                             {/* Delete scorecard button */}
-                            <Tooltip content="Delete" position="bottom">
+                            {!readOnly && <Tooltip content="Delete" position="bottom">
                                 <button
                                     onClick={onDelete}
                                     className="flex items-center justify-center p-2 rounded-full hover:bg-[#4F2828] text-gray-400 hover:text-red-300 transition-colors cursor-pointer"
@@ -377,7 +383,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                 >
                                     <Trash2 size={16} />
                                 </button>
-                            </Tooltip>
+                            </Tooltip>}
                         </div>
                     </div>
 
@@ -388,7 +394,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
                                 <HelpCircle size={12} />
                                 <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
-                                    The specific aspect or skill being evaluated in this scorecard
+                                    The specific aspect of the response or skill of the learner to be evaluated
                                     <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
                                 </div>
                             </div>
@@ -465,7 +471,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 </button>
                                             </div>
                                         ) : (
-                                            <Tooltip content="Click to edit" position="bottom">
+                                            <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
                                                 <span
                                                     className="inline-block px-2 py-0.5 rounded-full text-xs text-white whitespace-nowrap cursor-pointer hover:opacity-80 relative"
                                                     style={{ backgroundColor: pillColor }}
@@ -500,7 +506,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 </button>
                                             </div>
                                         ) : (
-                                            <Tooltip content="Click to edit" position="bottom">
+                                            <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
                                                 <span
                                                     className={`block break-words text-sm w-full whitespace-pre-wrap cursor-pointer hover:opacity-80 relative z-50 ${criterion.description ? '' : 'text-gray-500'}`}
                                                     onClick={() => startEditing(index, 'description')}
@@ -527,16 +533,14 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 style={{ caretColor: 'white' }}
                                             />
                                         ) : (
-                                            <span
-                                                className="block cursor-pointer hover:opacity-80 relative group"
-                                                onClick={() => startEditing(index, 'minScore')}
-                                            >
-                                                {criterion.minScore}
-                                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block px-2 py-1 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
-                                                    Click to edit
-                                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
-                                                </div>
-                                            </span>
+                                            <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
+                                                <span
+                                                    className="block cursor-pointer hover:opacity-80"
+                                                    onClick={() => startEditing(index, 'minScore')}
+                                                >
+                                                    {criterion.minScore}
+                                                </span>
+                                            </Tooltip>
                                         )}
                                     </div>
 
@@ -556,22 +560,20 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 style={{ caretColor: 'white' }}
                                             />
                                         ) : (
-                                            <span
-                                                className="block cursor-pointer hover:opacity-80 relative group"
-                                                onClick={() => startEditing(index, 'maxScore')}
-                                            >
-                                                {criterion.maxScore}
-                                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 hidden group-hover:block px-2 py-1 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
-                                                    Click to edit
-                                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-b-gray-900"></div>
-                                                </div>
-                                            </span>
+                                            <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
+                                                <span
+                                                    className="block cursor-pointer hover:opacity-80"
+                                                    onClick={() => startEditing(index, 'maxScore')}
+                                                >
+                                                    {criterion.maxScore}
+                                                </span>
+                                            </Tooltip>
                                         )}
                                     </div>
 
                                     {/* Delete Button Cell */}
                                     <div className="h-full flex items-center justify-center">
-                                        {criteria.length > 1 && (
+                                        {criteria.length > 1 && !readOnly && (
                                             <button
                                                 onClick={() => handleDeleteCriterion(index)}
                                                 className="p-1 rounded-full hover:bg-[#4F2828] text-gray-500 hover:text-red-300 transition-colors cursor-pointer"
@@ -586,7 +588,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                         })}
 
                         {/* If no criteria, show empty state */}
-                        {(!criteria || criteria.length === 0) && (
+                        {(!criteria || criteria.length === 0) && !readOnly && (
                             <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr 80px 80px 40px' }} className="gap-2 bg-[#2A2A2A] rounded-md p-1 text-white">
                                 <div className="px-2 py-1 text-sm flex items-center">
                                     <span className="inline-block px-2 py-0.5 rounded-full text-xs text-white bg-[#5E3B5D]">
@@ -603,7 +605,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                     </div>
 
                     {/* Add Criterion button - now below the criteria rows */}
-                    <div className="flex justify-center mt-3">
+                    {!readOnly && <div className="flex justify-center mt-3">
                         <button
                             onClick={handleAddCriterion}
                             className="flex items-center px-4 py-2 rounded-full bg-[#2A2A2A] hover:bg-[#2A4A3A] text-gray-300 hover:text-green-300 transition-colors cursor-pointer"
@@ -612,7 +614,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             <Plus size={14} className="mr-1" />
                             <span className="text-sm">Add</span>
                         </button>
-                    </div>
+                    </div>}
                 </div>
             </div>
 

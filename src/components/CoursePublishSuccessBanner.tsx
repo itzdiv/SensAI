@@ -25,7 +25,6 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
     courseNames = [],
     source = 'course' // Default to course page as the source
 }) => {
-    console.log(schoolId)
     const [isCopied, setIsCopied] = useState(false);
 
     if (!isOpen) return null;

@@ -5,6 +5,7 @@ interface TooltipProps {
     content: string;
     position?: "top" | "bottom" | "left" | "right";
     delay?: number;
+    disabled?: boolean;
 }
 
 export default function Tooltip({
@@ -12,6 +13,7 @@ export default function Tooltip({
     content,
     position = "top",
     delay = 300,
+    disabled = false,
 }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -55,6 +57,8 @@ export default function Tooltip({
         left: "right-[-6px] top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent",
         right: "left-[-6px] top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent",
     };
+
+    if (disabled) return children;
 
     return (
         <div
