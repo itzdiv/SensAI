@@ -801,6 +801,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                 cohortId={parseInt(cohortId)}
                 cohortName={cohort?.name || ''}
                 schoolSlug={schoolSlug}
+                schoolId={schoolId}
                 courseCount={courseLinkDetails.courseCount}
                 courseNames={courseLinkDetails.courseNames}
                 source="cohort"

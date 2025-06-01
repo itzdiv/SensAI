@@ -2020,7 +2020,7 @@ export default function CreateCourse() {
                                 <div className="mt-10">
                                     <h2 className="text-sm font-light text-gray-400 mb-1">Cohorts</h2>
                                     <p className="text-xs text-gray-500 mb-3 mr-4">
-                                        Invite learners to a cohort by clicking the share button beside the cohort name
+                                        Invite learners to a cohort by clicking the share button beside the cohort name or add them manually from the cohort page
                                     </p>
                                     <div className="flex flex-wrap gap-3">
                                         {courseCohorts.map((cohort: { id: number; name: string }) => (
@@ -2204,6 +2204,7 @@ export default function CreateCourse() {
                 cohortId={celebrationDetails.cohortId}
                 cohortName={celebrationDetails.cohortName}
                 schoolSlug={schoolSlug}
+                schoolId={params.id as string}
             />
 
             {/* Add the standalone CreateCohortDialog */}

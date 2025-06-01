@@ -6,6 +6,7 @@ interface CoursePublishSuccessBannerProps {
     onClose: () => void;
     cohortId: number | null;
     cohortName: string;
+    schoolId: string;
     schoolSlug: string;
     courseCount?: number;
     courseNames?: string[];
@@ -18,11 +19,13 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
     onClose,
     cohortId,
     cohortName,
+    schoolId,
     schoolSlug,
     courseCount = 0,
     courseNames = [],
     source = 'course' // Default to course page as the source
 }) => {
+    console.log(schoolId)
     const [isCopied, setIsCopied] = useState(false);
 
     if (!isOpen) return null;
@@ -33,8 +36,25 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
         ? "Courses are now live"
         : "Your course is now live";
     const description = isCohortSource
-        ? `Learners added to this cohort will now see ${courseCount === 1 ? "this course" : `these courses`} on their home page`
-        : `Learners added to this cohort will now see this course on their home page`;
+        ? (
+            <>
+                Learners added to this cohort can see {courseCount === 1 ? "this course" : "these courses"} now. Either add them manually from the <strong>Learners</strong> tab or send them an invite link.
+            </>
+        )
+        : (
+            <>
+                Learners added to this cohort can see this course now. Either add them manually from the{' '}
+                <a
+                    href={`/school/admin/${schoolId}/cohorts/${cohortId}`}
+                    className="text-blue-600 hover:text-blue-800"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    cohort admin dashboard
+                </a>{' '}
+                or send them an invite link.
+            </>
+        );
 
     // Generate the invite link
     const inviteLink = `${window.location.origin}/school/${schoolSlug}/join?cohortId=${cohortId}`;
