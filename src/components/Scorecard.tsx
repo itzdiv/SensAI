@@ -152,6 +152,56 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
         setToast(prev => ({ ...prev, show: false }));
     };
 
+    // Function to validate criteria before saving
+    const validateCriteriaForSave = () => {
+        const emptyFields: Array<{ index: number; field: 'name' | 'description'; fieldName: string }> = [];
+
+        criteria.forEach((criterion, index) => {
+            if (!criterion.name || criterion.name.trim() === '') {
+                emptyFields.push({ index, field: 'name', fieldName: 'Parameter' });
+            }
+            if (!criterion.description || criterion.description.trim() === '') {
+                emptyFields.push({ index, field: 'description', fieldName: 'Description' });
+            }
+        });
+
+        return emptyFields;
+    };
+
+    // Function to handle save with validation
+    const handleSave = () => {
+        const emptyFields = validateCriteriaForSave();
+
+        if (emptyFields.length > 0) {
+            // Highlight the first problematic row
+            const firstEmpty = emptyFields[0];
+            setHighlightedField({ index: firstEmpty.index, field: firstEmpty.field });
+
+            // Show toast with validation error
+            const fieldCount = emptyFields.length;
+            const uniqueRows = new Set(emptyFields.map(field => field.index)).size;
+
+            setToast({
+                show: true,
+                title: 'Missing Required Fields',
+                description: `Please fill all parameter names and descriptions before saving`,
+                emoji: '🚫'
+            });
+
+            // Clear the highlight after 4 seconds
+            setTimeout(() => {
+                setHighlightedField(null);
+            }, 4000);
+
+            return; // Don't proceed with save
+        }
+
+        // If validation passes, proceed with save
+        if (onSave) {
+            onSave();
+        }
+    };
+
     // Function to start editing a cell
     const startEditing = (rowIndex: number, field: 'name' | 'description' | 'maxScore' | 'minScore') => {
         if (readOnly) return;
@@ -352,7 +402,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             {shouldShowSaveButton && (
                                 <Tooltip content="Save changes" position="bottom">
                                     <button
-                                        onClick={onSave}
+                                        onClick={handleSave}
                                         className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors cursor-pointer"
                                         aria-label="Save scorecard changes"
                                     >
@@ -459,15 +509,15 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                     onBlur={saveChanges}
                                                     onKeyDown={handleKeyDown}
                                                     autoFocus
-                                                    className="bg-[#333] rounded w-full text-xs p-1 pr-6 outline-none"
+                                                    className="bg-[#333] rounded w-full text-xs p-1 pr-10 outline-none"
                                                     style={{ caretColor: 'white' }}
                                                 />
                                                 <button
                                                     onClick={saveChanges}
-                                                    className="absolute right-1 top-1/2 transform -translate-y-1/2 p-0.5 rounded-sm bg-[#4A4A4A] hover:bg-[#5A5A5A] text-green-400 hover:text-green-300 transition-colors cursor-pointer"
+                                                    className="absolute right-0 top-1/2 transform -translate-y-1/2 p-1 rounded-md bg-green-600 hover:bg-green-700 text-white shadow-lg border border-green-500 transition-colors cursor-pointer"
                                                     aria-label="Save parameter name"
                                                 >
-                                                    <Check size={12} />
+                                                    <Check size={16} />
                                                 </button>
                                             </div>
                                         ) : (
@@ -493,16 +543,16 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                     onBlur={saveChanges}
                                                     onKeyDown={handleKeyDown}
                                                     autoFocus
-                                                    className="bg-[#333] rounded w-full text-sm p-2 pr-6 outline-none min-h-[60px] resize-y"
+                                                    className="bg-[#333] rounded w-full text-sm p-2 pr-10 outline-none min-h-[60px] resize-y"
                                                     style={{ caretColor: 'white', resize: 'none' }}
                                                     placeholder="Enter description"
                                                 />
                                                 <button
                                                     onClick={saveChanges}
-                                                    className="absolute right-1 top-2 p-0.5 rounded-sm bg-[#4A4A4A] hover:bg-[#5A5A5A] text-green-400 hover:text-green-300 transition-colors cursor-pointer"
+                                                    className="absolute right-2 top-2 p-1 rounded-md bg-green-600 hover:bg-green-700 text-white shadow-lg border border-green-500 transition-colors cursor-pointer"
                                                     aria-label="Save description"
                                                 >
-                                                    <Check size={12} />
+                                                    <Check size={16} />
                                                 </button>
                                             </div>
                                         ) : (

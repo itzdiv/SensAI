@@ -645,10 +645,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                         // Show error message if callback is provided
                         if (showErrorMessage) {
+                            const parameterName = name || `parameter ${index + 1}`;
                             const suffix = questionIndex !== undefined ? ` for question ${questionIndex + 1}` : '';
                             showErrorMessage(
                                 "Empty Scorecard Parameter",
-                                `Please provide a description for parameter ${index + 1} in the scorecard${suffix}`,
+                                `Please provide a description for ${parameterName} in the scorecard${suffix}`,
                                 "🚫"
                             );
                         }
@@ -2215,7 +2216,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             // Show success toast
             setToastTitle("Scorecard Saved");
-            setToastMessage("Your scorecard changes have been saved successfully");
+            setToastMessage("All questions using this scorecard have been updated");
             setToastEmoji("✅");
             setShowToast(true);
 
