@@ -130,9 +130,10 @@ export default function JoinCohortPage() {
                         <p className="text-gray-400 mb-8">
                             You have been successfully added to the cohort
                         </p>
-                        <p className="text-gray-400 mb-8">
-                            Taking you to the school...
-                        </p>
+                        <div className="flex items-center justify-center gap-3 text-gray-400 mb-8">
+                            <span>Taking you to the school</span>
+                            <div className="w-4 h-4 border-t-2 border-b-2 border-gray-400 rounded-full animate-spin"></div>
+                        </div>
                     </>
                 )}
 

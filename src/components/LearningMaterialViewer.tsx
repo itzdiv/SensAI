@@ -442,9 +442,16 @@ export default function LearningMaterialViewer({
                         overflow: hidden;
                     }
                 }
+
+                .material-view-container {
+                    height: 100% !important;
+                    max-height: 100% !important;
+                    overflow: hidden !important;
+                    display: grid !important;
+                }
                 
                 /* Make sure the content and chat containers properly fit their content */
-                @media (max-width: 1024px) {
+                @media (max-width: 1024px) {               
                     .material-view-container {
                         height: 100% !important;
                         max-height: 100% !important;
@@ -453,7 +460,7 @@ export default function LearningMaterialViewer({
                         grid-template-rows: 50% 50% !important;
                         grid-template-columns: 1fr !important;
                     }
-                    
+
                     .content-container {
                         height: 100% !important;
                         max-height: 100% !important;
