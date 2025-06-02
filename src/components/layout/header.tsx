@@ -150,7 +150,7 @@ export function Header({
 
     // Add handler for "Try a demo" button click
     const handleTryDemoClick = () => {
-        window.open("https://sensai.hyperverge.org/school/first-principles/join?cohortId=4", "_blank");
+        window.open("https://sensai.hyperverge.org/school/first-principles/join?cohortId=89", "_blank");
         setMobileActionsOpen(false);
     };
 
