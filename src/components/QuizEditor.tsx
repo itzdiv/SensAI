@@ -31,6 +31,7 @@ import Toast from "./Toast";
 import Tooltip from "./Tooltip";
 // Import the PublishConfirmationDialog component
 import PublishConfirmationDialog from './PublishConfirmationDialog';
+import { useEditorContentOrSelectionChange } from "@blocknote/react";
 
 // Default configuration for new questions
 const defaultQuestionConfig: QuizQuestionConfig = {
@@ -250,6 +251,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                     const data = await response.json();
 
+                    console.log(data)
+                    console.log(availableScorecards)
+
                     // Update the questions with the fetched data
                     if (data && data.questions && data.questions.length > 0) {
                         const updatedQuestions = data.questions.map((question: APIQuestionResponse) => {
@@ -350,14 +354,24 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     .filter((id: number) => id !== undefined)
                             );
 
-                            const cleanedScorecards = availableScorecards.filter(scorecard => {
-                                // Keep all scorecards that are not new (published scorecards)
+                            const cleanedScorecards = availableScorecards.map(scorecard => {
+                                // Keep all scorecards that are not new (published scorecards) as is
                                 if (!scorecard.new) {
-                                    return true;
+                                    return scorecard;
                                 }
-                                // For new scorecards, only keep those that are attached to questions
-                                return attachedScorecardIds.has(scorecard.id);
+                                // For new scorecards, if attached to questions, return as is
+                                if (attachedScorecardIds.has(scorecard.id)) {
+                                    return scorecard;
+                                }
+                                // For new scorecards that are not attached, set new as false
+                                return {
+                                    ...scorecard,
+                                    new: false
+                                };
                             });
+
+                            console.log(availableScorecards)
+                            console.log(cleanedScorecards)
 
                             setSchoolScorecards(cleanedScorecards);
                         }
@@ -373,8 +387,20 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         // Store the original data for cancel operation
                         originalQuestionsRef.current = JSON.parse(JSON.stringify(updatedQuestions));
                     } else {
+                        console.log(availableScorecards)
                         if (availableScorecards.length > 0) {
-                            const cleanedScorecards = availableScorecards.filter(scorecard => !scorecard.new);
+                            const cleanedScorecards = availableScorecards.map(scorecard => {
+                                // Keep all scorecards that are not new (published scorecards) as is
+                                if (!scorecard.new) {
+                                    return scorecard;
+                                }
+                                // For new scorecards that are not attached, set new as false
+                                return {
+                                    ...scorecard,
+                                    new: false
+                                };
+                            });
+                            console.log(cleanedScorecards)
                             setSchoolScorecards(cleanedScorecards);
                         }
                     }
@@ -1007,41 +1033,42 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
 
         // Check if this scorecard is used by multiple questions
-        const questionsUsingThisScorecard = questions.filter(q =>
-            q.config.scorecardData && q.config.scorecardData.id === scorecardForQuestion.id
-        );
-        const isUsedByMultiple = questionsUsingThisScorecard.length > 1;
+        // const questionsUsingThisScorecard = questions.filter(q =>
+        //     q.config.scorecardData && q.config.scorecardData.id === scorecardForQuestion.id
+        // );
+        // const isUsedByMultiple = questionsUsingThisScorecard.length > 1;
 
         let updatedQuestions;
 
-        if (isUsedByMultiple) {
-            // Only remove from current question if used by multiple
-            updatedQuestions = [...questions];
-            updatedQuestions[currentQuestionIndex] = {
-                ...updatedQuestions[currentQuestionIndex],
-                config: {
-                    ...updatedQuestions[currentQuestionIndex].config,
-                    scorecardData: undefined
-                }
-            };
-            setQuestions(updatedQuestions);
-        } else {
-            // Original behavior: remove from all questions and schoolScorecards if new
-            if (scorecardForQuestion && scorecardForQuestion.new) {
-                const updatedScorecards = schoolScorecards.filter(scorecard => scorecard.id !== scorecardForQuestion.id);
-                setSchoolScorecards(updatedScorecards);
+        // if (isUsedByMultiple) {
+        // Only remove from current question without affecting others
+        updatedQuestions = [...questions];
+        updatedQuestions[currentQuestionIndex] = {
+            ...updatedQuestions[currentQuestionIndex],
+            config: {
+                ...updatedQuestions[currentQuestionIndex].config,
+                scorecardData: undefined
             }
+        };
+        setQuestions(updatedQuestions);
+        // }
+        // {
+        //     // Original behavior: remove from all questions and schoolScorecards if new
+        //     if (scorecardForQuestion && scorecardForQuestion.new) {
+        //         const updatedScorecards = schoolScorecards.filter(scorecard => scorecard.id !== scorecardForQuestion.id);
+        //         setSchoolScorecards(updatedScorecards);
+        //     }
 
-            updatedQuestions = [...questions];
+        //     updatedQuestions = [...questions];
 
-            for (let i = 0; i < updatedQuestions.length; i++) {
-                if (updatedQuestions[i].config.scorecardData && updatedQuestions[i].config.scorecardData?.id === scorecardForQuestion.id) {
-                    updatedQuestions[i].config.scorecardData = undefined;
-                }
-            }
+        //     for (let i = 0; i < updatedQuestions.length; i++) {
+        //         if (updatedQuestions[i].config.scorecardData && updatedQuestions[i].config.scorecardData?.id === scorecardForQuestion.id) {
+        //             updatedQuestions[i].config.scorecardData = undefined;
+        //         }
+        //     }
 
-            setQuestions(updatedQuestions);
-        }
+        //     setQuestions(updatedQuestions);
+        // }
 
         if (onChange) {
             onChange(updatedQuestions);
@@ -2238,17 +2265,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             {/* Scorecard delete confirmation modal */}
             <ConfirmationDialog
                 show={showScorecardDeleteConfirm && !isPreviewMode}
-                title={scorecardUsedByMultiple ? "Remove Scorecard" : "Delete Scorecard"}
-                message={scorecardUsedByMultiple
-                    ? "Are you sure you want to remove this scorecard from this question? This will not affect other questions using this scorecard."
-                    : "Are you sure you want to delete this scorecard? This action cannot be undone."
-                }
+                title="Remove Scorecard"
+                message="Are you sure you want to remove this scorecard from this question? This will not affect other questions using this scorecard."
                 onConfirm={() => {
                     removeScorecardFromSchoolScoreboards();
                     setShowScorecardDeleteConfirm(false);
                 }}
                 onCancel={() => setShowScorecardDeleteConfirm(false)}
                 type="delete"
+                confirmButtonText="Remove"
             />
 
             {/* Question delete confirmation modal */}
@@ -2269,7 +2294,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     setShowScorecardSaveConfirm(false);
                 }}
                 title="Are you sure you want to save?"
-                message="These changes will be applied to all the questions across quizzes using this scorecard"
+                message="These changes will be applied to all the questions across quizzes using this scorecard. If you want to make changes only to this question, you can duplicate the scorecard and add your changes there."
                 onCancel={() => setShowScorecardSaveConfirm(false)}
                 type="save"
                 isLoading={isSavingScorecardRef.current}
