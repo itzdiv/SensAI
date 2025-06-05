@@ -1034,8 +1034,8 @@ export default function LearnerQuizView({
                                     // Set isCorrect to true only if all criteria have received their maximum score
                                     isCorrect = completeScorecard.every((item: ScorecardItem) =>
                                         item.score !== undefined &&
-                                        item.max_score !== undefined &&
-                                        item.score === item.max_score
+                                        ((item.pass_score !== undefined && item.score >= item.pass_score) ||
+                                            (item.max_score !== undefined && item.score === item.max_score))
                                     );
                                 }
 

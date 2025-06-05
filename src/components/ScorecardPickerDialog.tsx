@@ -6,6 +6,7 @@ export interface CriterionData {
     description: string;
     maxScore: number;
     minScore: number;
+    passScore: number;
 }
 
 interface Scorecard {
@@ -166,9 +167,9 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
             description: "Assess written communication skills",
             is_template: true, // This is a hard-coded template
             criteria: [
-                { name: "Relevance", description: "How relevant is the content to the task?", maxScore: 5, minScore: 1 },
-                { name: "Grammar", description: "How grammatically correct is the content? Check for grammar, punctuation, syntax and tense errors.", maxScore: 5, minScore: 1 },
-                { name: "Clarity", description: "How clear is the content? Check for structure, organization, and readability.", maxScore: 5, minScore: 1 }
+                { name: "Relevance", description: "How relevant is the content to the task?", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Grammar", description: "How grammatically correct is the content? Check for grammar, punctuation, syntax and tense errors.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Clarity", description: "How clear is the content? Check for structure, organization, and readability.", maxScore: 5, minScore: 1, passScore: 3 }
             ],
             new: false
         },
@@ -179,10 +180,10 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
             description: "Assess the quality of interviewing skills",
             is_template: true, // This is a hard-coded template
             criteria: [
-                { name: "Relevance", description: "How relevant is the content to the question posed to them?", maxScore: 5, minScore: 1 },
-                { name: "Fluency", description: "How fluently does the candidate speak? Their pace should be neither slow nor fast but at a regular speaking speed. They should not use filler speech or pause frequently.", maxScore: 5, minScore: 1 },
-                { name: "Confidence", description: "How confident does the candidate sound? The tone should be confident and not hesitant. Check for nervous pauses or stutters.", maxScore: 5, minScore: 1 },
-                { name: "Pronunciation", description: "How well does the candidate pronounce the words? Their pronunciation should be clear and coherent. The words must be intelligible.", maxScore: 5, minScore: 1 }
+                { name: "Relevance", description: "How relevant is the content to the question posed to them?", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Fluency", description: "How fluently does the candidate speak? Their pace should be neither slow nor fast but at a regular speaking speed. They should not use filler speech or pause frequently.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Confidence", description: "How confident does the candidate sound? The tone should be confident and not hesitant. Check for nervous pauses or stutters.", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Pronunciation", description: "How well does the candidate pronounce the words? Their pronunciation should be clear and coherent. The words must be intelligible.", maxScore: 5, minScore: 1, passScore: 3 }
             ],
             new: false
         },
@@ -193,11 +194,11 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
             description: "Assess a product pitch",
             is_template: true, // This is a hard-coded template
             criteria: [
-                { name: "Problem", description: "How clearly does the pitch identify the problem being solved?", maxScore: 5, minScore: 1 },
-                { name: "Value", description: "How compelling is the value proposition for the target audience?", maxScore: 5, minScore: 1 },
-                { name: "Clarity", description: "How clear and concise is the overall pitch?", maxScore: 5, minScore: 1 },
-                { name: "Engagement", description: "How engaging and persuasive is the delivery of the pitch?", maxScore: 5, minScore: 1 },
-                { name: "Market Fit", description: "How well does the pitch demonstrate product-market fit?", maxScore: 5, minScore: 1 }
+                { name: "Problem", description: "How clearly does the pitch identify the problem being solved?", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Value", description: "How compelling is the value proposition for the target audience?", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Clarity", description: "How clear and concise is the overall pitch?", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Engagement", description: "How engaging and persuasive is the delivery of the pitch?", maxScore: 5, minScore: 1, passScore: 3 },
+                { name: "Market Fit", description: "How well does the pitch demonstrate product-market fit?", maxScore: 5, minScore: 1, passScore: 3 }
             ],
             new: false
         },
@@ -207,9 +208,9 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         //     icon: <Check size={16} className="text-white" />,
         //     description: "Assess the quality of written communication",
         //     criteria: [
-        //         { name: "Relevance", description: "How relevant is the content to the task?", maxScore: 5 },
-        //         { name: "Grammar", description: "How grammatically correct is the content? Check for grammar, punctuation, syntax and tense errors.", maxScore: 5 },
-        //         { name: "Clarity", description: "How clear is the content? Check for structure, organization, and readability.", maxScore: 5 }
+        //         { name: "Relevance", description: "How relevant is the content to the task?", maxScore: 5, passScore: 3 },
+        //         { name: "Grammar", description: "How grammatically correct is the content? Check for grammar, punctuation, syntax and tense errors.", maxScore: 5, passScore: 3 },
+        //         { name: "Clarity", description: "How clear is the content? Check for structure, organization, and readability.", maxScore: 5, passScore: 3 }
         //     ]
         // },
         // {
@@ -218,10 +219,10 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         //     icon: <Sparkles size={16} className="text-white" />,
         //     description: "Assess the quality of interviewing skills",
         //     criteria: [
-        //         { name: "Relevance", description: "How relevant is the content to the question posed to them?", maxScore: 5 },
-        //         { name: "Fluency", description: "How fluently does the candidate speak? Their pace should be neither slow nor fast but at a regular speaking speed. They should not use filler speech or pause frequently.", maxScore: 5 },
-        //         { name: "Confidence", description: "How confident does the candidate sound? The tone should be confident and not hesitant. Check for nervous pauses or stutters.", maxScore: 5 },
-        //         { name: "Pronunciation", description: "How well does the candidate pronounce the words? Their pronunciation should be clear and coherent. The words must be intelligible.", maxScore: 5 }
+        //         { name: "Relevance", description: "How relevant is the content to the question posed to them?", maxScore: 5, passScore: 3 },
+        //         { name: "Fluency", description: "How fluently does the candidate speak? Their pace should be neither slow nor fast but at a regular speaking speed. They should not use filler speech or pause frequently.", maxScore: 5, passScore: 3 },
+        //         { name: "Confidence", description: "How confident does the candidate sound? The tone should be confident and not hesitant. Check for nervous pauses or stutters.", maxScore: 5, passScore: 3 },
+        //         { name: "Pronunciation", description: "How well does the candidate pronounce the words? Their pronunciation should be clear and coherent. The words must be intelligible.", maxScore: 5, passScore: 3 }
         //     ]
         // },
     ];

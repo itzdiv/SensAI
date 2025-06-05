@@ -65,7 +65,22 @@ const LearnerScorecard: React.FC<LearnerScorecardProps> = ({
                         const scorePercentage = Math.round((item.score / item.max_score) * 100);
                         return (
                             <div key={`summary-${index}`} className="flex items-center justify-between">
-                                <div className="text-sm truncate pr-4 max-w-[60%] text-white">{item.category}</div>
+                                <div className="flex items-center space-x-2 text-sm truncate pr-4 max-w-[60%] text-white">
+
+                                    <svg
+                                        className={`w-4 h-4 flex-shrink-0 ${item.score >= item.pass_score ? 'text-emerald-500' : 'text-rose-500'}`}
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        {item.score >= item.pass_score ? (
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                                        ) : (
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                                        )}
+                                    </svg>
+                                    <span>{item.category}</span>
+                                </div>
                                 <div className="flex items-center space-x-3 flex-shrink-0">
                                     <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                                         <div
@@ -107,7 +122,23 @@ const LearnerScorecard: React.FC<LearnerScorecardProps> = ({
                                         }`} />
                                     <div>
                                         <div className="text-sm font-medium text-white">
-                                            {item.category}
+                                            <div className="flex items-center space-x-2">
+                                                <div>{item.category} </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <svg
+                                                        className={`w-4 h-4 ${item.score >= item.pass_score ? 'text-emerald-500' : 'text-rose-500'}`}
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                    >
+                                                        {item.score >= item.pass_score ? (
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                                                        ) : (
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                                                        )}
+                                                    </svg>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="text-xs text-zinc-400">
                                             Score: {item.score}/{item.max_score}
