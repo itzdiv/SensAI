@@ -77,6 +77,7 @@ export interface ScorecardCriterion {
     description: string;
     min_score: number;
     max_score: number;
+    pass_score: number;
 }
 
 // Define the API response question interface
@@ -97,6 +98,7 @@ export interface APIQuestionResponse {
             description: string;
             min_score: number;
             max_score: number;
+            pass_score: number
         }[];
     };
     context?: {
@@ -129,6 +131,7 @@ export interface ScorecardItem {
     };
     score: number;
     max_score: number;
+    pass_score: number
 }
 
 export interface AIResponse {

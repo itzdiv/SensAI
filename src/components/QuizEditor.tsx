@@ -220,7 +220,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 name: criterion.name,
                                 description: criterion.description,
                                 maxScore: criterion.max_score,
-                                minScore: criterion.min_score
+                                minScore: criterion.min_score,
+                                passScore: criterion.pass_score
                             })) || []
                         }));
 
@@ -804,7 +805,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     name: criterion.name,
                     description: criterion.description,
                     min_score: criterion.minScore,
-                    max_score: criterion.maxScore
+                    max_score: criterion.maxScore,
+                    pass_score: criterion.passScore
                 }))
             }),
         });
@@ -828,7 +830,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         try {
             // Use the reusable function to create scorecard
             const createdScorecard = await createScorecard(newScorecardTitle, [
-                { name: '', description: '', minScore: 1, maxScore: 5 }
+                { name: '', description: '', minScore: 1, maxScore: 5, passScore: 3 }
             ]);
 
             // Create scorecard data using the backend ID
@@ -838,7 +840,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 new: true, // Mark as newly created in this session
                 is_template: false, // Not a template
                 criteria: [
-                    { name: '', description: '', minScore: 1, maxScore: 5 }
+                    { name: '', description: '', minScore: 1, maxScore: 5, passScore: 3 }
                 ]
             };
 
@@ -2340,7 +2342,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     name: criterion.name,
                     description: criterion.description,
                     min_score: criterion.minScore,
-                    max_score: criterion.maxScore
+                    max_score: criterion.maxScore,
+                    pass_score: criterion.passScore
                 }))
             };
 

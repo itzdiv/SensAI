@@ -33,7 +33,7 @@ export interface ScorecardHandle {
 // Interface to track which cell is being edited
 interface EditingCell {
     rowIndex: number;
-    field: 'name' | 'description' | 'maxScore' | 'minScore';
+    field: 'name' | 'description' | 'maxScore' | 'minScore' | 'passScore';
 }
 
 const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
@@ -141,7 +141,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
             name: '',
             description: '',
             maxScore: 5,
-            minScore: 1
+            minScore: 1,
+            passScore: 3
         };
 
         const updatedCriteria = [...(criteria || []), newCriterion];
@@ -219,10 +220,10 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     };
 
     // Function to start editing a cell
-    const startEditing = (rowIndex: number, field: 'name' | 'description' | 'maxScore' | 'minScore') => {
+    const startEditing = (rowIndex: number, field: EditingCell['field']) => {
         if (readOnly) return;
 
-        const value = field === 'maxScore' || field === 'minScore'
+        const value = field === 'maxScore' || field === 'minScore' || field === 'passScore'
             ? criteria[rowIndex][field].toString()
             : criteria[rowIndex][field] || '';
 
@@ -237,7 +238,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
         const { rowIndex, field } = editingCell;
         const updatedCriteria = [...criteria];
 
-        if (field === 'maxScore' || field === 'minScore') {
+        if (field === 'maxScore' || field === 'minScore' || field === 'passScore') {
             // Convert to number and validate
             const numberValue = parseInt(editValue, 10);
             if (!isNaN(numberValue) && numberValue >= 0) {
@@ -246,24 +247,36 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                     // Show toast notification
                     setToast({
                         show: true,
-                        title: 'Invalid Value',
+                        title: 'Incorrect Value',
                         description: 'Minimum score must be less than the maximum score',
                         emoji: '⚠️'
                     });
                     setEditingCell(null);
-                    return; // Don't save the invalid value
+                    return; // Don't save the incorrect value
                 }
 
                 if (field === 'maxScore' && numberValue <= criteria[rowIndex].minScore) {
                     // Show toast notification
                     setToast({
                         show: true,
-                        title: 'Invalid Value',
+                        title: 'Incorrect Value',
                         description: 'Maximum score must be greater than the minimum score',
                         emoji: '⚠️'
                     });
                     setEditingCell(null);
-                    return; // Don't save the invalid value
+                    return; // Don't save the incorrect value
+                }
+
+                if (field === 'passScore' && (numberValue > criteria[rowIndex].maxScore || numberValue < criteria[rowIndex].minScore)) {
+                    // Show toast notification
+                    setToast({
+                        show: true,
+                        title: 'Incorrect Value',
+                        description: 'Pass mark must be between the minimum and maximum',
+                        emoji: '⚠️'
+                    });
+                    setEditingCell(null);
+                    return; // Don't save the incorrect value
                 }
 
                 updatedCriteria[rowIndex] = {
@@ -345,7 +358,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                 if (current.name !== original.name ||
                     current.description !== original.description ||
                     current.minScore !== original.minScore ||
-                    current.maxScore !== original.maxScore) {
+                    current.maxScore !== original.maxScore ||
+                    current.passScore !== original.passScore) {
                     return true;
                 }
             }
@@ -471,7 +485,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                     </div>
 
                     {/* Table header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr 80px 80px 40px' }} className="gap-2 mb-2 text-xs text-gray-300">
+                    <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr 80px 80px 100px 40px' }} className="gap-2 mb-2 text-xs text-gray-300">
                         <div className="px-2 flex items-center">
                             Parameter
                             <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
@@ -512,6 +526,16 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                 </div>
                             </div>
                         </div>
+                        <div className="px-2 text-center flex items-center justify-center">
+                            Pass Mark
+                            <div className="relative ml-1 text-gray-500 hover:text-gray-300 cursor-pointer group">
+                                <HelpCircle size={12} />
+                                <div className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2 hidden group-hover:block px-3 py-1.5 rounded bg-gray-900 text-white text-xs whitespace-nowrap z-[10000]">
+                                    The minimum score that a learner needs to get for this parameter to be marked as complete
+                                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-l-gray-900"></div>
+                                </div>
+                            </div>
+                        </div>
                         <div className="px-2"></div> {/* Empty header for delete button */}
                     </div>
 
@@ -528,7 +552,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                             return (
                                 <div
                                     key={index}
-                                    style={{ display: 'grid', gridTemplateColumns: '250px 1fr 80px 80px 40px' }}
+                                    style={{ display: 'grid', gridTemplateColumns: '350px 1fr 80px 80px 100px 40px' }}
                                     className={`gap-2 rounded-md p-1 text-white ${isRowHighlighted ? 'bg-[#4D2424] outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse' : 'bg-[#2A2A2A]'}`}
                                 >
                                     {/* Criterion Name Cell */}
@@ -649,6 +673,33 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                     onClick={() => startEditing(index, 'maxScore')}
                                                 >
                                                     {criterion.maxScore}
+                                                </span>
+                                            </Tooltip>
+                                        )}
+                                    </div>
+
+                                    {/* Pass Score Cell */}
+                                    <div className="px-2 py-1 text-sm text-center h-full flex items-center justify-center">
+                                        {editingCell?.rowIndex === index && editingCell.field === 'passScore' ? (
+                                            <input
+                                                type="number"
+                                                value={editValue}
+                                                onChange={(e) => setEditValue(e.target.value)}
+                                                onBlur={saveChanges}
+                                                onKeyDown={handleKeyDown}
+                                                autoFocus
+                                                min="0"
+                                                max="100"
+                                                className="bg-[#333] rounded w-full text-xs p-1 outline-none text-center"
+                                                style={{ caretColor: 'white' }}
+                                            />
+                                        ) : (
+                                            <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
+                                                <span
+                                                    className="block cursor-pointer hover:opacity-80"
+                                                    onClick={() => startEditing(index, 'passScore')}
+                                                >
+                                                    {criterion.passScore}
                                                 </span>
                                             </Tooltip>
                                         )}
