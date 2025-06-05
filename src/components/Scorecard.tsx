@@ -67,6 +67,9 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     // State to track highlighted fields
     const [highlightedField, setHighlightedField] = useState<{ index: number, field: 'name' | 'description' } | null>(null);
 
+    // Add ref to track previous scorecard ID for transition detection
+    const prevScorecardIdRef = useRef<string | undefined>(scorecardId);
+
     // Update nameValue when prop changes
     useEffect(() => {
         setNameValue(name || '');
@@ -298,37 +301,63 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
 
     // Check if the scorecard has been modified (for published scorecards)
     const hasChanges = useMemo(() => {
-        // Only check for changes if we have original data and this is not a new scorecard
-        if (!originalName || !originalCriteria || isNew) return false;
+        // Detect if we're in a transition by comparing current and previous scorecard IDs
+        const isCurrentlyTransitioning = prevScorecardIdRef.current !== scorecardId;
 
-        // Check if name has changed
-        if (nameValue !== originalName) return true;
+        // Update the ref for next comparison
+        if (isCurrentlyTransitioning) {
+            prevScorecardIdRef.current = scorecardId;
+        }
 
-        // Check if criteria length has changed
-        if (criteria.length !== originalCriteria.length) return true;
+        // Don't show changes during transitions to prevent save button flashing
+        if (isCurrentlyTransitioning) {
+            return false;
+        }
 
-        // Check if any criterion has changed
-        for (let i = 0; i < criteria.length; i++) {
-            const current = criteria[i];
-            const original = originalCriteria[i];
+        // For published scorecards with original data, check against original values
+        if (originalName && originalCriteria) {
+            // Check if name has changed
+            if (nameValue !== originalName) return true;
 
-            if (!original) return true; // New criterion added
+            // Check if criteria length has changed
+            if (criteria.length !== originalCriteria.length) return true;
 
-            if (current.name !== original.name ||
-                current.description !== original.description ||
-                current.minScore !== original.minScore ||
-                current.maxScore !== original.maxScore) {
-                return true;
+            // Check if any criterion has changed
+            for (let i = 0; i < criteria.length; i++) {
+                const current = criteria[i];
+                const original = originalCriteria[i];
+
+                if (!original) return true; // New criterion added
+
+                if (current.name !== original.name ||
+                    current.description !== original.description ||
+                    current.minScore !== original.minScore ||
+                    current.maxScore !== original.maxScore) {
+                    return true;
+                }
             }
+
+            return false;
+        }
+
+        // For draft scorecards (no original data), consider any content as changes
+        // Show save button if there's a name or any criteria with content
+        if (nameValue.trim()) return true;
+
+        if (criteria.some(criterion =>
+            criterion.name.trim() ||
+            criterion.description.trim() ||
+            criterion.minScore !== 1 ||
+            criterion.maxScore !== 5
+        )) {
+            return true;
         }
 
         return false;
-    }, [nameValue, criteria, originalName, originalCriteria, isNew]);
+    }, [nameValue, criteria, originalName, originalCriteria, scorecardId]);
 
     // Determine if save button should be shown
-    const shouldShowSaveButton = !isNew && hasChanges && onSave;
-
-    console.log(readOnly)
+    const shouldShowSaveButton = hasChanges && onSave;
 
     // Determine if banner should be shown
     const shouldShowBanner = !readOnly && isNew && (linked || isUsedByMultipleQuestions);
@@ -370,13 +399,13 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                 {/* Header with name */}
                 <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
                     {/* NEW pill */}
-                    {isNew && (
+                    {/* {isNew && (
                         <div className="mb-3">
                             <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-green-700 text-white">
                                 NEW
                             </span>
                         </div>
-                    )}
+                    )} */}
 
                     <div className="flex items-center mb-4">
                         <input
@@ -556,7 +585,7 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                                 </button>
                                             </div>
                                         ) : (
-                                            <Tooltip content="Click to edit" position="bottom" disabled={readOnly}>
+                                            <Tooltip content="Click to edit" position="bottom" disabled={readOnly} className="w-full">
                                                 <span
                                                     className={`block break-words text-sm w-full whitespace-pre-wrap cursor-pointer hover:opacity-80 relative z-50 ${criterion.description ? '' : 'text-gray-500'}`}
                                                     onClick={() => startEditing(index, 'description')}

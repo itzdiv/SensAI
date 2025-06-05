@@ -251,9 +251,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                     const data = await response.json();
 
-                    console.log(data)
-                    console.log(availableScorecards)
-
                     // Update the questions with the fetched data
                     if (data && data.questions && data.questions.length > 0) {
                         const updatedQuestions = data.questions.map((question: APIQuestionResponse) => {
@@ -332,8 +329,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         // Store original scorecard data for change detection
                         const originalData = new Map<string, { name: string, criteria: CriterionData[] }>();
                         updatedQuestions.forEach((question: QuizQuestion) => {
-                            if (question.config.scorecardData && !question.config.scorecardData.new) {
-                                // This is a published scorecard, store its original data
+                            if (question.config.scorecardData) {
+                                // Store original data for all scorecards fetched from API (including draft ones)
                                 const scorecardId = question.config.scorecardData.id;
                                 if (!originalData.has(scorecardId)) {
                                     originalData.set(scorecardId, {
@@ -345,37 +342,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                         });
                         setOriginalScorecardData(originalData);
 
-
-                        // Clean up school scorecards - remove any scorecards with new=true that are not attached to any question
-                        if (availableScorecards.length > 0) {
-                            const attachedScorecardIds = new Set(
-                                updatedQuestions
-                                    .map((q: QuizQuestion) => q.config.scorecardData?.id)
-                                    .filter((id: number) => id !== undefined)
-                            );
-
-                            const cleanedScorecards = availableScorecards.map(scorecard => {
-                                // Keep all scorecards that are not new (published scorecards) as is
-                                if (!scorecard.new) {
-                                    return scorecard;
-                                }
-                                // For new scorecards, if attached to questions, return as is
-                                if (attachedScorecardIds.has(scorecard.id)) {
-                                    return scorecard;
-                                }
-                                // For new scorecards that are not attached, set new as false
-                                return {
-                                    ...scorecard,
-                                    new: false
-                                };
-                            });
-
-                            console.log(availableScorecards)
-                            console.log(cleanedScorecards)
-
-                            setSchoolScorecards(cleanedScorecards);
-                        }
-
                         // Notify parent component about the update, but only once and after our state is updated
                         if (onChange) {
                             // Use setTimeout to break the current render cycle
@@ -386,23 +352,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
                         // Store the original data for cancel operation
                         originalQuestionsRef.current = JSON.parse(JSON.stringify(updatedQuestions));
-                    } else {
-                        console.log(availableScorecards)
-                        if (availableScorecards.length > 0) {
-                            const cleanedScorecards = availableScorecards.map(scorecard => {
-                                // Keep all scorecards that are not new (published scorecards) as is
-                                if (!scorecard.new) {
-                                    return scorecard;
-                                }
-                                // For new scorecards that are not attached, set new as false
-                                return {
-                                    ...scorecard,
-                                    new: false
-                                };
-                            });
-                            console.log(cleanedScorecards)
-                            setSchoolScorecards(cleanedScorecards);
-                        }
                     }
 
                     // Mark that we've fetched the data - do this regardless of whether questions were found
@@ -610,7 +559,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     ): boolean => {
         // If no scorecard or not a user-created scorecard (new), return true (valid)
-        if (!scorecard || !scorecard.new) {
+        if (!scorecard) {
             return true;
         }
 
@@ -826,51 +775,107 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
             // Position the bottom of the dialog above the button with some spacing
             setScorecardDialogPosition({
-                top: Math.max(10, rect.top - estimatedDialogHeight - 10), // Ensure at least 10px from top of viewport
+                top: Math.max(10, schoolScorecards.length > 0 ? rect.top - estimatedDialogHeight - 80 : rect.top - estimatedDialogHeight - 10), // Ensure at least 10px from top of viewport
                 left: Math.max(10, rect.left - 120) // Center horizontally but ensure it's not off-screen
             });
             setShowScorecardDialog(true);
         }
     };
 
-    // Function to handle creating a new scorecard
-    const handleCreateNewScorecard = () => {
-        setShowScorecardDialog(false);
+    // Add a reusable function for creating scorecards
+    const createScorecard = async (title: string, criteria: CriterionData[]): Promise<any> => {
+        if (!schoolId) {
+            throw new Error('School ID is required to create scorecard');
+        }
 
-        // Set the scorecard title
-        setScorecardTitle("New Scorecard");
-
-        // Create an empty scorecard
-        const newScorecardData: ScorecardTemplate = {
-            id: crypto.randomUUID(), // Generate a unique UUID for the scorecard
-            name: "New Scorecard",
-            new: true, // Mark as newly created in this session
-            is_template: false, // Not a template
-            criteria: [
-                { name: '', description: '', minScore: 1, maxScore: 5 }
-            ]
-        };
-
-        // Add the new scorecard to the question's config
-        handleConfigChange({
-            scorecardData: newScorecardData
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: title,
+                org_id: schoolId,
+                criteria: criteria.map(criterion => ({
+                    name: criterion.name,
+                    description: criterion.description,
+                    min_score: criterion.minScore,
+                    max_score: criterion.maxScore
+                }))
+            }),
         });
 
-        // Update school scorecards state with new scorecard
-        const updatedScorecards = [...schoolScorecards, newScorecardData];
-        setSchoolScorecards(updatedScorecards);
+        if (!response.ok) {
+            throw new Error(`Failed to create scorecard: ${response.status}`);
+        }
 
-        // Switch to the scorecard tab
-        setActiveEditorTab('scorecard');
+        return await response.json();
+    };
 
-        // Focus on the scorecard title after a short delay to allow rendering
-        setTimeout(() => {
-            scorecardRef.current?.focusName();
-        }, 100);
+    // Function to handle creating a new scorecard
+    const handleCreateNewScorecard = async () => {
+        setShowScorecardDialog(false);
+
+        const newScorecardTitle = "New Scorecard";
+
+        // Set the scorecard title
+        setScorecardTitle(newScorecardTitle);
+
+        try {
+            // Use the reusable function to create scorecard
+            const createdScorecard = await createScorecard(newScorecardTitle, [
+                { name: '', description: '', minScore: 1, maxScore: 5 }
+            ]);
+
+            // Create scorecard data using the backend ID
+            const newScorecardData: ScorecardTemplate = {
+                id: createdScorecard.id, // Use the ID returned from backend
+                name: createdScorecard.title,
+                new: true, // Mark as newly created in this session
+                is_template: false, // Not a template
+                criteria: [
+                    { name: '', description: '', minScore: 1, maxScore: 5 }
+                ]
+            };
+
+            // Add the new scorecard to the question's config
+            handleConfigChange({
+                scorecardData: newScorecardData
+            });
+
+            // Update school scorecards state with new scorecard
+            const updatedScorecards = [...schoolScorecards, newScorecardData];
+            setSchoolScorecards(updatedScorecards);
+
+            // Add the new scorecard to originalScorecardData as the baseline for change detection
+            const updatedOriginalData = new Map(originalScorecardData);
+            updatedOriginalData.set(newScorecardData.id, {
+                name: newScorecardData.name,
+                criteria: JSON.parse(JSON.stringify(newScorecardData.criteria))
+            });
+            setOriginalScorecardData(updatedOriginalData);
+
+            // Switch to the scorecard tab
+            setActiveEditorTab('scorecard');
+
+            // Focus on the scorecard title after a short delay to allow rendering
+            setTimeout(() => {
+                scorecardRef.current?.focusName();
+            }, 100);
+
+        } catch (error) {
+            console.error('Error creating scorecard:', error);
+
+            // Show error toast
+            setToastTitle("Creation Failed");
+            setToastMessage("Failed to create scorecard. Please try again.");
+            setToastEmoji("❌");
+            setShowToast(true);
+        }
     };
 
     // Function to handle selecting a scorecard template
-    const handleSelectScorecardTemplate = (template: ScorecardTemplate) => {
+    const handleSelectScorecardTemplate = async (template: ScorecardTemplate) => {
         setShowScorecardDialog(false);
 
         // Set the scorecard title
@@ -879,17 +884,34 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         let scorecard: ScorecardTemplate;
 
         if (template.is_template) {
-            // one of the hardcoded templates
-            scorecard = {
-                id: crypto.randomUUID(),
-                name: template.name,
-                new: true,
-                is_template: false,
-                criteria: template.criteria,
-            };
+            // Creating from a hardcoded template - use the reusable function
+            try {
+                const createdScorecard = await createScorecard(template.name, template.criteria);
+
+                // Use the backend ID for the new scorecard
+                scorecard = {
+                    id: createdScorecard.id, // Use the ID returned from backend
+                    name: createdScorecard.title,
+                    new: true,
+                    is_template: false,
+                    criteria: template.criteria,
+                };
+
+                // Update school scorecards state with new scorecard
+                const updatedScorecards = [...schoolScorecards, scorecard];
+                setSchoolScorecards(updatedScorecards);
+            } catch (error) {
+                console.error('Error creating scorecard from template:', error);
+
+                // Show error toast
+                setToastTitle("Creation Failed");
+                setToastMessage("Failed to create scorecard from template. Please try again.");
+                setToastEmoji("❌");
+                setShowToast(true);
+                return;
+            }
         } else {
-            // one of the user generated scorecards - could be both published scorecards or newly created scorecards
-            // in this session itself
+            // one of the user generated scorecards - could be both published scorecards or newly created scorecards in this session itself
             scorecard = {
                 id: template.id,
                 name: template.name,
@@ -899,11 +921,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             };
         }
 
-        // Update school scorecards state with new scorecard
-        if (template.is_template) {
-            const updatedScorecards = [...schoolScorecards, scorecard];
-            setSchoolScorecards(updatedScorecards);
-        }
+        // Add the new scorecard to originalScorecardData as the baseline for change detection
+        const updatedOriginalData = new Map(originalScorecardData);
+        updatedOriginalData.set(scorecard.id, {
+            name: scorecard.name,
+            criteria: JSON.parse(JSON.stringify(scorecard.criteria))
+        });
+        setOriginalScorecardData(updatedOriginalData);
 
         // Add the scorecard data to the question's config
         handleConfigChange({
@@ -1607,7 +1631,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
                         <Plus size={12} className="text-black" />
                     </div>
-                    Add Your First Question
+                    Add question
                 </button>
             )}
         </div>
@@ -1642,27 +1666,11 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 // Map inputType
                 const inputType = question.config.inputType
 
-                let scorecard = null
                 let scorecardId = null
 
                 if (question.config.scorecardData) {
                     // Use our helper function to determine if this is an API scorecard
-                    const isExistingScorecard = isPublishedScorecard(question.config.scorecardData);
-
-                    if (isExistingScorecard) {
-                        scorecardId = question.config.scorecardData.id
-                    } else {
-                        scorecard = {
-                            id: question.config.scorecardData.id,
-                            title: question.config.scorecardData.name,
-                            criteria: question.config.scorecardData.criteria.map(criterion => ({
-                                name: criterion.name,
-                                description: criterion.description,
-                                min_score: criterion.minScore,
-                                max_score: criterion.maxScore
-                            }))
-                        }
-                    }
+                    scorecardId = question.config.scorecardData.id
                 }
 
                 // Return the formatted question object for all questions, not just those with scorecards
@@ -1676,13 +1684,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     type: questionType,
                     max_attempts: question.config.responseType === 'exam' ? 1 : null,
                     is_feedback_shown: question.config.responseType === 'exam' ? false : true,
-                    scorecard: scorecard,
                     scorecard_id: scorecardId,
                     context: getKnowledgeBaseContent(question.config),
                 };
             });
 
-            // Make POST request to publish the quiz
+            // Make POST request to update the quiz
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/tasks/${taskId}/quiz`, {
                 method: 'POST',
                 headers: {
@@ -1751,6 +1758,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 // Get input_type from the current config
                 const inputType = question.config.inputType;
 
+                let scorecardId = null
+
+                if (question.config.scorecardData) {
+                    // Use our helper function to determine if this is an API scorecard
+                    scorecardId = question.config.scorecardData.id
+                }
+
                 return {
                     id: question.id,
                     blocks: question.content,
@@ -1758,6 +1772,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     coding_languages: question.config.codingLanguages || [],
                     type: questionType,
                     input_type: inputType,
+                    scorecard_id: scorecardId,
                     context: getKnowledgeBaseContent(question.config)
                 };
             });
@@ -2123,19 +2138,13 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         }
     }, [currentQuestionIndex, questions, getQuestionTypeOption, getAnswerTypeOption, getPurposeOption]);
 
-    // Helper function to check if a scorecard is a published scorecard
-    const isPublishedScorecard = (scorecardData: ScorecardTemplate): boolean => {
-        // published scorecards are those that are already part of the school and fetched from api
-        return scorecardData && !scorecardData.new && !scorecardData.is_template && typeof scorecardData.id === 'number';
-    };
-
     const isUserCreatedNewScorecard = (scorecardData: ScorecardTemplate): boolean => {
-        return scorecardData && !scorecardData.new && !scorecardData.is_template && typeof scorecardData.id === 'string';
+        return scorecardData && !scorecardData.new && !scorecardData.is_template;
     };
 
     const isLinkedScorecard = (scorecardData: ScorecardTemplate): boolean => {
         if (scorecardData.new) return false;
-        return isPublishedScorecard(scorecardData) || isUserCreatedNewScorecard(scorecardData);
+        return isUserCreatedNewScorecard(scorecardData);
     };
 
     // New function to sync all questions with a source scorecard when it changes
@@ -2184,8 +2193,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
         const scorecardData = currentQuestionConfig.scorecardData;
 
-        // Only save if this is a published scorecard (not new)
+        // Don't ask for confirmation if this is a new scorecard
         if (scorecardData.new) {
+            performScorecardSave();
             return;
         }
 
@@ -2202,9 +2212,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         const scorecardData = currentQuestionConfig.scorecardData;
 
         // Only save if this is a published scorecard (not new)
-        if (scorecardData.new) {
-            return;
-        }
+        // if (scorecardData.new) {
+        //     return;
+        // }
 
         isSavingScorecardRef.current = true;
 
@@ -2241,12 +2251,15 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             });
             setOriginalScorecardData(updatedOriginalData);
 
-            // Show success toast
+            // Show success toast if this is not a new scorecard
+            if (scorecardData.new) {
+                return;
+            }
+
             setToastTitle("Scorecard Saved");
             setToastMessage("All questions using this scorecard have been updated");
             setToastEmoji("✅");
             setShowToast(true);
-
         } catch (error) {
             console.error('Error saving scorecard:', error);
 
@@ -2686,35 +2699,60 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     onSave={handleSaveScorecardChanges}
                                                     originalName={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.name : undefined}
                                                     originalCriteria={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.criteria : undefined}
-                                                    onDuplicate={() => {
+                                                    onDuplicate={async () => {
                                                         if (!currentQuestionConfig.scorecardData) {
                                                             return;
                                                         }
 
                                                         const originalScorecard = currentQuestionConfig.scorecardData;
 
-                                                        // Create a duplicate scorecard with a new ID and mark it as new (unlinked)
-                                                        const duplicatedScorecard: ScorecardTemplate = {
-                                                            id: crypto.randomUUID(), // Generate a new unique ID
-                                                            name: `${originalScorecard.name} (Copy)`,
-                                                            new: true, // Mark as newly created to make it unlinked
-                                                            is_template: false,
-                                                            criteria: [...originalScorecard.criteria] // Deep copy the criteria
-                                                        };
+                                                        try {
+                                                            // Use the reusable function to create duplicated scorecard
+                                                            const createdScorecard = await createScorecard(
+                                                                `${originalScorecard.name} (Copy)`,
+                                                                originalScorecard.criteria
+                                                            );
 
-                                                        // Update the current question to use the duplicated scorecard
-                                                        handleConfigChange({
-                                                            scorecardData: duplicatedScorecard
-                                                        });
+                                                            // Create a duplicate scorecard with the backend ID
+                                                            const duplicatedScorecard: ScorecardTemplate = {
+                                                                id: createdScorecard.id, // Use the ID returned from backend
+                                                                name: createdScorecard.title,
+                                                                new: true, // Mark as newly created to make it unlinked
+                                                                is_template: false,
+                                                                criteria: [...originalScorecard.criteria] // Deep copy the criteria
+                                                            };
 
-                                                        // Add the duplicated scorecard to school scorecards
-                                                        const updatedScorecards = [...schoolScorecards, duplicatedScorecard];
-                                                        setSchoolScorecards(updatedScorecards);
+                                                            // Update the current question to use the duplicated scorecard
+                                                            handleConfigChange({
+                                                                scorecardData: duplicatedScorecard
+                                                            });
 
-                                                        // Focus on the scorecard name for editing
-                                                        setTimeout(() => {
-                                                            scorecardRef.current?.focusName();
-                                                        }, 100);
+                                                            // Add the duplicated scorecard to school scorecards
+                                                            const updatedScorecards = [...schoolScorecards, duplicatedScorecard];
+                                                            setSchoolScorecards(updatedScorecards);
+
+                                                            // Add the new scorecard to originalScorecardData as the baseline for change detection
+                                                            const updatedOriginalData = new Map(originalScorecardData);
+                                                            updatedOriginalData.set(duplicatedScorecard.id, {
+                                                                name: duplicatedScorecard.name,
+                                                                criteria: JSON.parse(JSON.stringify(duplicatedScorecard.criteria))
+                                                            });
+                                                            setOriginalScorecardData(updatedOriginalData);
+
+                                                            // Focus on the scorecard name for editing
+                                                            setTimeout(() => {
+                                                                scorecardRef.current?.focusName();
+                                                            }, 100);
+
+                                                        } catch (error) {
+                                                            console.error('Error duplicating scorecard:', error);
+
+                                                            // Show error toast
+                                                            setToastTitle("Duplication Failed");
+                                                            setToastMessage("Failed to duplicate scorecard. Please try again.");
+                                                            setToastEmoji("❌");
+                                                            setShowToast(true);
+                                                        }
                                                     }}
                                                     onNameChange={(newName) => {
                                                         if (!currentQuestionConfig.scorecardData) {

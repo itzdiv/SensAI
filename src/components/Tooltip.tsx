@@ -6,6 +6,7 @@ interface TooltipProps {
     position?: "top" | "bottom" | "left" | "right";
     delay?: number;
     disabled?: boolean;
+    className?: string;
 }
 
 export default function Tooltip({
@@ -14,6 +15,7 @@ export default function Tooltip({
     position = "top",
     delay = 300,
     disabled = false,
+    className = "",
 }: TooltipProps) {
     const [isVisible, setIsVisible] = useState(false);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,7 +64,7 @@ export default function Tooltip({
 
     return (
         <div
-            className="relative inline-block cursor-pointer"
+            className={`relative inline-block cursor-pointer ${className}`}
             onMouseEnter={showTip}
             onMouseLeave={hideTip}
             onTouchStart={showTip}

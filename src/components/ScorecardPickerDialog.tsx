@@ -46,7 +46,6 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
     };
 
     const statusPills = getStatusPills();
-    const description = template.description || `Organize ${template.name.toLowerCase()} efficiently.`;
 
     // Default criteria if not provided
     const criteria = template.criteria || [
@@ -69,11 +68,13 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
         // Calculate available space below the template
         const spaceBelow = viewportHeight - templateRect.top;
 
+        // Always position on the right side (outside the dialog)
+        const horizontalPosition = { left: '100%', marginLeft: '10px' };
+
         // If there's not enough space below, position from bottom up
         if (spaceBelow < previewHeight) {
             return {
-                left: '100%',
-                marginLeft: '10px',
+                ...horizontalPosition,
                 bottom: '0',
                 top: 'auto'
             };
@@ -81,19 +82,18 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
 
         // Otherwise position from top down (default)
         return {
-            left: '100%',
-            marginLeft: '10px',
+            ...horizontalPosition,
             top: '0',
             bottom: 'auto'
         };
     }, [templateElement]);
 
     return (
-        <div className="absolute z-[60] w-[350px] bg-[#2F2F2F] rounded-lg shadow-xl p-2" style={previewStyle}>
+        <div className="absolute z-[100] w-[350px] bg-[#2F2F2F] rounded-lg shadow-xl p-2" style={previewStyle}>
             {/* Header with name */}
             <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
                 <div className="flex items-center mb-4">
-                    {type === 'standard' && (
+                    {template.icon && (
                         <div className="w-6 h-6 bg-[#712828] rounded flex items-center justify-center mr-2">
                             {template.icon}
                         </div>
@@ -135,9 +135,9 @@ const TemplatePreview: React.FC<{ template: ScorecardTemplate; templateElement: 
                 </div>
             </div>
 
-            {/* Description text - only shown for standard type */}
-            {type === 'standard' && (
-                <p className="text-white text-sm font-normal px-1">{description}</p>
+            {/* Description text - show for both standard and user types */}
+            {template.description && (
+                <p className="text-white text-sm font-normal px-1">{template.description}</p>
             )}
         </div>
     );
@@ -242,7 +242,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
         if (!hasSchoolScorecards) return null;
 
         return (
-            <div className="mt-2 flex border-b border-[#333333]">
+            <div className={`flex border-b border-[#333333]`}>
                 <button
                     className={`px-4 py-2 text-sm font-light flex-1 cursor-pointer ${activeTab === 'yours' ?
                         'text-white border-b-2 border-white' :
@@ -267,39 +267,65 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
     const renderYourScorecards = () => {
         if (!hasSchoolScorecards || activeTab !== 'yours') return null;
 
-        return (
-            <div className="h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
-                {schoolScorecards.map((template) => (
-                    <div
-                        key={template.id}
-                        className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
-                        onClick={() => onSelectTemplate(template)}
-                        onMouseEnter={(e) => {
-                            setHoveredTemplate(template.id);
-                            setHoveredElement(e.currentTarget as HTMLDivElement);
-                        }}
-                        onMouseLeave={() => {
-                            setHoveredTemplate(null);
-                            setHoveredElement(null);
-                        }}
-                    >
-                        <span className="text-white text-sm">{template.name}</span>
-                        {template.new && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-700 text-white ml-2">
-                                NEW
-                            </span>
-                        )}
+        // Filter scorecards based on search query
+        const filteredScorecards = schoolScorecards.filter(scorecard =>
+            scorecard.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
 
-                        {/* Preview on hover */}
-                        {hoveredTemplate === template.id && hoveredElement && (
-                            <TemplatePreview
-                                template={template}
-                                templateElement={hoveredElement}
-                                type="user"
-                            />
-                        )}
+        return (
+            <div className="relative">
+                {/* Search input for user scorecards */}
+                <div className="p-4">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Search your scorecards"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-[#111] rounded-md px-3 py-2 text-white"
+                        />
                     </div>
-                ))}
+                </div>
+
+                <div className="h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#333] scrollbar-track-transparent">
+                    {filteredScorecards.length > 0 ? (
+                        filteredScorecards.map((template) => (
+                            <div
+                                key={template.id}
+                                className="flex items-center px-4 py-3 hover:bg-[#2A2A2A] cursor-pointer transition-colors relative"
+                                onClick={() => onSelectTemplate(template)}
+                                onMouseEnter={(e) => {
+                                    setHoveredTemplate(template.id);
+                                    setHoveredElement(e.currentTarget as HTMLDivElement);
+                                }}
+                                onMouseLeave={() => {
+                                    setHoveredTemplate(null);
+                                    setHoveredElement(null);
+                                }}
+                            >
+                                <span className="text-white text-sm">{template.name}</span>
+                                {/* {template.new && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-700 text-white ml-2">
+                                        NEW
+                                    </span>
+                                )} */}
+                            </div>
+                        ))
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                            {searchQuery ? 'No scorecards match your search' : 'No scorecards available'}
+                        </div>
+                    )}
+                </div>
+
+                {/* Preview positioned outside the scrollable container */}
+                {hoveredTemplate && hoveredElement && activeTab === 'yours' && (
+                    <TemplatePreview
+                        template={schoolScorecards.find(t => t.id === hoveredTemplate)!}
+                        templateElement={hoveredElement}
+                        type="user"
+                    />
+                )}
             </div>
         );
     };
@@ -348,7 +374,7 @@ const ScorecardPickerDialog: React.FC<ScorecardTemplatesDialogProps> = ({
 
     return (
         <div
-            className="fixed inset-0 z-50"
+            className="fixed inset-0 z-50 ${activeTab === 'yours' ? 'mt-2' : 'mt-20'}"
             onClick={onClose}
         >
             <div
