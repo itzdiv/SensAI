@@ -205,6 +205,22 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
         }
     };
 
+    // Function to handle cancel - revert to original values
+    const handleCancel = () => {
+        if (originalName && originalCriteria) {
+            // Revert name to original
+            setNameValue(originalName);
+            if (onNameChange) {
+                onNameChange(originalName);
+            }
+
+            // Revert criteria to original
+            if (onChange) {
+                onChange([...originalCriteria]);
+            }
+        }
+    };
+
     // Function to start editing a cell
     const startEditing = (rowIndex: number, field: 'name' | 'description' | 'maxScore' | 'minScore') => {
         if (readOnly) return;
@@ -436,6 +452,19 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                                         aria-label="Save scorecard changes"
                                     >
                                         Save
+                                    </button>
+                                </Tooltip>
+                            )}
+
+                            {/* Cancel scorecard button - only show for modified published scorecards */}
+                            {shouldShowSaveButton && originalName && originalCriteria && (
+                                <Tooltip content="Cancel changes" position="bottom">
+                                    <button
+                                        onClick={handleCancel}
+                                        className="px-3 py-1.5 rounded-md bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium transition-colors cursor-pointer"
+                                        aria-label="Cancel scorecard changes"
+                                    >
+                                        Cancel
                                     </button>
                                 </Tooltip>
                             )}

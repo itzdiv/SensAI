@@ -788,7 +788,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             throw new Error('School ID is required to create scorecard');
         }
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/scorecards/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
