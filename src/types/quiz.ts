@@ -23,6 +23,8 @@ export interface QuizEditorHandle {
             questionIndex?: number;
         }
     ) => boolean;
+    hasUnsavedScorecardChanges: () => boolean;
+    handleScorecardChangesRevert: () => void;
 }
 
 export interface QuizQuestionConfig {
@@ -67,6 +69,7 @@ export interface QuizEditorProps {
     onValidationError?: (message: string, description: string) => void; // Function to handle validation errors
     courseId?: string; // ID of the course for fetching learning materials
     scheduledPublishAt?: string | null;
+    onQuestionChangeWithUnsavedScorecardChanges?: () => void;
 }
 
 export interface ScorecardCriterion {

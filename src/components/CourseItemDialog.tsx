@@ -116,6 +116,14 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     // State to track if quiz has questions (for publish/preview button visibility)
     const [hasQuizQuestions, setHasQuizQuestions] = useState(false);
 
+    // Add state for unsaved scorecard confirmation dialog
+    const [showUnsavedScorecardConfirmation, setShowUnsavedScorecardConfirmation] = useState(false);
+
+    const [showUnsavedScorecardChangesInfo, setShowUnsavedScorecardChangesInfo] = useState(false);
+
+    // Use useRef instead of useState for storing the pending action
+    const pendingActionRef = useRef<(() => void) | null>(null);
+
     // Add a ref for the date picker container
     const datePickerRef = useRef<HTMLDivElement>(null);
 
@@ -537,31 +545,69 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
     // Handle save button click - show confirmation
     const handleSaveClick = () => {
-        // For quizzes, validate before showing save confirmation
+        checkUnsavedScorecardChangesBeforeAction(() => {
+            // For quizzes, validate before showing save confirmation
+            if (activeItem?.type === 'quiz' && quizEditorRef.current) {
+                // Run validation before opening the save confirmation
+                const isValid = quizEditorRef.current.validateBeforePublish();
+                if (!isValid) {
+                    return; // Don't show confirmation if validation fails
+                }
+            }
+
+            // For learning materials, validate content exists
+            if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
+                const hasContent = learningMaterialEditorRef.current.hasContent();
+                if (!hasContent) {
+                    // Show error message
+                    displayToast(
+                        "Empty Learning Material",
+                        "Please add content before saving",
+                        "🚫"
+                    );
+                    return; // Don't show confirmation if validation fails
+                }
+            }
+
+            // If validation passes, show save confirmation
+            setShowSaveConfirmation(true);
+        });
+    };
+
+    // Function to check for unsaved scorecard changes and handle appropriately
+    const checkUnsavedScorecardChangesBeforeAction = (action: () => void) => {
+        // For quizzes, check for unsaved scorecard changes first
         if (activeItem?.type === 'quiz' && quizEditorRef.current) {
-            // Run validation before opening the save confirmation
-            const isValid = quizEditorRef.current.validateBeforePublish();
-            if (!isValid) {
-                return; // Don't show confirmation if validation fails
+            if (quizEditorRef.current.hasUnsavedScorecardChanges()) {
+                pendingActionRef.current = action;
+                setShowUnsavedScorecardConfirmation(true);
+                return;
             }
         }
 
-        // For learning materials, validate content exists
-        if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
-            const hasContent = learningMaterialEditorRef.current.hasContent();
-            if (!hasContent) {
-                // Show error message
-                displayToast(
-                    "Empty Learning Material",
-                    "Please add content before saving",
-                    "🚫"
-                );
-                return; // Don't show confirmation if validation fails
-            }
+        // If no unsaved scorecard changes, proceed with the action
+        action();
+    };
+
+    // Handle unsaved scorecard confirmation - navigate to question
+    const handleGoBackToScorecard = () => {
+        setShowUnsavedScorecardConfirmation(false);
+
+        // Clear the pending action
+        pendingActionRef.current = null;
+    };
+
+    // Handle discard unsaved scorecard changes
+    const handleDiscardScorecardChanges = () => {
+        setShowUnsavedScorecardConfirmation(false);
+
+        // Execute the appropriate action based on what was being attempted
+        if (pendingActionRef.current) {
+            pendingActionRef.current();
         }
 
-        // If validation passes, show save confirmation
-        setShowSaveConfirmation(true);
+        // Clear the pending action
+        pendingActionRef.current = null;
     };
 
     // Handle confirmed save action
@@ -695,7 +741,11 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     <>
                                         {/* Save Draft button */}
                                         <button
-                                            onClick={handleConfirmSaveDraft}
+                                            onClick={() => {
+                                                checkUnsavedScorecardChangesBeforeAction(() => {
+                                                    handleConfirmSaveDraft();
+                                                });
+                                            }}
                                             className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-yellow-500 hover:bg-[#222222] focus:border-gray-500 active:border-gray-500 rounded-full transition-colors cursor-pointer mr-3"
                                             aria-label={`Save ${activeItem?.type} draft`}
                                         >
@@ -705,31 +755,33 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                         {/* Existing Publish button */}
                                         <button
                                             onClick={() => {
-                                                // For quizzes, validate before showing publish confirmation
-                                                if (activeItem?.type === 'quiz' && quizEditorRef.current) {
-                                                    // Run validation before opening the publish confirmation
-                                                    const isValid = quizEditorRef.current.validateBeforePublish();
-                                                    if (!isValid) {
-                                                        return; // Don't show confirmation if validation fails
+                                                checkUnsavedScorecardChangesBeforeAction(() => {
+                                                    // For quizzes, validate before showing publish confirmation
+                                                    if (activeItem?.type === 'quiz' && quizEditorRef.current) {
+                                                        // Run validation before opening the publish confirmation
+                                                        const isValid = quizEditorRef.current.validateBeforePublish();
+                                                        if (!isValid) {
+                                                            return; // Don't show confirmation if validation fails
+                                                        }
                                                     }
-                                                }
 
-                                                // For learning materials, validate content exists
-                                                if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
-                                                    const hasContent = learningMaterialEditorRef.current.hasContent();
-                                                    if (!hasContent) {
-                                                        // Show error message
-                                                        displayToast(
-                                                            "Empty Learning Material",
-                                                            "Please add content before publishing",
-                                                            "🚫"
-                                                        );
-                                                        return; // Don't show confirmation if validation fails
+                                                    // For learning materials, validate content exists
+                                                    if (activeItem?.type === 'material' && learningMaterialEditorRef.current) {
+                                                        const hasContent = learningMaterialEditorRef.current.hasContent();
+                                                        if (!hasContent) {
+                                                            // Show error message
+                                                            displayToast(
+                                                                "Empty Learning Material",
+                                                                "Please add content before publishing",
+                                                                "🚫"
+                                                            );
+                                                            return; // Don't show confirmation if validation fails
+                                                        }
                                                     }
-                                                }
 
-                                                // If validation passes, show publish confirmation
-                                                onSetShowPublishConfirmation(true);
+                                                    // If validation passes, show publish confirmation
+                                                    onSetShowPublishConfirmation(true);
+                                                });
                                             }}
                                             className="flex items-center px-4 py-2 text-sm text-white bg-transparent border !border-green-500 hover:bg-[#222222] focus:border-green-500 active:border-green-500 rounded-full transition-colors cursor-pointer"
                                             aria-label={`Publish ${activeItem?.type}`}
@@ -1007,6 +1059,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     onSetShowPublishConfirmation(false);
                                 }}
                                 schoolId={schoolId}
+                                onQuestionChangeWithUnsavedScorecardChanges={() => {
+                                    setShowUnsavedScorecardChangesInfo(true);
+                                }}
                             />
                         ) : null}
                     </div>
@@ -1042,6 +1097,33 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 onConfirm={handleConfirmSavePublished}
                 onCancel={handleCancelSave}
                 type="publish"
+            />
+
+            {/* Unsaved scorecard confirmation dialog */}
+            <ConfirmationDialog
+                open={showUnsavedScorecardConfirmation}
+                title="Unsaved Scorecard Changes"
+                message={`The scorecard for this question has unsaved changes. Do you want to discard them and continue, or go back to save them?`}
+                confirmButtonText="Discard Changes"
+                cancelButtonText="Go Back"
+                onConfirm={handleDiscardScorecardChanges}
+                onCancel={handleGoBackToScorecard}
+                type="delete"
+            />
+
+            <ConfirmationDialog
+                open={showUnsavedScorecardChangesInfo}
+                title="You have unsaved changes"
+                message={`Your scorecard has unsaved changes. Either save them or discard them.`}
+                confirmButtonText="Go back"
+                cancelButtonText=""
+                onConfirm={() => {
+                    setShowUnsavedScorecardChangesInfo(false);
+                }}
+                onCancel={() => {
+                    setShowUnsavedScorecardChangesInfo(false);
+                }}
+                type="custom"
             />
 
             {/* Toast notification */}

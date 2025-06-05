@@ -138,6 +138,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     onValidationError,
     courseId,
     scheduledPublishAt = null,
+    onQuestionChangeWithUnsavedScorecardChanges,
 }, ref) => {
     // For published quizzes: data is always fetched from the API
     // For draft quizzes: always start with empty questions
@@ -149,6 +150,9 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     const originalQuestionsRef = useRef<QuizQuestion[]>([]);
     // Add a ref to store the original title
     const originalTitleRef = useRef<string>("");
+
+    // Add ref to store pending action when unsaved scorecard changes are detected
+    const pendingScorecardActionRef = useRef<(() => void) | null>(null);
 
     // Add loading state for fetching questions
     const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
@@ -1456,6 +1460,24 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Add a new question
     const addQuestion = useCallback(() => {
+        if (checkUnsavedScorecardChanges()) {
+            // Store the add question action as pending
+            pendingScorecardActionRef.current = () => {
+                // Execute the add question logic without checking for unsaved changes
+                executeAddQuestion();
+            };
+
+            if (onQuestionChangeWithUnsavedScorecardChanges) {
+                onQuestionChangeWithUnsavedScorecardChanges();
+            }
+            return;
+        }
+
+        executeAddQuestion();
+    }, [questions, onChange]);
+
+    // Extract the actual add question logic to a separate function
+    const executeAddQuestion = useCallback(() => {
         // Get the previous question's configuration if available
         // Otherwise, use default values
         let questionType = 'objective';
@@ -1526,52 +1548,89 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     // Navigate to previous question
     const goToPreviousQuestion = useCallback(() => {
-        if (currentQuestionIndex > 0) {
-            // Reset last content update ref when navigating to a different question
-            lastContentUpdateRef.current = "";
-            const newIndex = currentQuestionIndex - 1;
+        if (currentQuestionIndex == 0) return;
 
+        if (checkUnsavedScorecardChanges()) {
+            // Store the previous question action as pending
+            pendingScorecardActionRef.current = () => {
+                // Execute the previous question logic without checking for unsaved changes
+                executeGoToPreviousQuestion();
+            };
 
-            // Reset active tab to question when navigating
-            // Only change active tab if the current tab is not available in the next question
-            const nextQuestion = questions[newIndex];
-            if (activeEditorTab === 'scorecard' && nextQuestion.config.questionType !== 'subjective') {
-                setActiveEditorTab('question');
-            } else if (activeEditorTab === 'answer' && nextQuestion.config.questionType == 'subjective') {
-                setActiveEditorTab('question');
+            if (onQuestionChangeWithUnsavedScorecardChanges) {
+                onQuestionChangeWithUnsavedScorecardChanges();
             }
+            return;
+        }
 
-            setCurrentQuestionIndex(newIndex);
+        executeGoToPreviousQuestion();
+    }, [currentQuestionIndex, onQuestionChange, questions, activeEditorTab, isPreviewMode]);
 
-            // Call the onQuestionChange callback if provided
-            if (onQuestionChange && questions[newIndex] && !isPreviewMode) {
-                onQuestionChange(questions[newIndex].id);
-            }
+    // Extract the actual previous question logic to a separate function
+    const executeGoToPreviousQuestion = useCallback(() => {
+        // Reset last content update ref when navigating to a different question
+        lastContentUpdateRef.current = "";
+        const newIndex = currentQuestionIndex - 1;
+
+
+        // Reset active tab to question when navigating
+        // Only change active tab if the current tab is not available in the next question
+        const nextQuestion = questions[newIndex];
+        if (activeEditorTab === 'scorecard' && nextQuestion.config.questionType !== 'subjective') {
+            setActiveEditorTab('question');
+        } else if (activeEditorTab === 'answer' && nextQuestion.config.questionType == 'subjective') {
+            setActiveEditorTab('question');
+        }
+
+        setCurrentQuestionIndex(newIndex);
+
+        // Call the onQuestionChange callback if provided
+        if (onQuestionChange && questions[newIndex] && !isPreviewMode) {
+            onQuestionChange(questions[newIndex].id);
         }
     }, [currentQuestionIndex, onQuestionChange, questions, activeEditorTab, isPreviewMode]);
 
     // Navigate to next question
     const goToNextQuestion = useCallback(() => {
-        if (currentQuestionIndex < questions.length - 1) {
-            // Reset last content update ref when navigating to a different question
-            lastContentUpdateRef.current = "";
-            const newIndex = currentQuestionIndex + 1;
+        if (currentQuestionIndex == questions.length - 1) return;
 
-            // Reset active tab to question when navigating
-            const nextQuestion = questions[newIndex];
-            if (activeEditorTab === 'scorecard' && nextQuestion.config.questionType !== 'subjective') {
-                setActiveEditorTab('question');
-            } else if (activeEditorTab === 'answer' && nextQuestion.config.questionType == 'subjective') {
-                setActiveEditorTab('question');
+        if (checkUnsavedScorecardChanges()) {
+            // Store the next question action as pending
+            pendingScorecardActionRef.current = () => {
+                // Execute the next question logic without checking for unsaved changes
+                executeGoToNextQuestion();
+            };
+
+            if (onQuestionChangeWithUnsavedScorecardChanges) {
+                onQuestionChangeWithUnsavedScorecardChanges();
             }
-
-            setCurrentQuestionIndex(newIndex);
-
-            // Call the onQuestionChange callback if provided
-            if (onQuestionChange && questions[newIndex] && !isPreviewMode) {
-                onQuestionChange(questions[newIndex].id);
-            }
+            return;
         }
+
+        executeGoToNextQuestion();
+    }, [currentQuestionIndex, questions.length, onQuestionChange, questions, activeEditorTab, isPreviewMode]);
+
+    // Extract the actual next question logic to a separate function
+    const executeGoToNextQuestion = useCallback(() => {
+        // Reset last content update ref when navigating to a different question
+        lastContentUpdateRef.current = "";
+        const newIndex = currentQuestionIndex + 1;
+
+        // Reset active tab to question when navigating
+        const nextQuestion = questions[newIndex];
+        if (activeEditorTab === 'scorecard' && nextQuestion.config.questionType !== 'subjective') {
+            setActiveEditorTab('question');
+        } else if (activeEditorTab === 'answer' && nextQuestion.config.questionType == 'subjective') {
+            setActiveEditorTab('question');
+        }
+
+        setCurrentQuestionIndex(newIndex);
+
+        // Call the onQuestionChange callback if provided
+        if (onQuestionChange && questions[newIndex] && !isPreviewMode) {
+            onQuestionChange(questions[newIndex].id);
+        }
+
     }, [currentQuestionIndex, questions.length, onQuestionChange, questions, activeEditorTab, isPreviewMode]);
 
     // Delete current question
@@ -1845,6 +1904,59 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             question.config.codingLanguages.length > 0);
     }, [questions, currentQuestionIndex]);
 
+    // Add function to check for unsaved scorecard changes across all questions
+    const checkUnsavedScorecardChanges = useCallback(() => {
+        // Check only the current question
+        if (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length) {
+            const question = questions[currentQuestionIndex];
+
+            // Check if this question has a scorecard
+            if (question.config.scorecardData) {
+                const scorecardId = question.config.scorecardData.id;
+
+                const originalData = originalScorecardData.get(scorecardId);
+
+                // If this is a new scorecard (not in original data), skip the check
+                if (!originalData) {
+                    return false;
+                }
+
+                // Check if scorecard name has changed
+                if (question.config.scorecardData.name !== originalData.name) {
+                    return true;
+                }
+
+                // Check if criteria have changed
+                const currentCriteria = question.config.scorecardData.criteria;
+                const originalCriteria = originalData.criteria;
+
+                // Check if criteria length has changed
+                if (currentCriteria.length !== originalCriteria.length) {
+                    return true;
+                }
+
+                // Check if any criterion has changed
+                for (let j = 0; j < currentCriteria.length; j++) {
+                    const current = currentCriteria[j];
+                    const original = originalCriteria[j];
+
+                    if (!original) {
+                        return true;
+                    }
+
+                    if (current.name !== original.name ||
+                        current.description !== original.description ||
+                        current.minScore !== original.minScore ||
+                        current.maxScore !== original.maxScore) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false; // No unsaved changes found
+    }, [questions, originalScorecardData, currentQuestionIndex]);
+
     // Expose methods to parent component via the ref
     useImperativeHandle(ref, () => ({
         saveDraft: () => updateDraftQuiz(null, 'draft'),
@@ -1924,6 +2036,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             // Return true if there are changes
             return currentQuestionsStr !== originalQuestionsStr;
         },
+        hasUnsavedScorecardChanges: checkUnsavedScorecardChanges,
+        handleScorecardChangesRevert: handleScorecardRevert
     }));
 
     // Update the MemoizedLearnerQuizView to include the correct answer
@@ -2201,7 +2315,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
         // Show confirmation dialog instead of saving directly
         setShowScorecardSaveConfirm(true);
-    }, [currentQuestionConfig.scorecardData, schoolId]);
+    }, [currentQuestionConfig.scorecardData, schoolId, originalScorecardData]);
 
     // Function that actually performs the scorecard save operation
     const performScorecardSave = useCallback(async () => {
@@ -2243,13 +2357,20 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 throw new Error(`Failed to save scorecard: ${response.status}`);
             }
 
-            // Update the original scorecard data to reflect the saved state
-            const updatedOriginalData = new Map(originalScorecardData);
-            updatedOriginalData.set(scorecardData.id, {
+            // Create the new original data immediately
+            const newOriginalData = {
                 name: scorecardData.name,
                 criteria: JSON.parse(JSON.stringify(scorecardData.criteria))
-            });
+            };
+
+            // Update the original scorecard data to reflect the saved state
+            const updatedOriginalData = new Map(originalScorecardData);
+            updatedOriginalData.set(scorecardData.id, newOriginalData);
             setOriginalScorecardData(updatedOriginalData);
+
+            // Also update the ref immediately for synchronous access
+            // This ensures that any immediate checks will see the updated data
+            originalScorecardData.set(scorecardData.id, newOriginalData);
 
             // Show success toast if this is not a new scorecard
             if (scorecardData.new) {
@@ -2272,6 +2393,41 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             isSavingScorecardRef.current = false;
         }
     }, [currentQuestionConfig.scorecardData, schoolId, originalScorecardData, setToastTitle, setToastMessage, setToastEmoji, setShowToast]);
+
+    // New function to handle complete scorecard revert
+    const handleScorecardRevert = useCallback(() => {
+        if (!currentQuestionConfig.scorecardData) {
+            return;
+        }
+
+        const scorecardId = currentQuestionConfig.scorecardData.id;
+        const originalData = originalScorecardData.get(scorecardId);
+
+        if (!originalData) {
+            return; // No original data to revert to
+        }
+
+        // Create the reverted scorecard data
+        const revertedScorecardData = {
+            ...currentQuestionConfig.scorecardData,
+            name: originalData.name,
+            criteria: [...originalData.criteria]
+        };
+
+        // Update the question config atomically
+        handleConfigChange({
+            scorecardData: revertedScorecardData
+        });
+
+        // Update the scorecard in schoolScorecards state
+        const updatedScorecards = schoolScorecards.map(sc =>
+            sc.id === scorecardId ? { ...sc, name: originalData.name, criteria: [...originalData.criteria] } : sc
+        );
+        setSchoolScorecards(updatedScorecards);
+
+        // Sync all linked scorecards to reflect the reverted changes
+        syncLinkedScorecards(scorecardId, originalData.name, originalData.criteria);
+    }, [currentQuestionConfig.scorecardData, originalScorecardData, handleConfigChange, schoolScorecards, syncLinkedScorecards]);
 
     return (
         <div className="flex flex-col h-full relative" key={`quiz-${taskId}-${isEditMode ? 'edit' : 'view'}`}>
@@ -2699,6 +2855,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                     onSave={handleSaveScorecardChanges}
                                                     originalName={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.name : undefined}
                                                     originalCriteria={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.criteria : undefined}
+                                                    onRevert={handleScorecardRevert}
                                                     onDuplicate={async () => {
                                                         if (!currentQuestionConfig.scorecardData) {
                                                             return;

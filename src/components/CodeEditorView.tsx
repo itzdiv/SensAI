@@ -1266,7 +1266,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                 {showInputPanel && (
                     <div className="flex-none h-1/3 border-t border-[#444444] flex flex-col">
                         <div className={`px-4 py-2 ${inputError ? 'bg-red-800' : 'bg-[#222222]'} text-white text-sm font-medium flex justify-between items-center`}>
-                            <span>{inputError ? 'Input Required' : 'Input (stdin)'}</span>
+                            <span>{inputError ? 'Input Required' : 'Add inputs for testing'}</span>
                         </div>
                         <textarea
                             ref={inputRef}

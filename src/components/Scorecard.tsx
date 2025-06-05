@@ -22,10 +22,12 @@ interface ScorecardProps {
     allQuestions?: any[]; // New prop to pass all questions for checking usage
     originalName?: string; // Original name for change detection
     originalCriteria?: CriterionData[]; // Original criteria for change detection
+    onRevert?: () => void; // New prop for reverting all changes atomically
 }
 
 export interface ScorecardHandle {
     focusName: () => void;
+    discardChanges: () => void;
 }
 
 // Interface to track which cell is being edited
@@ -48,7 +50,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
     scorecardId,
     allQuestions = [],
     originalName,
-    originalCriteria
+    originalCriteria,
+    onRevert
 }, ref) => {
     const nameRef = useRef<HTMLInputElement>(null);
     // State to track which cell is being edited
@@ -124,6 +127,9 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
                 // Select all text to make it easy to replace
                 nameRef.current.select();
             }
+        },
+        discardChanges: () => {
+            handleCancel();
         }
     }));
 
@@ -207,17 +213,8 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
 
     // Function to handle cancel - revert to original values
     const handleCancel = () => {
-        if (originalName && originalCriteria) {
-            // Revert name to original
-            setNameValue(originalName);
-            if (onNameChange) {
-                onNameChange(originalName);
-            }
-
-            // Revert criteria to original
-            if (onChange) {
-                onChange([...originalCriteria]);
-            }
+        if (onRevert) {
+            onRevert();
         }
     };
 
@@ -390,28 +387,6 @@ const Scorecard = forwardRef<ScorecardHandle, ScorecardProps>(({
             />
 
             <div className="w-full bg-[#2F2F2F] rounded-lg shadow-xl p-2">
-                {/* Linked Scorecard Banner */}
-                {shouldShowBanner && (
-                    <div className="mb-3 bg-[#2A2A2A] border border-blue-400/50 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-6">
-                                <div className="flex-shrink-0">
-                                    <RefreshCw size={16} className="text-blue-400" />
-                                </div>
-                                <div>
-                                    <div className="text-sm font-medium text-blue-300 mb-1">Synced Scorecard</div>
-                                    <div className="text-xs text-blue-200">
-                                        This scorecard is synced across multiple questions - any changes made here will apply to all questions in this quiz using this scorecard
-                                    </div>
-                                    <div className="text-xs text-blue-200">
-                                        To update this scorecard only for this question without affecting others, duplicate it and make changes to it
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* Header with name */}
                 <div className="p-5 pb-3 bg-[#1F1F1F] mb-2">
                     {/* NEW pill */}

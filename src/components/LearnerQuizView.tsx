@@ -752,18 +752,9 @@ export default function LearnerQuizView({
                     audio_data: msg.audioData
                 }));
 
-                let scorecard = undefined;
+                let scorecardId = undefined;
                 if (validQuestions[currentQuestionIndex].config.questionType === 'subjective') {
-                    scorecard = {
-                        id: validQuestions[currentQuestionIndex].config.scorecardData?.id || '',
-                        title: validQuestions[currentQuestionIndex].config.scorecardData?.name || '',
-                        criteria: validQuestions[currentQuestionIndex].config.scorecardData?.criteria.map(criterion => ({
-                            name: criterion.name,
-                            description: criterion.description,
-                            min_score: criterion.minScore,
-                            max_score: criterion.maxScore
-                        })) || []
-                    }
+                    scorecardId = validQuestions[currentQuestionIndex].config.scorecardData?.id
                 }
 
                 // Create the request body for teacher testing mode
@@ -778,7 +769,7 @@ export default function LearnerQuizView({
                         "answer": validQuestions[currentQuestionIndex].config.correctAnswer,
                         "type": validQuestions[currentQuestionIndex].config.questionType,
                         "input_type": validQuestions[currentQuestionIndex].config.inputType,
-                        "scorecard": scorecard,
+                        "scorecard_id": scorecardId,
                         "coding_languages": validQuestions[currentQuestionIndex].config.codingLanguages,
                         "context": getKnowledgeBaseContent(validQuestions[currentQuestionIndex].config as QuizQuestionConfig)
                     },
