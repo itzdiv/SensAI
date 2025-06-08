@@ -2598,8 +2598,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                             options={questionTypeOptions}
                                             selectedOption={selectedQuestionType}
                                             onChange={handleQuestionTypeChange}
-                                            disabled={readOnly || status === 'published'}
-                                            disabledTooltip={status === 'published' ? "Question type cannot be changed for published questions" : ""}
+                                            disabled={readOnly}
                                         />
                                     </div>
                                     <Dropdown
