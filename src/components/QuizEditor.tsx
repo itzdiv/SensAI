@@ -1833,6 +1833,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     coding_languages: question.config.codingLanguages || [],
                     type: questionType,
                     input_type: inputType,
+                    response_type: question.config.responseType,
                     scorecard_id: scorecardId,
                     context: getKnowledgeBaseContent(question.config)
                 };
