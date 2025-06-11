@@ -2681,7 +2681,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     {/* Show content based on active tab */}
                                     {activeEditorTab === 'question' ? (
                                         <div className="w-full">
-                                            <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                            <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
                                                 <BlockNoteEditor
                                                     key={`quiz-editor-question-${currentQuestionIndex}`}
                                                     initialContent={currentQuestionContent}

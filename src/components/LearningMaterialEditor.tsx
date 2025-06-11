@@ -591,13 +591,13 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
     return (
         <div className={`w-full h-full ${className}`}>
             <div className="w-full flex flex-col my-4">
-                <div className={`editor-container h-full overflow-y-auto overflow-hidden relative z-0`}>
+                <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0`}>
                     <BlockNoteEditor
                         initialContent={initialContent}
                         onChange={handleEditorChange}
                         isDarkMode={isDarkMode}
                         readOnly={readOnly}
-                        className="dark-editor"
+                        className="dark-editor min-h-screen"
                         onEditorReady={setEditorInstance}
                     />
                 </div>
