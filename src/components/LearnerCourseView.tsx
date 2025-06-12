@@ -336,7 +336,10 @@ export default function LearnerCourseView({
                             responseType: q.response_type,
                             correctAnswer: q.answer,
                             questionType: q.type,
-                            codingLanguages: q.coding_languages || []
+                            codingLanguages: q.coding_languages || [],
+                            scorecardData: {
+                                id: q.scorecard_id,
+                            }
                         }
                     };
                 });
