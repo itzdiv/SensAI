@@ -2075,6 +2075,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     }
                 }}
                 userId={userId}
+                taskId={taskId}
                 isTestMode={true}
             />
         );

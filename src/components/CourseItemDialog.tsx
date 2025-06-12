@@ -13,6 +13,7 @@ import Tooltip from "./Tooltip";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatScheduleDate } from "@/lib/utils/dateFormat";
+import { useAuth } from "@/lib/auth";
 
 // Dynamically import the editor components
 const DynamicLearningMaterialEditor = dynamic(
@@ -84,6 +85,9 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
     schoolId,
     courseId,
 }) => {
+    // Get authenticated user ID
+    const { user } = useAuth();
+
     // Add refs for the editor components
     const learningMaterialEditorRef = useRef<LearningMaterialEditorHandle>(null);
     const quizEditorRef = useRef<QuizEditorHandle>(null);
@@ -1002,6 +1006,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     displayToast(message, description, "🚫");
                                 }}
                                 courseId={courseId}
+                                userId={user?.id}
                                 onSaveSuccess={(updatedData) => {
                                     // Handle save success
                                     if (updatedData) {

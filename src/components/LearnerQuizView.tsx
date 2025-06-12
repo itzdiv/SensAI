@@ -773,6 +773,8 @@ export default function LearnerQuizView({
                         "coding_languages": validQuestions[currentQuestionIndex].config.codingLanguages,
                         "context": getKnowledgeBaseContent(validQuestions[currentQuestionIndex].config as QuizQuestionConfig)
                     },
+                    user_id: userId,
+                    task_id: taskId,
                     task_type: 'quiz'
                 };
             } else {
@@ -782,6 +784,7 @@ export default function LearnerQuizView({
                     response_type: responseType,
                     question_id: currentQuestionId,
                     user_id: userId,
+                    task_id: taskId,
                     task_type: 'quiz'
                 };
             }
