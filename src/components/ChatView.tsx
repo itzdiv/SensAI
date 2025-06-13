@@ -133,50 +133,16 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         }
     }));
 
+
+
     // Extract code from chat history for coding questions
     useEffect(() => {
         if (!isCodingQuestion) {
             return;
         }
 
-
-        // Check for saved code drafts first
-        const fetchSavedCode = async () => {
-            if (!userId || !currentQuestionId) {
-                return null;
-            }
-
-            try {
-                const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/code/user/${userId}/question/${currentQuestionId}`
-                );
-
-                if (response.ok) {
-                    const codeDraft = await response.json();
-                    if (codeDraft && codeDraft.code && Array.isArray(codeDraft.code)) {
-                        const savedCodeByLanguage: Record<string, string> = {};
-                        codeDraft.code.forEach((langCode: { language: string; value: string }) => {
-                            savedCodeByLanguage[langCode.language.toLowerCase()] = langCode.value;
-                        });
-                        return savedCodeByLanguage;
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching saved code:', error);
-            }
-
-            return null;
-        };
-
-        console.log('here')
-
-        // Try to get saved code first
-        fetchSavedCode().then(savedCode => {
-            if (savedCode && Object.keys(savedCode).length > 0) {
-                setCodeContent(savedCode);
-                return;
-            }
-
+        // Function to extract code from chat history
+        const extractCodeFromChatHistory = () => {
             if (currentChatHistory.length === 0) {
                 setCodeContent({});
                 return;
@@ -236,6 +202,49 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                     console.error('Error parsing code from chat history:', error);
                 }
             }
+        };
+
+        // Check for saved code drafts first
+        const fetchSavedCode = async () => {
+            if (!userId || !currentQuestionId) {
+                return null;
+            }
+
+            try {
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/code/user/${userId}/question/${currentQuestionId}`
+                );
+
+                if (response.ok) {
+                    const codeDraft = await response.json();
+                    if (codeDraft && codeDraft.code && Array.isArray(codeDraft.code)) {
+                        const savedCodeByLanguage: Record<string, string> = {};
+                        codeDraft.code.forEach((langCode: { language: string; value: string }) => {
+                            savedCodeByLanguage[langCode.language.toLowerCase()] = langCode.value;
+                        });
+                        return savedCodeByLanguage;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching saved code:', error);
+            }
+
+            return null;
+        };
+
+        if (isTestMode) {
+            extractCodeFromChatHistory();
+            return;
+        }
+
+        // Try to get saved code first
+        fetchSavedCode().then(savedCode => {
+            if (savedCode && Object.keys(savedCode).length > 0) {
+                setCodeContent(savedCode);
+                return;
+            }
+            // Extract code from chat history if no saved code exists
+            extractCodeFromChatHistory();
         });
     }, [currentChatHistory, isCodingQuestion, codingLanguages, userId, currentQuestionId]);
 
@@ -759,9 +768,9 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             {!viewOnly && isCodingQuestion &&
                 // Hide toggle for exam questions that are completed
                 !(currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) && (
-                    <div className={`flex items-center mb-4 ${isViewingCode ? 'justify-between' : 'justify-end'}`}>
+                    <div className={`flex items-center mb-4 ${isViewingCode && !isTestMode ? 'justify-between' : 'justify-end'}`}>
                         {/* Save button - only show when code view is active */}
-                        {isViewingCode && (
+                        {isViewingCode && !isTestMode && (
                             <button
                                 onClick={handleSave}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors cursor-pointer flex items-center"
