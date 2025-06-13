@@ -57,6 +57,9 @@ interface ChatHistoryViewProps {
     currentQuestionConfig?: any;
     onRetry?: () => void;
     taskType: string;
+    showLearnerView?: boolean;
+    onShowLearnerViewChange?: (show: boolean) => void;
+    isAdminView?: boolean;
 }
 
 const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
@@ -66,7 +69,10 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
     showPreparingReport,
     currentQuestionConfig,
     taskType,
-    onRetry
+    onRetry,
+    showLearnerView = false,
+    onShowLearnerViewChange,
+    isAdminView = false,
 }) => {
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -261,6 +267,11 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
             (message.isError);
     };
 
+    // Find the last AI message index
+    const lastAiMessageIndex = chatHistory.reduce((lastIndex, message, index) => {
+        return message.sender === 'ai' ? index : lastIndex;
+    }, -1);
+
     return (
         <>
             <style jsx>{customStyles}</style>
@@ -269,78 +280,103 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                 className="h-full overflow-y-auto w-full hide-scrollbar pb-8"
             >
                 <div className="flex flex-col space-y-6 pr-2">
-                    {chatHistory.map((message) => (
-                        <div
-                            key={message.id}
-                            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
+                    {chatHistory.map((message, index) => (
+                        <div key={message.id}>
                             <div
-                                className={`rounded-2xl px-4 py-2 ${message.messageType === 'audio'
-                                    ? 'w-full sm:w-[75%]'
-                                    : message.messageType === 'code'
-                                        ? 'bg-[#282828] text-white w-[90%]'
-                                        : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`
-                                    }`}
+                                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                             >
-                                {message.messageType === 'audio' && message.audioData ? (
-                                    <div className="flex flex-col space-y-2">
-                                        <audio
-                                            controls
-                                            className="w-full"
-                                            src={`data:audio/wav;base64,${message.audioData}`}
+                                <div
+                                    className={`rounded-2xl px-4 py-2 ${message.messageType === 'audio'
+                                        ? 'w-full sm:w-[75%]'
+                                        : message.messageType === 'code'
+                                            ? 'bg-[#282828] text-white w-[90%]'
+                                            : `${message.sender === 'user' ? 'bg-[#333333] text-white' : 'bg-[#1A1A1A] text-white'} max-w-[75%]`
+                                        }`}
+                                >
+                                    {message.sender === 'ai' && index === lastAiMessageIndex &&
+                                        currentQuestionConfig?.responseType === 'exam' &&
+                                        onShowLearnerViewChange &&
+                                        isAdminView && (
+                                            <div className="-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl bg-[#232428] border-b border-[#35363a]">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-300 font-light select-none">Show result</span>
+                                                    <button
+                                                        onClick={() => onShowLearnerViewChange(!showLearnerView)}
+                                                        className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 focus:outline-none
+                                                            ${!showLearnerView ? 'bg-white border-gray-400' : 'bg-[#444950] border-[#444950]'}
+                                                        `}
+                                                        aria-pressed={!showLearnerView}
+                                                        aria-label="Show result toggle"
+                                                    >
+                                                        <span
+                                                            className={`inline-block h-5 w-5 transform rounded-full bg-black shadow-md transition-transform duration-200
+                                                                ${!showLearnerView ? 'translate-x-5' : 'translate-x-1'}
+                                                            `}
+                                                        />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    {message.messageType === 'audio' && message.audioData ? (
+                                        <div className="flex flex-col space-y-2">
+                                            <audio
+                                                controls
+                                                className="w-full"
+                                                src={`data:audio/wav;base64,${message.audioData}`}
+                                            />
+                                        </div>
+                                    ) : message.messageType === 'code' ? (
+                                        <CodeMessageDisplay
+                                            code={message.content}
+                                            language={
+                                                Array.isArray(currentQuestionConfig?.codingLanguages) &&
+                                                    currentQuestionConfig?.codingLanguages.length > 0
+                                                    ? currentQuestionConfig?.codingLanguages[0]
+                                                    : undefined
+                                            }
                                         />
-                                    </div>
-                                ) : message.messageType === 'code' ? (
-                                    <CodeMessageDisplay
-                                        code={message.content}
-                                        language={
-                                            Array.isArray(currentQuestionConfig?.codingLanguages) &&
-                                                currentQuestionConfig?.codingLanguages.length > 0
-                                                ? currentQuestionConfig?.codingLanguages[0]
-                                                : undefined
-                                        }
-                                    />
-                                ) : (
-                                    <div>
-                                        {message.sender === 'ai' ? (
-                                            <div className="text-sm font-sans break-words break-anywhere markdown-content">
-                                                <Markdown
-                                                    remarkPlugins={[remarkGfm]}
-                                                >
-                                                    {message.content}
-                                                </Markdown>
-                                            </div>
-                                        ) : (
-                                            <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">{message.content}</pre>
-                                        )}
-                                        {shouldShowViewReport(message) && (
-                                            <div className="my-3">
-                                                <button
-                                                    onClick={() => onViewScorecard(message.scorecard || [])}
-                                                    className="bg-[#333333] text-white px-4 py-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                    </svg>
-                                                    View Report
-                                                </button>
-                                            </div>
-                                        )}
-                                        {isErrorMessage(message) && onRetry && (
-                                            <div className="my-3">
-                                                <button
-                                                    onClick={onRetry}
-                                                    className="bg-[#333333] text-white px-4 py-2 mb-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                    </svg>
-                                                    Retry
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                    ) : (
+                                        <div>
+                                            {message.sender === 'ai' ? (
+                                                <div className="text-sm font-sans break-words break-anywhere markdown-content">
+                                                    <Markdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                    >
+                                                        {message.content}
+                                                    </Markdown>
+                                                </div>
+                                            ) : (
+                                                <pre className="text-sm break-words whitespace-pre-wrap break-anywhere font-sans">{message.content}</pre>
+                                            )}
+                                            {shouldShowViewReport(message) && (
+                                                <div className="my-3">
+                                                    <button
+                                                        onClick={() => onViewScorecard(message.scorecard || [])}
+                                                        className="bg-[#333333] text-white px-4 py-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                        </svg>
+                                                        View Report
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {isErrorMessage(message) && onRetry && (
+                                                <div className="my-3">
+                                                    <button
+                                                        onClick={onRetry}
+                                                        className="bg-[#333333] text-white px-4 py-2 mb-2 rounded-full text-xs hover:bg-[#444444] transition-colors cursor-pointer flex items-center"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                        </svg>
+                                                        Retry
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}

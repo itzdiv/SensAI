@@ -2,7 +2,7 @@
 
 import "@blocknote/core/fonts/inter.css";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical, CheckCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical, CheckCircle, Eye, EyeOff } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
 import ChatView, { CodeViewState } from './ChatView';
@@ -33,6 +33,7 @@ export interface LearnerQuizViewProps {
     completedQuestionIds?: Record<string, boolean>;
     onAiRespondingChange?: (isResponding: boolean) => void;
     onMobileViewChange?: (mode: MobileViewMode) => void;
+    isAdminView?: boolean;
 }
 
 export default function LearnerQuizView({
@@ -49,10 +50,14 @@ export default function LearnerQuizView({
     taskId = '',
     completedQuestionIds: initialCompletedQuestionIds = {},
     onAiRespondingChange,
-    onMobileViewChange
+    onMobileViewChange,
+    isAdminView = false,
 }: LearnerQuizViewProps) {
     // Constant message for exam submission confirmation
     const EXAM_CONFIRMATION_MESSAGE = "Thank you for your submission. We will review it shortly";
+
+    // Add state for tracking view mode
+    const [showLearnerView, setShowLearnerView] = useState(false);
 
     // Current question index
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -252,24 +257,29 @@ export default function LearnerQuizView({
                 // Get the last user message
                 const lastUserMessage = userMessages[userMessages.length - 1];
 
-                // Only return the last user message and a confirmation message
-                return [
-                    lastUserMessage,
-                    {
-                        id: `ai-confirmation-${currentQuestionId}`,
-                        content: EXAM_CONFIRMATION_MESSAGE,
-                        sender: 'ai',
-                        timestamp: new Date(),
-                        messageType: 'text',
-                        audioData: undefined,
-                        scorecard: []
-                    }
-                ];
+                // If showing learner view, return only the last user message and confirmation
+                if (showLearnerView) {
+                    return [
+                        lastUserMessage,
+                        {
+                            id: `ai-confirmation-${currentQuestionId}`,
+                            content: EXAM_CONFIRMATION_MESSAGE,
+                            sender: 'ai',
+                            timestamp: new Date(),
+                            messageType: 'text',
+                            audioData: undefined,
+                            scorecard: []
+                        }
+                    ];
+                }
+
+                // Otherwise return the full history to show AI feedback
+                return history;
             }
         }
 
         return history;
-    }, [chatHistories, currentQuestionIndex, validQuestions, completedQuestionIds, pendingSubmissionQuestionIds]);
+    }, [chatHistories, currentQuestionIndex, validQuestions, completedQuestionIds, pendingSubmissionQuestionIds, showLearnerView]);
 
     // Get the last user message for the current question
     const getLastUserMessage = useMemo(() => {
@@ -1599,6 +1609,14 @@ export default function LearnerQuizView({
         }
     }, [mobileViewMode, codeViewState.isViewingCode]); // Also reapply when code view toggle changes
 
+    // Set initial showLearnerView based on isAdminView
+    useEffect(() => {
+        const currentQuestion = questions.find(q => q.id === currentQuestionId);
+        if (!isAdminView && currentQuestion?.config?.responseType === 'exam') {
+            setShowLearnerView(true);
+        }
+    }, [isAdminView, questions, currentQuestionId]);
+
     return (
         <div className={`w-full h-full ${className}`}>
             {/* Add the custom styles */}
@@ -1959,6 +1977,9 @@ export default function LearnerQuizView({
                             handleRetry={handleRetry}
                             onCodeStateChange={handleCodeStateChange}
                             initialIsViewingCode={isCodeQuestion}
+                            showLearnerView={showLearnerView}
+                            onShowLearnerViewChange={setShowLearnerView}
+                            isAdminView={isAdminView}
                         />
                     )}
                 </div>

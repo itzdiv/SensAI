@@ -44,6 +44,9 @@ interface ChatViewProps {
     handleRetry?: () => void;
     onCodeStateChange?: (state: CodeViewState) => void;
     initialIsViewingCode?: boolean;
+    showLearnerView?: boolean;
+    onShowLearnerViewChange?: (show: boolean) => void;
+    isAdminView?: boolean;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({
@@ -68,6 +71,9 @@ const ChatView: React.FC<ChatViewProps> = ({
     handleRetry,
     onCodeStateChange,
     initialIsViewingCode = false,
+    showLearnerView = false,
+    onShowLearnerViewChange,
+    isAdminView = false,
 }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -356,8 +362,11 @@ const ChatView: React.FC<ChatViewProps> = ({
                                 isAiResponding={isAiResponding}
                                 showPreparingReport={showPreparingReport}
                                 currentQuestionConfig={currentQuestionConfig}
-                                onRetry={handleRetry}
                                 taskType={taskType}
+                                onRetry={handleRetry}
+                                showLearnerView={showLearnerView}
+                                onShowLearnerViewChange={onShowLearnerViewChange}
+                                isAdminView={isAdminView}
                             />
                         </div>
                     )}

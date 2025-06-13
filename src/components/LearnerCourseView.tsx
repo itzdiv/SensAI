@@ -32,6 +32,7 @@ interface LearnerCourseViewProps {
     viewOnly?: boolean;
     learnerId?: string;
     isTestMode?: boolean;
+    isAdminView?: boolean;
 }
 
 export default function LearnerCourseView({
@@ -44,6 +45,7 @@ export default function LearnerCourseView({
     isTestMode = false,
     viewOnly = false,
     learnerId = '',
+    isAdminView = false,
 }: LearnerCourseViewProps) {
     // Get user from auth context
     const { user } = useAuth();
@@ -1226,6 +1228,7 @@ export default function LearnerCourseView({
                                                     isDarkMode={true}
                                                     onAiRespondingChange={handleAiRespondingChange}
                                                     className={`${isSidebarOpen ? 'sidebar-visible' : ''}`}
+                                                    isAdminView={isAdminView}
                                                 />
                                             </>
                                         )}

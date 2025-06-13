@@ -10,13 +10,15 @@ interface ClientLearnerViewWrapperProps {
     learnerId: string;
     cohortId: string;
     courseId: string;
+    isAdminView: boolean;
 }
 
 export default function ClientLearnerViewWrapper({
     modules,
     learnerId,
     cohortId,
-    courseId
+    courseId,
+    isAdminView
 }: ClientLearnerViewWrapperProps) {
 
     // State for tracking completed tasks and questions
@@ -71,6 +73,7 @@ export default function ClientLearnerViewWrapper({
             completedQuestionIds={completedQuestionIds}
             viewOnly={true}
             learnerId={learnerId}
+            isAdminView={isAdminView}
         />
     );
 } 

@@ -87,6 +87,7 @@ export default async function AdminLearnerViewPage({
                                         learnerId={learnerId}
                                         cohortId={cohortId}
                                         courseId={courseId}
+                                        isAdminView={true}
                                     />
                                 </>
                             ) : (
