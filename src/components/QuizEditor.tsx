@@ -2492,74 +2492,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 </div>
             )}
 
-            {/* Quiz Controls - Hide in preview mode and when there are no questions */}
-            {!isPreviewMode && ((questions.length > 0 && status === 'draft') || (questions.length > 1 && status === 'published')) && (
-                <div className="flex justify-between items-center mx-12 px-6 py-6">
-                    {/* Left: Add Question Button */}
-                    <div className="flex-1">
-                        {!readOnly && status === 'draft' && <button
-                            onClick={addQuestion}
-                            className="flex items-center px-4 py-2 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
-                            disabled={readOnly}
-                            style={{ opacity: readOnly ? 0.5 : 1 }}
-                        >
-                            <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
-                                <Plus size={12} className="text-black" />
-                            </div>
-                            Add Question
-                        </button>}
-                    </div>
-
-                    {/* Middle: Navigation Controls */}
-                    <div className="flex-1 flex items-center justify-center">
-                        {questions.length > 1 && (
-                            <>
-                                <button
-                                    onClick={goToPreviousQuestion}
-                                    disabled={currentQuestionIndex === 0}
-                                    className={`w-10 h-10 flex items-center justify-center rounded-full ${currentQuestionIndex === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-[#3A3A3A] cursor-pointer'} transition-colors border border-[#3A3A3A]`}
-                                    aria-label="Previous question"
-                                >
-                                    <ChevronLeft size={20} />
-                                </button>
-
-                                <div className={`mx-3 px-4 py-1.5 rounded-full border transition-all duration-300 text-sm font-medium relative z-10 text-gray-300
-                                    ${questionCountHighlighted
-                                        ? 'bg-green-700 font-semibold shadow-lg animate-question-highlight'
-                                        : 'bg-[#2A2A2A] border-[#3A3A3A]'}`}>
-                                    Question {currentQuestionIndex + 1} / {questions.length}
-                                </div>
-
-                                <button
-                                    onClick={goToNextQuestion}
-                                    disabled={currentQuestionIndex === questions.length - 1}
-                                    className={`w-10 h-10 flex items-center justify-center rounded-full ${currentQuestionIndex === questions.length - 1 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-[#3A3A3A] cursor-pointer'} transition-colors border border-[#3A3A3A]`}
-                                    aria-label="Next question"
-                                >
-                                    <ChevronRight size={20} />
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Right: Delete Button and Publish Button */}
-                    <div className="flex-1 flex justify-end items-center space-x-3">
-                        {!readOnly && status === 'draft' && (
-                            <button
-                                onClick={() => setShowDeleteConfirm(true)}
-                                className="flex items-center px-3 py-1.5 text-sm text-red-400 hover:text-white bg-[#3A3A3A] hover:bg-red-600 rounded-md transition-colors cursor-pointer"
-                                aria-label="Delete current question"
-                            >
-                                <Trash2 size={16} className="mr-1" />
-                                Delete
-                            </button>
-                        )}
-                    </div>
-                </div>
-            )}
-
             {/* Content area with animation when a new question is added */}
-            <div className={`flex flex-1 gap-4 ${!isPreviewMode && (questions.length == 1 && status === 'published') ? 'mt-4' : ''} ${newQuestionAdded ? 'animate-new-question' : ''} ${isPreviewMode ? 'h-full' : ''}`}>
+            <div className={`flex flex-1 gap-0 ${newQuestionAdded ? 'animate-new-question' : ''} ${isPreviewMode ? 'h-full' : ''}`}>
                 {isPreviewMode ? (
                     <>
                         <div
@@ -2568,7 +2502,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                             onMouseDown={(e) => e.stopPropagation()} // Stop mousedown events too
                         >
                             {MemoizedLearnerQuizView}
-
                         </div>
                     </>
                 ) : (
@@ -2578,421 +2511,515 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 <EmptyQuizPlaceholder />
                             </div>
                         ) : (
-                            <div className="w-full flex flex-col mx-4 mb-4">
-                                <div className="flex flex-col space-y-2 mx-12 mb-4">
-
-                                    <div className="flex items-center">
-                                        <Dropdown
-                                            icon={<Sparkles size={16} />}
-                                            title="Purpose"
-                                            options={questionPurposeOptions}
-                                            selectedOption={selectedPurpose}
-                                            onChange={handlePurposeChange}
-                                            disabled={readOnly}
-                                        />
+                            <>
+                                {/* Left Sidebar - Questions List */}
+                                <div className="w-64 h-full bg-[#121212] border-r flex flex-col overflow-hidden">
+                                    {/* Sidebar Header */}
+                                    <div className="p-4 border-b bg-[#0A0A0A] flex items-center justify-between">
+                                        <h3 className="text-lg font-light text-white">Questions</h3>
+                                        <div className={`px-3 py-1 rounded-full text-xs transition-all duration-300 ${questionCountHighlighted
+                                            ? 'bg-green-700 font-semibold shadow-lg animate-question-highlight'
+                                            : 'bg-[#2A2A2A] border-[#3A3A3A]'
+                                            } text-gray-300`}>
+                                            {questions.length}
+                                        </div>
                                     </div>
 
-                                    <div className="flex items-center">
-                                        <Dropdown
-                                            icon={<HelpCircle size={16} />}
-                                            title="Question Type"
-                                            options={questionTypeOptions}
-                                            selectedOption={selectedQuestionType}
-                                            onChange={handleQuestionTypeChange}
-                                            disabled={readOnly}
-                                        />
-                                    </div>
-                                    <Dropdown
-                                        icon={<Pen size={16} />}
-                                        title="Answer Type"
-                                        options={answerTypeOptions}
-                                        selectedOption={selectedAnswerType}
-                                        onChange={handleAnswerTypeChange}
-                                        disabled={readOnly}
-                                    />
-                                    {selectedAnswerType.value == 'code' && (
-                                        <div className="mb-4 flex items-center">
-                                            <div className={`w-full ${highlightedField === 'codingLanguage' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-md' : ''}`}>
-                                                <Dropdown
-                                                    icon={<Code size={16} />}
-                                                    title="Languages"
-                                                    options={codingLanguageOptions}
-                                                    selectedOptions={selectedCodingLanguages}
-                                                    onChange={handleCodingLanguageChange}
-                                                    disabled={readOnly}
-                                                    multiselect={true}
-                                                    placeholder="Select one or more languages"
-                                                />
-                                            </div>
+                                    {/* Add Question Button */}
+                                    {!readOnly && status === 'draft' && (
+                                        <div className="p-3 border-b">
+                                            <button
+                                                onClick={addQuestion}
+                                                className="w-full flex items-center justify-center px-4 py-2 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+                                                disabled={readOnly}
+                                            >
+                                                <div className="w-4 h-4 rounded-full border border-black flex items-center justify-center mr-2">
+                                                    <Plus size={10} className="text-black" />
+                                                </div>
+                                                Add Question
+                                            </button>
                                         </div>
                                     )}
 
-                                </div>
+                                    {/* Questions List */}
+                                    <div className="flex-1 overflow-y-auto">
+                                        {questions.map((question, index) => (
+                                            <div
+                                                key={question.id}
+                                                className={`px-4 py-3 cursor-pointer flex items-center justify-between group border-l-2 ${index === currentQuestionIndex
+                                                    ? "bg-[#222222] border-green-500"
+                                                    : "hover:bg-[#1A1A1A] border-transparent"
+                                                    }`}
+                                                onClick={() => {
+                                                    if (checkUnsavedScorecardChanges()) {
+                                                        pendingScorecardActionRef.current = () => {
+                                                            setCurrentQuestionIndex(index);
+                                                            setActiveEditorTab('question');
+                                                            if (onQuestionChange && !isPreviewMode) {
+                                                                onQuestionChange(question.id);
+                                                            }
+                                                        };
+                                                        if (onQuestionChangeWithUnsavedScorecardChanges) {
+                                                            onQuestionChangeWithUnsavedScorecardChanges();
+                                                        }
+                                                        return;
+                                                    }
 
-                                {/* Segmented control for editor tabs */}
-                                <div className="flex justify-center mb-4">
-                                    <div className="inline-flex bg-[#222222] rounded-lg p-1">
-                                        <button
-                                            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'question'
-                                                ? 'bg-[#333333] text-white'
-                                                : 'text-gray-400 hover:text-white'
-                                                }`}
-                                            onClick={() => setActiveEditorTab('question')}
-                                        >
-                                            <HelpCircle size={16} className="mr-2" />
-                                            Question
-                                        </button>
-                                        {selectedQuestionType.value !== 'subjective' ? (
-                                            <button
-                                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'answer'
-                                                    ? 'bg-[#333333] text-white'
-                                                    : 'text-gray-400 hover:text-white'
-                                                    }`}
-                                                onClick={() => setActiveEditorTab('answer')}
+                                                    setCurrentQuestionIndex(index);
+                                                    setActiveEditorTab('question');
+                                                    if (onQuestionChange && !isPreviewMode) {
+                                                        onQuestionChange(question.id);
+                                                    }
+                                                }}
                                             >
-                                                <Check size={16} className="mr-2" />
-                                                Correct Answer
-                                            </button>
-                                        ) : (
-                                            <button
-                                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'scorecard'
-                                                    ? 'bg-[#333333] text-white'
-                                                    : 'text-gray-400 hover:text-white'
-                                                    }`}
-                                                onClick={() => setActiveEditorTab('scorecard')}
-                                            >
-                                                <ClipboardCheck size={16} className="mr-2" />
-                                                Scorecard
-                                            </button>
-                                        )}
-                                        <button
-                                            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'knowledge'
-                                                ? 'bg-[#333333] text-white'
-                                                : 'text-gray-400 hover:text-white'
-                                                }`}
-                                            onClick={() => setActiveEditorTab('knowledge')}
-                                        >
-                                            <BookOpen size={16} className="mr-2" />
-                                            AI Training Resources
-                                        </button>
+                                                <div className="flex items-center flex-1 min-w-0">
+
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className={`text-sm truncate ${index === currentQuestionIndex ? "text-white" : "text-gray-300"
+                                                            }`}>
+                                                            Question {index + 1}
+                                                        </div>
+                                                        <div className={`text-xs truncate ${index === currentQuestionIndex ? "text-gray-300" : "text-gray-500"
+                                                            }`}>
+                                                            {question.config.responseType === 'chat' ? 'Practice' : 'Exam'} • {question.config.questionType === 'objective' ? 'Objective' : 'Subjective'} • {question.config.inputType}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Delete button - only show for current question and when not readonly */}
+                                                {!readOnly && status === 'draft' && index === currentQuestionIndex && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setShowDeleteConfirm(true);
+                                                        }}
+                                                        className="opacity-0 cursor-pointer group-hover:opacity-100 ml-2 p-1 text-red-400 hover:text-red-300 transition-all duration-200"
+                                                        aria-label="Delete question"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div className="w-full h-full flex">
-                                    {/* Show content based on active tab */}
-                                    {activeEditorTab === 'question' ? (
-                                        <div className="w-full">
-                                            <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
-                                                <BlockNoteEditor
-                                                    key={`quiz-editor-question-${currentQuestionIndex}`}
-                                                    initialContent={currentQuestionContent}
-                                                    onChange={handleQuestionContentChange}
-                                                    isDarkMode={isDarkMode}
-                                                    readOnly={readOnly}
-                                                    onEditorReady={setEditorInstance}
-                                                    className="quiz-editor"
-                                                />
-                                            </div>
-                                        </div>
-                                    ) : activeEditorTab === 'answer' ? (
-                                        <div className={`w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden h-full overflow-y-auto ${highlightedField === 'answer' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                // Ensure the correct answer editor keeps focus
-                                                if (correctAnswerEditorRef.current) {
-                                                    try {
-                                                        // Try to focus the editor
-                                                        correctAnswerEditorRef.current.focusEditor();
-                                                    } catch (err) {
-                                                        console.error("Error focusing correct answer editor:", err);
-                                                    }
-                                                }
-                                            }}
-                                            onMouseDown={(e) => {
-                                                e.stopPropagation();
-                                            }}
-                                        >
-                                            <BlockNoteEditor
-                                                key={`correct-answer-editor-${currentQuestionIndex}`}
-                                                initialContent={currentQuestionConfig.correctAnswer}
-                                                onChange={handleCorrectAnswerChange}
-                                                isDarkMode={isDarkMode}
-                                                readOnly={readOnly}
-                                                onEditorReady={setCorrectAnswerEditorInstance}
-                                                className="correct-answer-editor"
-                                                placeholder="Enter the correct answer here"
-                                                allowMedia={false}
+                                {/* Main Content Area */}
+                                <div className="flex-1 flex flex-col">
+                                    {/* Question Configuration Header */}
+                                    <div className="flex flex-col space-y-2 p-4 border-b bg-[#111111]">
+                                        <div className="flex items-center">
+                                            <Dropdown
+                                                icon={<Sparkles size={16} />}
+                                                title="Purpose"
+                                                options={questionPurposeOptions}
+                                                selectedOption={selectedPurpose}
+                                                onChange={handlePurposeChange}
+                                                disabled={readOnly}
                                             />
                                         </div>
-                                    ) : activeEditorTab === 'knowledge' ? (
-                                        <div className="w-full mt-4 flex flex-row overflow-y-auto">
-                                            {/* Left column with callout (20-30% width) */}
-                                            <div className="w-[20%]">
-                                                <div className="bg-[#222222] p-3 rounded-md">
-                                                    <BookOpen size={16} className="text-amber-400 mb-2" />
-                                                    <div>
-                                                        <p className="text-gray-400 text-xs leading-tight mb-2">
-                                                            These resources are <span className="font-bold text-white">optional</span> and will not be shown to learners but can be used by AI to provide more accurate and helpful feedback
-                                                        </p>
 
-                                                    </div>
+                                        <div className="flex items-center">
+                                            <Dropdown
+                                                icon={<HelpCircle size={16} />}
+                                                title="Question Type"
+                                                options={questionTypeOptions}
+                                                selectedOption={selectedQuestionType}
+                                                onChange={handleQuestionTypeChange}
+                                                disabled={readOnly}
+                                            />
+                                        </div>
+                                        <Dropdown
+                                            icon={<Pen size={16} />}
+                                            title="Answer Type"
+                                            options={answerTypeOptions}
+                                            selectedOption={selectedAnswerType}
+                                            onChange={handleAnswerTypeChange}
+                                            disabled={readOnly}
+                                        />
+                                        {selectedAnswerType.value == 'code' && (
+                                            <div className="flex items-center">
+                                                <div className={`w-full ${highlightedField === 'codingLanguage' ? 'outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E] rounded-md' : ''}`}>
+                                                    <Dropdown
+                                                        icon={<Code size={16} />}
+                                                        title="Languages"
+                                                        options={codingLanguageOptions}
+                                                        selectedOptions={selectedCodingLanguages}
+                                                        onChange={handleCodingLanguageChange}
+                                                        disabled={readOnly}
+                                                        multiselect={true}
+                                                        placeholder="Select one or more languages"
+                                                    />
                                                 </div>
                                             </div>
+                                        )}
+                                    </div>
 
-                                            {/* Right column with linker and editor (70-80% width) */}
-                                            <div className="w-[80%] flex flex-col">
-                                                {readOnly &&
-                                                    (!currentQuestion?.config?.linkedMaterialIds?.length &&
-                                                        (!currentQuestion?.config?.knowledgeBaseBlocks?.length ||
-                                                            extractTextFromBlocks(currentQuestion?.config?.knowledgeBaseBlocks || []).trim().length === 0)) ? (
-                                                    <div className="w-full flex flex-col items-center justify-center p-8 text-center rounded-lg bg-[#1A1A1A] h-full">
-                                                        <div className="max-w-md">
-                                                            <h3 className="text-xl font-light text-white mb-3">No knowledge base found</h3>
-                                                            <p className="text-gray-400 mb-6">
-                                                                This question does not have any knowledge base attached to it
+                                    {/* Segmented control for editor tabs */}
+                                    <div className="flex justify-center py-4">
+                                        <div className="inline-flex bg-[#222222] rounded-lg p-1">
+                                            <button
+                                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'question'
+                                                    ? 'bg-[#333333] text-white'
+                                                    : 'text-gray-400 hover:text-white'
+                                                    }`}
+                                                onClick={() => setActiveEditorTab('question')}
+                                            >
+                                                <HelpCircle size={16} className="mr-2" />
+                                                Question
+                                            </button>
+                                            {selectedQuestionType.value !== 'subjective' ? (
+                                                <button
+                                                    className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'answer'
+                                                        ? 'bg-[#333333] text-white'
+                                                        : 'text-gray-400 hover:text-white'
+                                                        }`}
+                                                    onClick={() => setActiveEditorTab('answer')}
+                                                >
+                                                    <Check size={16} className="mr-2" />
+                                                    Correct Answer
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'scorecard'
+                                                        ? 'bg-[#333333] text-white'
+                                                        : 'text-gray-400 hover:text-white'
+                                                        }`}
+                                                    onClick={() => setActiveEditorTab('scorecard')}
+                                                >
+                                                    <ClipboardCheck size={16} className="mr-2" />
+                                                    Scorecard
+                                                </button>
+                                            )}
+                                            <button
+                                                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium cursor-pointer ${activeEditorTab === 'knowledge'
+                                                    ? 'bg-[#333333] text-white'
+                                                    : 'text-gray-400 hover:text-white'
+                                                    }`}
+                                                onClick={() => setActiveEditorTab('knowledge')}
+                                            >
+                                                <BookOpen size={16} className="mr-2" />
+                                                AI Training Resources
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Editor Content */}
+                                    <div className="flex-1 overflow-hidden">
+                                        {/* Show content based on active tab */}
+                                        {activeEditorTab === 'question' ? (
+                                            <div className="w-full h-full">
+                                                <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'question' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}>
+                                                    <BlockNoteEditor
+                                                        key={`quiz-editor-question-${currentQuestionIndex}`}
+                                                        initialContent={currentQuestionContent}
+                                                        onChange={handleQuestionContentChange}
+                                                        isDarkMode={isDarkMode}
+                                                        readOnly={readOnly}
+                                                        onEditorReady={setEditorInstance}
+                                                        className="quiz-editor"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : activeEditorTab === 'answer' ? (
+                                            <div className={`editor-container h-full min-h-screen overflow-y-auto overflow-hidden relative z-0 ${highlightedField === 'answer' ? 'm-2 outline outline-2 outline-red-400 shadow-md shadow-red-900/50 animate-pulse bg-[#2D1E1E]' : ''}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    // Ensure the correct answer editor keeps focus
+                                                    if (correctAnswerEditorRef.current) {
+                                                        try {
+                                                            // Try to focus the editor
+                                                            correctAnswerEditorRef.current.focusEditor();
+                                                        } catch (err) {
+                                                            console.error("Error focusing correct answer editor:", err);
+                                                        }
+                                                    }
+                                                }}
+                                                onMouseDown={(e) => {
+                                                    e.stopPropagation();
+                                                }}
+                                            >
+                                                <BlockNoteEditor
+                                                    key={`correct-answer-editor-${currentQuestionIndex}`}
+                                                    initialContent={currentQuestionConfig.correctAnswer}
+                                                    onChange={handleCorrectAnswerChange}
+                                                    isDarkMode={isDarkMode}
+                                                    readOnly={readOnly}
+                                                    onEditorReady={setCorrectAnswerEditorInstance}
+                                                    className="correct-answer-editor"
+                                                    placeholder="Enter the correct answer here"
+                                                    allowMedia={false}
+                                                />
+                                            </div>
+                                        ) : activeEditorTab === 'knowledge' ? (
+                                            <div className="w-full h-full flex flex-row overflow-y-auto p-4">
+                                                {/* Left column with callout (20-30% width) */}
+                                                <div className="w-[20%]">
+                                                    <div className="bg-[#222222] p-3 rounded-md">
+                                                        <BookOpen size={16} className="text-amber-400 mb-2" />
+                                                        <div>
+                                                            <p className="text-gray-400 text-xs leading-tight mb-2">
+                                                                These resources are <span className="font-bold text-white">optional</span> and will <span className="font-bold text-white">not be shown to learners</span> but can be used by AI to provide more accurate and helpful feedback
                                                             </p>
                                                         </div>
                                                     </div>
-                                                ) : (
-                                                    <div className="h-full">
-                                                        {/* Add learning material selection component */}
-                                                        <div className="mb-4 ml-12">
-                                                            <LearningMaterialLinker
-                                                                courseId={courseId || ''}
-                                                                linkedMaterialIds={currentQuestion?.config?.linkedMaterialIds || []}
-                                                                readOnly={readOnly}
-                                                                onMaterialsChange={(linkedMaterialIds) => {
-                                                                    // Update the question config with the new linked material IDs
-                                                                    const updatedQuestions = [...questions];
-                                                                    const currentQuestion = updatedQuestions[currentQuestionIndex];
-                                                                    const currentConfig = currentQuestion.config || {};
+                                                </div>
 
-                                                                    updatedQuestions[currentQuestionIndex] = {
-                                                                        ...currentQuestion,
-                                                                        config: {
-                                                                            ...currentConfig,
-                                                                            linkedMaterialIds: linkedMaterialIds
+                                                {/* Right column with linker and editor (70-80% width) */}
+                                                <div className="w-[80%] flex flex-col">
+                                                    {readOnly &&
+                                                        (!currentQuestion?.config?.linkedMaterialIds?.length &&
+                                                            (!currentQuestion?.config?.knowledgeBaseBlocks?.length ||
+                                                                extractTextFromBlocks(currentQuestion?.config?.knowledgeBaseBlocks || []).trim().length === 0)) ? (
+                                                        <div className="w-full flex flex-col items-center justify-center p-8 text-center rounded-lg bg-[#1A1A1A] h-full">
+                                                            <div className="max-w-md">
+                                                                <h3 className="text-xl font-light text-white mb-3">No knowledge base found</h3>
+                                                                <p className="text-gray-400 mb-6">
+                                                                    This question does not have any knowledge base attached to it
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-full">
+                                                            {/* Add learning material selection component */}
+                                                            <div className="mb-4 ml-12">
+                                                                <LearningMaterialLinker
+                                                                    courseId={courseId || ''}
+                                                                    linkedMaterialIds={currentQuestion?.config?.linkedMaterialIds || []}
+                                                                    readOnly={readOnly}
+                                                                    onMaterialsChange={(linkedMaterialIds) => {
+                                                                        // Update the question config with the new linked material IDs
+                                                                        const updatedQuestions = [...questions];
+                                                                        const currentQuestion = updatedQuestions[currentQuestionIndex];
+                                                                        const currentConfig = currentQuestion.config || {};
+
+                                                                        updatedQuestions[currentQuestionIndex] = {
+                                                                            ...currentQuestion,
+                                                                            config: {
+                                                                                ...currentConfig,
+                                                                                linkedMaterialIds: linkedMaterialIds
+                                                                            }
+                                                                        };
+
+                                                                        setQuestions(updatedQuestions);
+
+                                                                        if (onChange) {
+                                                                            onChange(updatedQuestions);
                                                                         }
-                                                                    };
+                                                                    }}
+                                                                />
+                                                            </div>
 
-                                                                    setQuestions(updatedQuestions);
-
-                                                                    if (onChange) {
-                                                                        onChange(updatedQuestions);
+                                                            <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden relative z-0"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    // Ensure the knowledge base editor keeps focus
+                                                                    if (knowledgeBaseEditorRef.current) {
+                                                                        try {
+                                                                            // Try to focus the editor
+                                                                            knowledgeBaseEditorRef.current.focusEditor();
+                                                                        } catch (err) {
+                                                                            console.error("Error focusing knowledge base editor:", err);
+                                                                        }
                                                                     }
                                                                 }}
-                                                            />
-                                                        </div>
-
-                                                        <div className="w-full flex-1 bg-[#1A1A1A] rounded-md overflow-hidden relative z-0"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                // Ensure the knowledge base editor keeps focus
-                                                                if (knowledgeBaseEditorRef.current) {
-                                                                    try {
-                                                                        // Try to focus the editor
-                                                                        knowledgeBaseEditorRef.current.focusEditor();
-                                                                    } catch (err) {
-                                                                        console.error("Error focusing knowledge base editor:", err);
-                                                                    }
-                                                                }
-                                                            }}
-                                                            onMouseDown={(e) => {
-                                                                e.stopPropagation();
-                                                            }}
-                                                        >
-                                                            <BlockNoteEditor
-                                                                key={`knowledge-base-editor-${currentQuestionIndex}`}
-                                                                initialContent={currentQuestionConfig.knowledgeBaseBlocks || []}
-                                                                onChange={(content) => {
-                                                                    // Store blocks
-                                                                    const updatedQuestions = [...questions];
-                                                                    updatedQuestions[currentQuestionIndex] = {
-                                                                        ...updatedQuestions[currentQuestionIndex],
-                                                                        config: {
-                                                                            ...updatedQuestions[currentQuestionIndex].config,
-                                                                            knowledgeBaseBlocks: content
-                                                                        }
-                                                                    };
-                                                                    setQuestions(updatedQuestions);
-
-                                                                    if (onChange) {
-                                                                        onChange(updatedQuestions);
-                                                                    }
+                                                                onMouseDown={(e) => {
+                                                                    e.stopPropagation();
                                                                 }}
-                                                                isDarkMode={isDarkMode}
-                                                                readOnly={readOnly}
-                                                                onEditorReady={setKnowledgeBaseEditorInstance}
-                                                                className="knowledge-base-editor"
-                                                                placeholder="Link existing materials using the button above or add new material here"
-                                                                allowMedia={false}
-                                                            />
+                                                            >
+                                                                <BlockNoteEditor
+                                                                    key={`knowledge-base-editor-${currentQuestionIndex}`}
+                                                                    initialContent={currentQuestionConfig.knowledgeBaseBlocks || []}
+                                                                    onChange={(content) => {
+                                                                        // Store blocks
+                                                                        const updatedQuestions = [...questions];
+                                                                        updatedQuestions[currentQuestionIndex] = {
+                                                                            ...updatedQuestions[currentQuestionIndex],
+                                                                            config: {
+                                                                                ...updatedQuestions[currentQuestionIndex].config,
+                                                                                knowledgeBaseBlocks: content
+                                                                            }
+                                                                        };
+                                                                        setQuestions(updatedQuestions);
+
+                                                                        if (onChange) {
+                                                                            onChange(updatedQuestions);
+                                                                        }
+                                                                    }}
+                                                                    isDarkMode={isDarkMode}
+                                                                    readOnly={readOnly}
+                                                                    onEditorReady={setKnowledgeBaseEditorInstance}
+                                                                    className="knowledge-base-editor"
+                                                                    placeholder="Link existing materials using the button above or add new material here"
+                                                                    allowMedia={false}
+                                                                />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
-                                        currentQuestionConfig.scorecardData ? (
-                                            <div className="h-full overflow-y-auto w-full">
-                                                <Scorecard
-                                                    ref={scorecardRef}
-                                                    name={currentQuestionConfig.scorecardData?.name || scorecardTitle}
-                                                    criteria={currentQuestionConfig.scorecardData?.criteria || []}
-                                                    onDelete={() => {
-                                                        // Check if scorecard is used by multiple questions
-                                                        const scorecardForQuestion = questions[currentQuestionIndex].config.scorecardData;
-                                                        if (scorecardForQuestion) {
-                                                            const questionsUsingThisScorecard = questions.filter(q =>
-                                                                q.config.scorecardData && q.config.scorecardData.id === scorecardForQuestion.id
-                                                            );
-                                                            setScorecardUsedByMultiple(questionsUsingThisScorecard.length > 1);
-                                                        }
-                                                        setShowScorecardDeleteConfirm(true);
-                                                    }}
-                                                    new={currentQuestionConfig.scorecardData?.new}
-                                                    readOnly={readOnly}
-                                                    linked={isLinkedScorecard(currentQuestionConfig.scorecardData)}
-                                                    scorecardId={currentQuestionConfig.scorecardData?.id}
-                                                    allQuestions={questions}
-                                                    onSave={handleSaveScorecardChanges}
-                                                    originalName={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.name : undefined}
-                                                    originalCriteria={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.criteria : undefined}
-                                                    onRevert={handleScorecardRevert}
-                                                    onDuplicate={async () => {
-                                                        if (!currentQuestionConfig.scorecardData) {
-                                                            return;
-                                                        }
-
-                                                        const originalScorecard = currentQuestionConfig.scorecardData;
-
-                                                        try {
-                                                            // Use the reusable function to create duplicated scorecard
-                                                            const createdScorecard = await createScorecard(
-                                                                `${originalScorecard.name} (Copy)`,
-                                                                originalScorecard.criteria
-                                                            );
-
-                                                            // Create a duplicate scorecard with the backend ID
-                                                            const duplicatedScorecard: ScorecardTemplate = {
-                                                                id: createdScorecard.id, // Use the ID returned from backend
-                                                                name: createdScorecard.title,
-                                                                new: true, // Mark as newly created to make it unlinked
-                                                                is_template: false,
-                                                                criteria: [...originalScorecard.criteria] // Deep copy the criteria
-                                                            };
-
-                                                            // Update the current question to use the duplicated scorecard
-                                                            handleConfigChange({
-                                                                scorecardData: duplicatedScorecard
-                                                            });
-
-                                                            // Add the duplicated scorecard to school scorecards
-                                                            const updatedScorecards = [...schoolScorecards, duplicatedScorecard];
-                                                            setSchoolScorecards(updatedScorecards);
-
-                                                            // Add the new scorecard to originalScorecardData as the baseline for change detection
-                                                            const updatedOriginalData = new Map(originalScorecardData);
-                                                            updatedOriginalData.set(duplicatedScorecard.id, {
-                                                                name: duplicatedScorecard.name,
-                                                                criteria: JSON.parse(JSON.stringify(duplicatedScorecard.criteria))
-                                                            });
-                                                            setOriginalScorecardData(updatedOriginalData);
-
-                                                            // Focus on the scorecard name for editing
-                                                            setTimeout(() => {
-                                                                scorecardRef.current?.focusName();
-                                                            }, 100);
-
-                                                        } catch (error) {
-                                                            console.error('Error duplicating scorecard:', error);
-
-                                                            // Show error toast
-                                                            setToastTitle("Duplication Failed");
-                                                            setToastMessage("Failed to duplicate scorecard. Please try again.");
-                                                            setToastEmoji("❌");
-                                                            setShowToast(true);
-                                                        }
-                                                    }}
-                                                    onNameChange={(newName) => {
-                                                        if (!currentQuestionConfig.scorecardData) {
-                                                            return;
-                                                        }
-
-                                                        const currentScorecardData = currentQuestionConfig.scorecardData;
-
-                                                        // Update the title of the current scorecard
-                                                        const updatedScorecardData = {
-                                                            ...currentScorecardData,
-                                                            name: newName
-                                                        };
-
-                                                        handleConfigChange({
-                                                            scorecardData: updatedScorecardData
-                                                        });
-
-                                                        // Update the scorecard in schoolScorecards state
-                                                        const updatedScorecards = schoolScorecards.map(sc =>
-                                                            sc.id === currentScorecardData.id ? { ...sc, name: newName } : sc
-                                                        );
-                                                        setSchoolScorecards(updatedScorecards);
-
-                                                        // sync all linked scorecards to reflect the name change
-                                                        syncLinkedScorecards(currentScorecardData.id, newName);
-                                                    }}
-                                                    onChange={(updatedCriteria) => {
-                                                        if (!currentQuestionConfig.scorecardData) {
-                                                            return;
-                                                        }
-
-                                                        const currentScorecardData = currentQuestionConfig.scorecardData;
-
-                                                        // Update the current question's scorecard
-                                                        const updatedScorecardData = {
-                                                            ...currentScorecardData,
-                                                            criteria: updatedCriteria
-                                                        };
-
-                                                        handleConfigChange({
-                                                            scorecardData: updatedScorecardData
-                                                        });
-
-                                                        // Update the scorecard in schoolScorecards state
-                                                        const updatedScorecards = schoolScorecards.map(sc =>
-                                                            sc.id === currentScorecardData.id ? { ...sc, criteria: updatedCriteria } : sc
-                                                        );
-                                                        setSchoolScorecards(updatedScorecards);
-
-                                                        // sync all linked scorecards to reflect the criteria changes
-                                                        syncLinkedScorecards(currentScorecardData.id, undefined, updatedCriteria);
-                                                    }}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="w-full flex flex-col items-center justify-center p-8 text-center border border-dashed border-gray-700 rounded-lg bg-[#1A1A1A]">
-                                                <div className="max-w-md">
-                                                    <h3 className="text-xl font-light text-white mb-3">What is a scorecard?</h3>
-                                                    <p className="text-gray-400 mb-6">
-                                                        A scorecard is a set of parameters used to grade the answer to an open-ended question - either use one of our templates or create your own
-                                                    </p>
-                                                    <button
-                                                        className="flex items-center px-5 py-2.5 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer mx-auto"
-                                                        ref={scorecardButtonRef}
-                                                        onClick={handleOpenScorecardDialog}
-                                                        disabled={readOnly}
-                                                    >
-                                                        <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
-                                                            <Plus size={12} className="text-black" />
-                                                        </div>
-                                                        Add a scorecard
-                                                    </button>
+                                                    )}
                                                 </div>
                                             </div>
-                                        )
-                                    )}
+                                        ) : (
+                                            // Scorecard tab - show empty table if scorecard is selected, otherwise show placeholder
+                                            currentQuestionConfig.scorecardData ? (
+                                                <div className="h-full overflow-y-auto w-full p-4">
+                                                    <Scorecard
+                                                        ref={scorecardRef}
+                                                        name={currentQuestionConfig.scorecardData?.name || scorecardTitle}
+                                                        criteria={currentQuestionConfig.scorecardData?.criteria || []}
+                                                        onDelete={() => {
+                                                            // Check if scorecard is used by multiple questions
+                                                            const scorecardForQuestion = questions[currentQuestionIndex].config.scorecardData;
+                                                            if (scorecardForQuestion) {
+                                                                const questionsUsingThisScorecard = questions.filter(q =>
+                                                                    q.config.scorecardData && q.config.scorecardData.id === scorecardForQuestion.id
+                                                                );
+                                                                setScorecardUsedByMultiple(questionsUsingThisScorecard.length > 1);
+                                                            }
+                                                            setShowScorecardDeleteConfirm(true);
+                                                        }}
+                                                        new={currentQuestionConfig.scorecardData?.new}
+                                                        readOnly={readOnly}
+                                                        linked={isLinkedScorecard(currentQuestionConfig.scorecardData)}
+                                                        scorecardId={currentQuestionConfig.scorecardData?.id}
+                                                        allQuestions={questions}
+                                                        onSave={handleSaveScorecardChanges}
+                                                        originalName={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.name : undefined}
+                                                        originalCriteria={currentQuestionConfig.scorecardData?.id ? originalScorecardData.get(currentQuestionConfig.scorecardData.id)?.criteria : undefined}
+                                                        onRevert={handleScorecardRevert}
+                                                        onDuplicate={async () => {
+                                                            if (!currentQuestionConfig.scorecardData) {
+                                                                return;
+                                                            }
+
+                                                            const originalScorecard = currentQuestionConfig.scorecardData;
+
+                                                            try {
+                                                                // Use the reusable function to create duplicated scorecard
+                                                                const createdScorecard = await createScorecard(
+                                                                    `${originalScorecard.name} (Copy)`,
+                                                                    originalScorecard.criteria
+                                                                );
+
+                                                                // Create a duplicate scorecard with the backend ID
+                                                                const duplicatedScorecard: ScorecardTemplate = {
+                                                                    id: createdScorecard.id, // Use the ID returned from backend
+                                                                    name: createdScorecard.title,
+                                                                    new: true, // Mark as newly created to make it unlinked
+                                                                    is_template: false,
+                                                                    criteria: [...originalScorecard.criteria] // Deep copy the criteria
+                                                                };
+
+                                                                // Update the current question to use the duplicated scorecard
+                                                                handleConfigChange({
+                                                                    scorecardData: duplicatedScorecard
+                                                                });
+
+                                                                // Add the duplicated scorecard to school scorecards
+                                                                const updatedScorecards = [...schoolScorecards, duplicatedScorecard];
+                                                                setSchoolScorecards(updatedScorecards);
+
+                                                                // Add the new scorecard to originalScorecardData as the baseline for change detection
+                                                                const updatedOriginalData = new Map(originalScorecardData);
+                                                                updatedOriginalData.set(duplicatedScorecard.id, {
+                                                                    name: duplicatedScorecard.name,
+                                                                    criteria: JSON.parse(JSON.stringify(duplicatedScorecard.criteria))
+                                                                });
+                                                                setOriginalScorecardData(updatedOriginalData);
+
+                                                                // Focus on the scorecard name for editing
+                                                                setTimeout(() => {
+                                                                    scorecardRef.current?.focusName();
+                                                                }, 100);
+
+                                                            } catch (error) {
+                                                                console.error('Error duplicating scorecard:', error);
+
+                                                                // Show error toast
+                                                                setToastTitle("Duplication Failed");
+                                                                setToastMessage("Failed to duplicate scorecard. Please try again.");
+                                                                setToastEmoji("❌");
+                                                                setShowToast(true);
+                                                            }
+                                                        }}
+                                                        onNameChange={(newName) => {
+                                                            if (!currentQuestionConfig.scorecardData) {
+                                                                return;
+                                                            }
+
+                                                            const currentScorecardData = currentQuestionConfig.scorecardData;
+
+                                                            // Update the title of the current scorecard
+                                                            const updatedScorecardData = {
+                                                                ...currentScorecardData,
+                                                                name: newName
+                                                            };
+
+                                                            handleConfigChange({
+                                                                scorecardData: updatedScorecardData
+                                                            });
+
+                                                            // Update the scorecard in schoolScorecards state
+                                                            const updatedScorecards = schoolScorecards.map(sc =>
+                                                                sc.id === currentScorecardData.id ? { ...sc, name: newName } : sc
+                                                            );
+                                                            setSchoolScorecards(updatedScorecards);
+
+                                                            // sync all linked scorecards to reflect the name change
+                                                            syncLinkedScorecards(currentScorecardData.id, newName);
+                                                        }}
+                                                        onChange={(updatedCriteria) => {
+                                                            if (!currentQuestionConfig.scorecardData) {
+                                                                return;
+                                                            }
+
+                                                            const currentScorecardData = currentQuestionConfig.scorecardData;
+
+                                                            // Update the current question's scorecard
+                                                            const updatedScorecardData = {
+                                                                ...currentScorecardData,
+                                                                criteria: updatedCriteria
+                                                            };
+
+                                                            handleConfigChange({
+                                                                scorecardData: updatedScorecardData
+                                                            });
+
+                                                            // Update the scorecard in schoolScorecards state
+                                                            const updatedScorecards = schoolScorecards.map(sc =>
+                                                                sc.id === currentScorecardData.id ? { ...sc, criteria: updatedCriteria } : sc
+                                                            );
+                                                            setSchoolScorecards(updatedScorecards);
+
+                                                            // sync all linked scorecards to reflect the criteria changes
+                                                            syncLinkedScorecards(currentScorecardData.id, undefined, updatedCriteria);
+                                                        }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
+                                                    <div className="max-w-md">
+                                                        <h3 className="text-xl font-light text-white mb-3">What is a scorecard?</h3>
+                                                        <p className="text-gray-400 mb-6">
+                                                            A scorecard is a set of parameters used to grade the answer to an open-ended question - either use one of our templates or create your own
+                                                        </p>
+                                                        <button
+                                                            className="flex items-center px-5 py-2.5 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer mx-auto"
+                                                            ref={scorecardButtonRef}
+                                                            onClick={handleOpenScorecardDialog}
+                                                            disabled={readOnly}
+                                                        >
+                                                            <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
+                                                                <Plus size={12} className="text-black" />
+                                                            </div>
+                                                            Add a scorecard
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
                     </>
                 )}

@@ -652,7 +652,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 >
                     {/* Dialog Header */}
                     <div
-                        className="flex items-center justify-between p-4 border-b border-gray-800"
+                        className="flex items-center justify-between p-4 border-b"
                         style={{ backgroundColor: '#111111' }}
                     >
                         <div className="flex-1 flex items-center">
