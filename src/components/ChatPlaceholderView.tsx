@@ -37,20 +37,34 @@ const ChatPlaceholderView: React.FC<ChatPlaceholderViewProps> = ({
                                     : 'Ready for a challenge?'
                         }
                     </h2>
-                    <p className="text-gray-400 text-center max-w-md mx-6 sm:mx-auto mb-8">
+                    <div className="text-gray-400 text-center max-w-md mx-6 sm:mx-auto mb-8">
                         {viewOnly
-                            ? `There is no chat history for this quiz`
+                            ? <p>There is no chat history for this quiz</p>
                             : taskType === 'learning_material'
-                                ? `Ask your doubt here and AI will help you understand the material better`
+                                ? <p>Ask your doubt here and AI will help you understand the material better</p>
                                 : responseType === 'exam'
-                                    ? (inputType === 'code'
-                                        ? `Think through your answer, then write your code in the code editor. You can attempt the question only once. Be careful and confident.`
-                                        : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`)
-                                    : (inputType === 'code'
-                                        ? `Think through your answer, then write your code in the code editor. You can also type your response below if you want to ask or say something that is not code. You will receive instant feedback and support throughout your journey`
-                                        : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`)
+                                    ? (
+                                        <div className="bg-[#1a1a1a] rounded-xl px-6 py-5 flex flex-col items-center justify-center max-w-lg mx-auto">
+                                            <span className="flex items-center gap-2 mb-2">
+                                                <span className="text-red-400 text-lg" style={{ fontWeight: 300 }}>●</span>
+                                                <span className="text-red-400 font-light text-base">One-time Submission</span>
+                                            </span>
+                                            <span className="text-gray-300 font-light text-center mt-1">
+                                                {inputType === 'code'
+                                                    ? `Think through your answer carefully, then write your code in the code editor. You can attempt the question only once. Be careful and confident.`
+                                                    : `Think through your answer carefully, then ${inputType === 'audio' ? 'record' : 'type'} it here. You can attempt the question only once. Be careful and confident.`}
+                                            </span>
+                                        </div>
+                                    )
+                                    : (
+                                        <p>
+                                            {inputType === 'code'
+                                                ? `Think through your answer, then write your code in the code editor. You can also type your response below if you want to ask or say something that is not code. You will receive instant feedback and support throughout your journey`
+                                                : `Think through your answer, then ${inputType === 'audio' ? 'record' : 'type'} it here. You will receive instant feedback and support throughout your journey`}
+                                        </p>
+                                    )
                         }
-                    </p>
+                    </div>
                 </>
             )}
         </div>

@@ -1202,6 +1202,14 @@ export default function LearnerQuizView({
         ]
     );
 
+    // Add state for exam submission confirmation
+    const [showExamSubmissionConfirmation, setShowExamSubmissionConfirmation] = useState(false);
+    const [pendingExamSubmission, setPendingExamSubmission] = useState<{
+        responseContent: string;
+        responseType: 'text' | 'audio' | 'code';
+        audioData?: string;
+    } | null>(null);
+
     // Modified handleSubmitAnswer function to use shared logic
     const handleSubmitAnswer = useCallback((responseType: 'text' | 'code' = 'text') => {
         // Get the current answer from the ref
@@ -1209,9 +1217,38 @@ export default function LearnerQuizView({
 
         if (!answer.trim()) return;
 
-        // Use the shared processing function
+        // For exam questions, show confirmation dialog
+        if (validQuestions[currentQuestionIndex]?.config?.responseType === 'exam') {
+            setPendingExamSubmission({
+                responseContent: answer,
+                responseType
+            });
+            setShowExamSubmissionConfirmation(true);
+            return;
+        }
+
+        // Use the shared processing function for non-exam questions
         processUserResponse(answer, responseType);
-    }, [processUserResponse]);
+    }, [processUserResponse, validQuestions, currentQuestionIndex]);
+
+    // Handle exam submission confirmation
+    const handleExamSubmissionConfirm = useCallback(() => {
+        if (pendingExamSubmission) {
+            processUserResponse(
+                pendingExamSubmission.responseContent,
+                pendingExamSubmission.responseType,
+                pendingExamSubmission.audioData
+            );
+        }
+        setShowExamSubmissionConfirmation(false);
+        setPendingExamSubmission(null);
+    }, [pendingExamSubmission, processUserResponse]);
+
+    // Handle exam submission cancellation
+    const handleExamSubmissionCancel = useCallback(() => {
+        setShowExamSubmissionConfirmation(false);
+        setPendingExamSubmission(null);
+    }, []);
 
     // New function to handle audio submission using shared logic
     const handleAudioSubmit = useCallback(async (audioBlob: Blob) => {
@@ -1958,6 +1995,18 @@ export default function LearnerQuizView({
                 cancelButtonText="Stay"
                 onConfirm={handleNavigationConfirm}
                 onCancel={handleNavigationCancel}
+                type="custom"
+            />
+
+            {/* Exam Submission Confirmation Dialog */}
+            <ConfirmationDialog
+                open={showExamSubmissionConfirmation}
+                title="Confirm Submission"
+                message="This is an exam question. You can only submit your answer once and won't be able to modify it. Are you sure you want to submit now?"
+                confirmButtonText="Submit"
+                cancelButtonText="Review Again"
+                onConfirm={handleExamSubmissionConfirm}
+                onCancel={handleExamSubmissionCancel}
                 type="custom"
             />
 
