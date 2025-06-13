@@ -430,7 +430,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         };
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/code`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/code/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
