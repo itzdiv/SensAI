@@ -413,11 +413,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     // Handle save functionality
     const [showSaveToast, setShowSaveToast] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = async () => {
-        if (!codeEditorRef.current || !currentQuestionId) {
+        if (!codeEditorRef.current || !currentQuestionId || isSaving) {
             return;
         }
+
+        setIsSaving(true);
 
         const currentCode = codeEditorRef.current.getCurrentCode();
 
@@ -429,6 +432,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
         // Only save if there's actual code content
         if (codeDrafts.length === 0 || codeDrafts.every(draft => !draft.value.trim())) {
+            setIsSaving(false);
             return;
         }
 
@@ -458,6 +462,8 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         } catch (error) {
             console.error('Error saving code:', error);
             // Optionally show error feedback
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -773,9 +779,14 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                         {isViewingCode && !isTestMode && (
                             <button
                                 onClick={handleSave}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors cursor-pointer flex items-center"
+                                disabled={isSaving}
+                                className={`px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors cursor-pointer flex items-center ${isSaving ? 'opacity-75' : ''}`}
                             >
-                                <Save size={16} className="mr-2" />
+                                {isSaving ? (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                ) : (
+                                    <Save size={16} className="mr-2" />
+                                )}
                                 <span>Save</span>
                             </button>
                         )}
