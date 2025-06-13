@@ -3,8 +3,9 @@ import { ChatMessage, ScorecardItem, QuizQuestion } from '../types/quiz';
 import ChatPlaceholderView from './ChatPlaceholderView';
 import ChatHistoryView from './ChatHistoryView';
 import AudioInputComponent from './AudioInputComponent';
-import CodeEditorView from './CodeEditorView';
-import { MessageCircle, Code, Sparkles } from 'lucide-react';
+import CodeEditorView, { CodeEditorViewHandle } from './CodeEditorView';
+import Toast from './Toast';
+import { MessageCircle, Code, Sparkles, Save } from 'lucide-react';
 import isEqual from 'lodash/isEqual';
 
 // Export interface for code view state to be used by parent components
@@ -47,6 +48,7 @@ interface ChatViewProps {
     showLearnerView?: boolean;
     onShowLearnerViewChange?: (show: boolean) => void;
     isAdminView?: boolean;
+    userId?: string;
 }
 
 export interface ChatViewHandle {
@@ -78,8 +80,12 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     showLearnerView = false,
     onShowLearnerViewChange,
     isAdminView = false,
+    userId,
 }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Add ref for CodeEditorView
+    const codeEditorRef = useRef<CodeEditorViewHandle>(null);
 
     // Add state for code editor toggle and preview
     const [isViewingCode, setIsViewingCode] = useState(initialIsViewingCode);
@@ -133,66 +139,105 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             return;
         }
 
-        if (currentChatHistory.length === 0) {
-            setCodeContent({});
-            return;
-        }
 
-        // Filter messages to find code type messages
-        const codeMessages = currentChatHistory.filter(
-            message => message.messageType === 'code' && message.sender === 'user'
-        );
-
-        // Use the most recent code message if any exists
-        if (codeMessages.length > 0) {
-            const lastCodeMessage = codeMessages[codeMessages.length - 1];
-            const codeContent = lastCodeMessage.content;
-            const codeByLanguage: Record<string, string> = {};
+        // Check for saved code drafts first
+        const fetchSavedCode = async () => {
+            if (!userId || !currentQuestionId) {
+                return null;
+            }
 
             try {
-                // Try to parse code sections based on language markers
-                const languagePattern = /\/\/ ([A-Z]+)\n([\s\S]*?)(?=\/\/ [A-Z]+\n|$)/g;
-                let match;
-                let foundAnyMatches = false;
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/code/user/${userId}/question/${currentQuestionId}`
+                );
 
-                while ((match = languagePattern.exec(codeContent)) !== null) {
-                    foundAnyMatches = true;
-                    const lang = match[1].toLowerCase();
-                    const code = match[2].trim();
-
-                    // Map common language variations
-                    const normalizedLang =
-                        lang === 'javascript' || lang === 'js' ? 'javascript' :
-                            lang === 'html' ? 'html' :
-                                lang === 'css' ? 'css' :
-                                    lang === 'python' || lang === 'py' ? 'python' :
-                                        lang === 'typescript' || lang === 'ts' ? 'typescript' :
-                                            lang;
-
-                    codeByLanguage[normalizedLang] = code;
-                }
-
-                // If no language headers were found, use the content as the first language
-                if (!foundAnyMatches && codingLanguages.length > 0) {
-                    codeByLanguage[codingLanguages[0].toLowerCase()] = codeContent;
-                }
-
-                // Ensure all configured languages have an entry
-                codingLanguages.forEach((lang: string) => {
-                    const normalizedLang = lang.toLowerCase();
-                    if (!codeByLanguage[normalizedLang]) {
-                        // If a language doesn't have code yet, initialize with empty string
-                        codeByLanguage[normalizedLang] = '';
+                if (response.ok) {
+                    const codeDraft = await response.json();
+                    if (codeDraft && codeDraft.code && Array.isArray(codeDraft.code)) {
+                        const savedCodeByLanguage: Record<string, string> = {};
+                        codeDraft.code.forEach((langCode: { language: string; value: string }) => {
+                            savedCodeByLanguage[langCode.language.toLowerCase()] = langCode.value;
+                        });
+                        return savedCodeByLanguage;
                     }
-                });
-
-                // Set the code content for the editor
-                setCodeContent(codeByLanguage);
+                }
             } catch (error) {
-                console.error('Error parsing code from chat history:', error);
+                console.error('Error fetching saved code:', error);
             }
-        }
-    }, [currentChatHistory, isCodingQuestion, codingLanguages]);
+
+            return null;
+        };
+
+        console.log('here')
+
+        // Try to get saved code first
+        fetchSavedCode().then(savedCode => {
+            if (savedCode && Object.keys(savedCode).length > 0) {
+                setCodeContent(savedCode);
+                return;
+            }
+
+            if (currentChatHistory.length === 0) {
+                setCodeContent({});
+                return;
+            }
+
+            // Filter messages to find code type messages
+            const codeMessages = currentChatHistory.filter(
+                message => message.messageType === 'code' && message.sender === 'user'
+            );
+
+            // Use the most recent code message if any exists
+            if (codeMessages.length > 0) {
+                const lastCodeMessage = codeMessages[codeMessages.length - 1];
+                const codeContent = lastCodeMessage.content;
+                const codeByLanguage: Record<string, string> = {};
+
+                try {
+                    // Try to parse code sections based on language markers
+                    const languagePattern = /\/\/ ([A-Z]+)\n([\s\S]*?)(?=\/\/ [A-Z]+\n|$)/g;
+                    let match;
+                    let foundAnyMatches = false;
+
+                    while ((match = languagePattern.exec(codeContent)) !== null) {
+                        foundAnyMatches = true;
+                        const lang = match[1].toLowerCase();
+                        const code = match[2].trim();
+
+                        // Map common language variations
+                        const normalizedLang =
+                            lang === 'javascript' || lang === 'js' ? 'javascript' :
+                                lang === 'html' ? 'html' :
+                                    lang === 'css' ? 'css' :
+                                        lang === 'python' || lang === 'py' ? 'python' :
+                                            lang === 'typescript' || lang === 'ts' ? 'typescript' :
+                                                lang;
+
+                        codeByLanguage[normalizedLang] = code;
+                    }
+
+                    // If no language headers were found, use the content as the first language
+                    if (!foundAnyMatches && codingLanguages.length > 0) {
+                        codeByLanguage[codingLanguages[0].toLowerCase()] = codeContent;
+                    }
+
+                    // Ensure all configured languages have an entry
+                    codingLanguages.forEach((lang: string) => {
+                        const normalizedLang = lang.toLowerCase();
+                        if (!codeByLanguage[normalizedLang]) {
+                            // If a language doesn't have code yet, initialize with empty string
+                            codeByLanguage[normalizedLang] = '';
+                        }
+                    });
+
+                    // Set the code content for the editor
+                    setCodeContent(codeByLanguage);
+                } catch (error) {
+                    console.error('Error parsing code from chat history:', error);
+                }
+            }
+        });
+    }, [currentChatHistory, isCodingQuestion, codingLanguages, userId, currentQuestionId]);
 
     // Notify parent of code state changes
     useEffect(() => {
@@ -245,7 +290,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     };
 
     // Handle code submission
-    const handleCodeSubmit = (code: Record<string, string>) => {
+    const handleCodeSubmit = async (code: Record<string, string>) => {
         // Add code to chat history as a user message
         if (Object.values(code).some(content => content.trim())) {
             // Format the code for display in the chat
@@ -268,6 +313,21 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
             // Then call the submit function
             handleSubmitAnswer('code');
+
+            // Delete any existing code for this question before submitting new code
+            if (userId && currentQuestionId) {
+                try {
+                    await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/code/user/${userId}/question/${currentQuestionId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                } catch (error) {
+                    console.error('Error deleting existing code:', error);
+                    // Continue with submission even if delete fails
+                }
+            }
 
             // For exam questions, keep the code editor visible so that users can review their code
             if (currentQuestionConfig?.responseType !== 'exam') {
@@ -342,12 +402,74 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
         }
     };
 
+    // Handle save functionality
+    const [showSaveToast, setShowSaveToast] = useState(false);
+
+    const handleSave = async () => {
+        if (!codeEditorRef.current || !currentQuestionId) {
+            return;
+        }
+
+        const currentCode = codeEditorRef.current.getCurrentCode();
+
+        // Convert code object to CodeDraft array
+        const codeDrafts = Object.entries(currentCode).map(([language, value]) => ({
+            language,
+            value
+        }));
+
+        // Only save if there's actual code content
+        if (codeDrafts.length === 0 || codeDrafts.every(draft => !draft.value.trim())) {
+            return;
+        }
+
+        const requestBody = {
+            user_id: parseInt(userId || '0'),
+            question_id: parseInt(currentQuestionId),
+            code: codeDrafts
+        };
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/code`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save code');
+            }
+
+            console.log('here')
+
+            // Show success toast
+            setShowSaveToast(true);
+        } catch (error) {
+            console.error('Error saving code:', error);
+            // Optionally show error feedback
+        }
+    };
+
+    // Auto-hide save toast after 3 seconds
+    useEffect(() => {
+        if (showSaveToast) {
+            const timer = setTimeout(() => {
+                setShowSaveToast(false);
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [showSaveToast]);
+
     // Render the code editor or chat view based on state
     const renderMainContent = () => {
         // If viewing code and not in viewOnly mode, show the code editor
         if (isViewingCode && isCodingQuestion && !viewOnly) {
             return (
                 <CodeEditorView
+                    ref={codeEditorRef}
                     initialCode={codeContent}
                     languages={codingLanguages}
                     handleCodeSubmit={handleCodeSubmit}
@@ -637,7 +759,19 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
             {!viewOnly && isCodingQuestion &&
                 // Hide toggle for exam questions that are completed
                 !(currentQuestionConfig?.responseType === 'exam' && isQuestionCompleted) && (
-                    <div className="flex justify-end mb-4">
+                    <div className={`flex items-center mb-4 ${isViewingCode ? 'justify-between' : 'justify-end'}`}>
+                        {/* Save button - only show when code view is active */}
+                        {isViewingCode && (
+                            <button
+                                onClick={handleSave}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors cursor-pointer flex items-center"
+                            >
+                                <Save size={16} className="mr-2" />
+                                <span>Save</span>
+                            </button>
+                        )}
+
+                        {/* Chat/Code toggle */}
                         <div className="code-toggle-switch">
                             <div
                                 className={`code-toggle-option ${!isViewingCode ? 'active' : ''}`}
@@ -659,6 +793,15 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
             {/* Main content area with code editor or chat view */}
             {renderMainContent()}
+
+            {/* Save Toast */}
+            <Toast
+                show={showSaveToast}
+                title="Code Saved"
+                description="The code will be restored when you return to this question"
+                emoji="✅"
+                onClose={() => setShowSaveToast(false)}
+            />
         </div>
     );
 });

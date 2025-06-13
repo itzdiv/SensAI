@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import { Play, Send, Terminal, ArrowLeft, X } from 'lucide-react';
 import Toast from './Toast';
@@ -8,6 +8,11 @@ interface CodeEditorViewProps {
     languages?: string[];
     handleCodeSubmit: (code: Record<string, string>) => void;
     onCodeRun?: (previewContent: string, output: string, executionTime?: string, isRunning?: boolean) => void;
+}
+
+// Add interface for the ref methods
+export interface CodeEditorViewHandle {
+    getCurrentCode: () => Record<string, string>;
 }
 
 // Preview component that can be used in a separate column
@@ -399,12 +404,12 @@ const JUDGE0_API_URL = process.env.JUDGE0_API_URL || '';
 // Whether to use proxy approach to avoid CORS issues
 const USE_PROXY_API = true;
 
-const CodeEditorView: React.FC<CodeEditorViewProps> = ({
+const CodeEditorView = forwardRef<CodeEditorViewHandle, CodeEditorViewProps>(({
     initialCode = {},
     languages = ['javascript'],
     handleCodeSubmit,
     onCodeRun,
-}) => {
+}, ref) => {
     // Check if React is in the original languages array
     const hasReact = languages.some(lang =>
         lang.toLowerCase() === 'react'
@@ -1141,6 +1146,11 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
         }
     }, [showMobilePreview, isMobileView]);
 
+    // Use useImperativeHandle to expose getCurrentCode method
+    useImperativeHandle(ref, () => ({
+        getCurrentCode: () => code,
+    }));
+
     return (
         <div className="flex flex-col h-full overflow-auto">
             {/* Toast notification for input validation */}
@@ -1288,7 +1298,7 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
                     <button
                         onClick={handleCodeRun}
                         disabled={isRunning}
-                        className="flex items-center space-x-2 bg-[#333333] hover:bg-[#444444] text-white rounded-full px-4 py-2 cursor-pointer"
+                        className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-700 disabled:opacity-50 text-white rounded-full px-4 py-2 cursor-pointer"
                     >
                         {isRunning ? (
                             <>
@@ -1338,6 +1348,6 @@ const CodeEditorView: React.FC<CodeEditorViewProps> = ({
             </div>
         </div>
     );
-};
+});
 
 export default CodeEditorView; 

@@ -1984,6 +1984,7 @@ export default function LearnerQuizView({
                             showLearnerView={showLearnerView}
                             onShowLearnerViewChange={setShowLearnerView}
                             isAdminView={isAdminView}
+                            userId={userId}
                             ref={chatViewRef}
                         />
                     )}
