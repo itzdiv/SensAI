@@ -5,7 +5,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, MoreVertical, Maximize2, Minimize2, MessageCircle, X, Columns, LayoutGrid, SplitSquareVertical, CheckCircle, Eye, EyeOff } from "lucide-react";
 import BlockNoteEditor from "./BlockNoteEditor";
 import { QuizQuestion, ChatMessage, ScorecardItem, AIResponse, QuizQuestionConfig } from "../types/quiz";
-import ChatView, { CodeViewState } from './ChatView';
+import ChatView, { CodeViewState, ChatViewHandle } from './ChatView';
 import ScorecardView from './ScorecardView';
 import ConfirmationDialog from './ConfirmationDialog';
 import { getKnowledgeBaseContent } from './QuizEditor';
@@ -191,6 +191,9 @@ export default function LearnerQuizView({
 
     // Add a reference for the scorecard container
     const scorecardContainerRef = useRef<HTMLDivElement>(null);
+
+    // Reference to the ChatView component
+    const chatViewRef = useRef<ChatViewHandle>(null);
 
     // Store the current answer in a ref to avoid re-renders
     const currentAnswerRef = useRef(currentAnswer);
@@ -1252,6 +1255,7 @@ export default function LearnerQuizView({
         }
         setShowExamSubmissionConfirmation(false);
         setPendingExamSubmission(null);
+        chatViewRef.current?.toggleCodeView();
     }, [pendingExamSubmission, processUserResponse]);
 
     // Handle exam submission cancellation
@@ -1980,6 +1984,7 @@ export default function LearnerQuizView({
                             showLearnerView={showLearnerView}
                             onShowLearnerViewChange={setShowLearnerView}
                             isAdminView={isAdminView}
+                            ref={chatViewRef}
                         />
                     )}
                 </div>

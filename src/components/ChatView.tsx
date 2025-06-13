@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { ChatMessage, ScorecardItem, QuizQuestion } from '../types/quiz';
 import ChatPlaceholderView from './ChatPlaceholderView';
 import ChatHistoryView from './ChatHistoryView';
@@ -49,7 +49,11 @@ interface ChatViewProps {
     isAdminView?: boolean;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({
+export interface ChatViewHandle {
+    toggleCodeView: () => void;
+}
+
+const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     currentChatHistory,
     isAiResponding,
     showPreparingReport,
@@ -74,7 +78,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     showLearnerView = false,
     onShowLearnerViewChange,
     isAdminView = false,
-}) => {
+}, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Add state for code editor toggle and preview
@@ -116,6 +120,12 @@ const ChatView: React.FC<ChatViewProps> = ({
             setIsViewingCode(false);
         }
     }, [currentQuestionConfig, isCodingQuestion, viewOnly, taskType, isQuestionCompleted]);
+
+    useImperativeHandle(ref, () => ({
+        toggleCodeView: () => {
+            setIsViewingCode(prev => !prev);
+        }
+    }));
 
     // Extract code from chat history for coding questions
     useEffect(() => {
@@ -259,8 +269,10 @@ const ChatView: React.FC<ChatViewProps> = ({
             // Then call the submit function
             handleSubmitAnswer('code');
 
-            // Switch back to chat view
-            setIsViewingCode(false);
+            // For exam questions, keep the code editor visible so that users can review their code
+            if (currentQuestionConfig?.responseType !== 'exam') {
+                setIsViewingCode(false);
+            }
         }
     };
 
@@ -649,6 +661,6 @@ const ChatView: React.FC<ChatViewProps> = ({
             {renderMainContent()}
         </div>
     );
-};
+});
 
 export default ChatView; 
