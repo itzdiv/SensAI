@@ -276,8 +276,8 @@ export default function CohortMemberManagement({
     const roleText = {
         title: role === 'learner' ? 'Start building your cohort' : 'Guide your learners',
         description: role === 'learner' ? 'Create a group of learners who will take your course together' : 'Add mentors to support and inspire your learners',
-        buttonText: role === 'learner' ? 'Add Learners' : 'Add Mentors',
-        modalTitle: role === 'learner' ? 'Invite Learners' : 'Invite Mentors',
+        buttonText: role === 'learner' ? 'Add learners' : 'Add mentors',
+        modalTitle: role === 'learner' ? 'Invite learners' : 'Invite mentors',
         successToastTitle: 'Bumping it up',
         successToastEmoji: role === 'learner' ? '📧' : '👩‍🏫',
     };

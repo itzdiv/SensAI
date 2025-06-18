@@ -134,7 +134,7 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
                             ) : (
                                 <>
                                     <Copy size={16} className="mr-2" />
-                                    Copy Invite Link
+                                    Copy invite link
                                 </>
                             )}
                         </button>

@@ -1866,7 +1866,7 @@ export default function CreateCourse() {
                             className="inline-flex items-center text-gray-400 hover:text-white transition-colors mb-4"
                         >
                             <ArrowLeft size={16} className="mr-2 text-sm" />
-                            Back To Courses
+                            Back to courses
                         </Link>
 
                         <div className="flex items-center justify-between mb-8">

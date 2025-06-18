@@ -637,7 +637,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                             className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none cursor-pointer"
                                             onClick={() => setIsInviteDialogOpen(true)}
                                         >
-                                            Invite Members
+                                            Invite members
                                         </button>
                                         {selectedMembers.length > 0 && (
                                             <button

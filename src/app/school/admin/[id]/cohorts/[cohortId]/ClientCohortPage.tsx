@@ -547,7 +547,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                     className="flex items-center text-gray-400 hover:text-white transition-colors mb-4"
                                 >
                                     <ArrowLeft size={16} className="mr-2" />
-                                    Back To Cohorts
+                                    Back to cohorts
                                 </Link>
 
                                 <div className="flex items-center justify-between">
@@ -604,7 +604,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                     className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors cursor-pointer"
                                                 >
                                                     <Mail size={16} />
-                                                    <span>Invite Learners</span>
+                                                    <span>Invite learners</span>
                                                 </button>
 
                                                 {/* Link Course button and dropdown */}
@@ -620,7 +620,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                         }}
                                                     >
                                                         <Plus size={16} />
-                                                        <span>Link Course</span>
+                                                        <span>Link course</span>
                                                     </button>
 
                                                     {/* Use the new dropdown component */}
