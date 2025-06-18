@@ -119,6 +119,7 @@ export interface ChatMessage {
     audioData?: string; // base64 encoded audio data
     scorecard?: ScorecardItem[]; // Add scorecard field for detailed feedback
     isError?: boolean;
+    is_correct?: boolean; // Add is_correct attribute for exam responses
 }   
 
 

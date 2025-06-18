@@ -391,6 +391,11 @@ export default function LearnerQuizView({
                             if (contentObj && contentObj.scorecard) {
                                 chatMessage.scorecard = contentObj.scorecard;
                             }
+
+                            // Extract is_correct if available
+                            if (contentObj && contentObj.is_correct !== undefined) {
+                                chatMessage.is_correct = contentObj.is_correct;
+                            }
                         } catch (error) {
                             // If parsing fails, assume it's the old format (plain text)
                             // Keep the original content as is - it's already set in chatMessage

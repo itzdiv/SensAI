@@ -297,9 +297,30 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({
                                         currentQuestionConfig?.responseType === 'exam' &&
                                         onShowLearnerViewChange &&
                                         isAdminView && (
-                                            <div className="-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl bg-[#232428] border-b border-[#35363a]">
+                                            <div className={`-mx-4 -mt-2 mb-4 px-4 pt-3 pb-2 rounded-t-2xl border-b border-[#35363a] ${message.is_correct !== undefined
+                                                ? message.is_correct
+                                                    ? 'bg-green-900/40'
+                                                    : 'bg-red-900/40'
+                                                : 'bg-[#232428]'
+                                                }`}>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm text-gray-300 font-light select-none">Show result</span>
+                                                    <div className="flex items-center">
+                                                        {message.is_correct !== undefined && (
+                                                            <div className={`mr-2 w-5 h-5 rounded-full flex items-center justify-center ${message.is_correct ? 'bg-green-600' : 'bg-red-600'
+                                                                }`}>
+                                                                {message.is_correct ? (
+                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                ) : (
+                                                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        <span className="text-sm text-gray-300 font-light select-none">Show result</span>
+                                                    </div>
                                                     <button
                                                         onClick={() => onShowLearnerViewChange(!showLearnerView)}
                                                         className={`relative cursor-pointer inline-flex h-6 w-11 items-center rounded-full border transition-colors duration-200 focus:outline-none
