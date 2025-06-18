@@ -1014,7 +1014,7 @@ export default function CourseModuleList({
                 }
                 title="Are you sure you want to delete this module?"
                 message="All tasks within this module will be permanently removed. This action cannot be undone."
-                confirmButtonText="Delete Module"
+                confirmButtonText="Delete"
                 onConfirm={handleConfirmModuleDelete}
                 onCancel={handleCancelModuleDelete}
                 type="delete"

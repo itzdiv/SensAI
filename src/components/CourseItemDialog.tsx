@@ -1082,7 +1082,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                         ?
                         "Would you like to save your progress before leaving? If you don't save, all your progress will be lost." : "All your unsaved changes will be lost if you leave without saving. Are you sure you want to leave?"
                 }
-                confirmButtonText={isClosingDraft ? "Save" : "Discard Changes"}
+                confirmButtonText={isClosingDraft ? "Save" : "Discard changes"}
                 cancelButtonText={isClosingDraft ? "Discard" : "Continue Editing"}
                 onConfirm={isClosingDraft ? handleConfirmSaveDraft : handleConfirmDiscardChanges}
                 onCancel={isClosingDraft ? handleConfirmDiscardChanges : handleCancelClosingDialog}
@@ -1109,7 +1109,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 open={showUnsavedScorecardConfirmation}
                 title="Unsaved Scorecard Changes"
                 message={`The scorecard for this question has unsaved changes. Do you want to discard them and continue, or go back to save them?`}
-                confirmButtonText="Discard Changes"
+                confirmButtonText="Discard changes"
                 cancelButtonText="Go Back"
                 onConfirm={handleDiscardScorecardChanges}
                 onCancel={handleGoBackToScorecard}

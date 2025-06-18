@@ -955,7 +955,7 @@ export default function LearnerCourseView({
                 open={showNavigationConfirmation}
                 title="AI is still responding"
                 message="The AI is still generating a response. If you navigate away now, you will not see the complete response. Are you sure you want to leave?"
-                confirmButtonText="Leave Anyway"
+                confirmButtonText="Leave anyway"
                 cancelButtonText="Stay"
                 onConfirm={handleNavigationConfirm}
                 onCancel={handleNavigationCancel}
@@ -1301,7 +1301,7 @@ export default function LearnerCourseView({
                 open={showNavigationConfirmation}
                 title="What's the rush?"
                 message="Our AI is still reviewing your answer and will be ready with a response soon. If you navigate away now, you will not see the complete response. Are you sure you want to leave?"
-                confirmButtonText="Leave Anyway"
+                confirmButtonText="Leave anyway"
                 cancelButtonText="Stay"
                 onConfirm={handleNavigationConfirm}
                 onCancel={handleNavigationCancel}

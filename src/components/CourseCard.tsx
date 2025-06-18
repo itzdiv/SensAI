@@ -136,7 +136,7 @@ export default function CourseCard({ course, onDelete }: CourseCardProps) {
                 show={isDeleteConfirmOpen}
                 title="Delete Course"
                 message={`Are you sure you want to delete this course? All the modules and tasks will be permanently deleted, any learner with access will lose all their progress and this action is irreversible`}
-                confirmButtonText="Delete Course"
+                confirmButtonText="Delete"
                 onConfirm={handleDeleteConfirm}
                 onCancel={() => setIsDeleteConfirmOpen(false)}
                 type="delete"
