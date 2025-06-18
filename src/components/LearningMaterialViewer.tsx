@@ -257,7 +257,8 @@ export default function LearningMaterialViewer({
                 response_type: 'text',
                 task_id: parseInt(taskId),
                 chat_history: formattedChatHistory,
-                task_type: 'learning_material'
+                task_type: 'learning_material',
+                user_id: userId
             };
 
             let receivedAnyResponse = false;
