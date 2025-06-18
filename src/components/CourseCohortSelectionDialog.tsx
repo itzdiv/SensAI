@@ -197,7 +197,7 @@ export const CourseCohortSelectionDialog = ({
                                 onClick={handleCreateCohortClick}
                                 className="mt-4 inline-block px-4 py-2 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                             >
-                                Create Cohort
+                                Create cohort
                             </button>
                         </>
                     ) : totalSchoolCohorts > 0 && cohorts.length === 0 ? (

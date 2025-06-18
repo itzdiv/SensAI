@@ -88,7 +88,7 @@ export default function CohortCard({ cohort, schoolId, onDelete }: CohortCardPro
             {/* Confirmation Dialog */}
             <ConfirmationDialog
                 show={isDeleteConfirmOpen}
-                title="Delete Cohort"
+                title="Delete cohort"
                 message={`Are you sure you want to delete this cohort? All learners will instantly lose access to any course assigned to this cohort, they will lose any progress they made and this action is irreversible`}
                 confirmButtonText="Delete"
                 onConfirm={handleDeleteConfirm}

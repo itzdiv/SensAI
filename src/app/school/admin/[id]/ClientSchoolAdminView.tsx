@@ -557,7 +557,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                     onClick={() => setIsCreateCourseDialogOpen(true)}
                                                     className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer"
                                                 >
-                                                    Create Course
+                                                    Create course
                                                 </button>
                                             </div>
 
@@ -578,7 +578,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                 onClick={() => setIsCreateCourseDialogOpen(true)}
                                                 className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity inline-block cursor-pointer"
                                             >
-                                                Create Course
+                                                Create course
                                             </button>
                                         </div>
                                     )}
@@ -597,7 +597,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                         setIsCreateCohortDialogOpen(true);
                                                     }}
                                                 >
-                                                    Create Cohort
+                                                    Create cohort
                                                 </button>
                                             </div>
 
@@ -622,7 +622,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                                                     setIsCreateCohortDialogOpen(true);
                                                 }}
                                             >
-                                                Create Cohort
+                                                Create cohort
                                             </button>
                                         </div>
                                     )}
@@ -723,7 +723,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             {/* Delete Member Confirmation Dialog */}
             <ConfirmationDialog
                 show={isDeleteConfirmOpen}
-                title={memberToDelete || selectedMembers.length == 1 ? "Remove Member" : "Remove Selected Members"}
+                title={memberToDelete || selectedMembers.length == 1 ? "Remove member" : "Remove selected members"}
                 message={memberToDelete
                     ? `Are you sure you want to remove ${memberToDelete.email} from this organization?`
                     : `Are you sure you want to remove ${selectedMembers.length} ${selectedMembers.length === 1 ? 'member' : 'members'} from this organization?`
@@ -734,7 +734,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 type="delete"
             />
 
-            {/* Create Cohort Dialog */}
+            {/* Create cohort Dialog */}
             <CreateCohortDialog
                 open={isCreateCohortDialogOpen}
                 onClose={() => setIsCreateCohortDialogOpen(false)}
@@ -742,7 +742,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
                 schoolId={id}
             />
 
-            {/* Create Course Dialog */}
+            {/* Create course Dialog */}
             <CreateCourseDialog
                 open={isCreateCourseDialogOpen}
                 onClose={() => setIsCreateCourseDialogOpen(false)}

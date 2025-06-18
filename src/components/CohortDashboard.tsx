@@ -141,7 +141,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                     }}
                     className="px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity cursor-pointer"
                 >
-                    Add Learners
+                    Add learners
                 </button>
             </div>
         );

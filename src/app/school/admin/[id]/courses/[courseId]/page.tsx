@@ -390,7 +390,7 @@ export default function CreateCourse() {
     const addLearningMaterialToState = (moduleId: string, taskData: any, position: number) => {
         const newItem: LearningMaterial = {
             id: taskData.id.toString(),
-            title: taskData.title,
+            title: taskData.title || "New learning material",
             position: position,
             type: 'material',
             content: [], // Empty content, the editor will initialize with default content
@@ -404,7 +404,7 @@ export default function CreateCourse() {
     const addQuizToState = (moduleId: string, taskData: any, position: number) => {
         const newItem: Quiz = {
             id: taskData.id.toString(),
-            title: taskData.title || "New Quiz",
+            title: taskData.title || "New quiz",
             position: position,
             type: 'quiz',
             questions: taskData.questions || [],
@@ -499,7 +499,7 @@ export default function CreateCourse() {
                     course_id: parseInt(courseId),
                     milestone_id: parseInt(moduleId),
                     type: "quiz",
-                    title: "New Quiz",
+                    title: "New quiz",
                     status: "draft"
                 }),
             });
@@ -1962,7 +1962,7 @@ export default function CreateCourse() {
                             onClick={() => addModule(courseId, schoolId, modules, setModules, setActiveModuleId, lastUsedColorIndex, setLastUsedColorIndex)}
                             className="mb-6 px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-100 cursor-pointer"
                         >
-                            Add Module
+                            Add module
                         </button>
 
                         <CourseModuleList
@@ -2177,7 +2177,7 @@ export default function CreateCourse() {
             {/* Confirmation Dialog for Cohort Removal */}
             <ConfirmationDialog
                 open={showRemoveCohortConfirmation}
-                title="Remove Course From Cohort"
+                title="Remove course from cohort"
                 message={`Are you sure you want to remove this course from "${cohortToRemove?.name}"? Learners in that cohort will no longer have access to this course`}
                 onConfirm={() => cohortToRemove && removeCohortFromCourse(cohortToRemove.id)}
                 onCancel={() => {

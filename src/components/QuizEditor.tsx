@@ -1689,8 +1689,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     className="flex items-center px-5 py-2.5 text-sm text-black bg-white hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
                     disabled={readOnly}
                 >
-                    <div className="w-5 h-5 rounded-full border border-black flex items-center justify-center mr-2">
-                        <Plus size={12} className="text-black" />
+                    <div className="w-4 h-4 rounded-full border border-black flex items-center justify-center mr-2">
+                        <Plus size={10} className="text-black" />
                     </div>
                     Add question
                 </button>
@@ -2439,7 +2439,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             {/* Scorecard delete confirmation modal */}
             <ConfirmationDialog
                 show={showScorecardDeleteConfirm && !isPreviewMode}
-                title="Remove Scorecard"
+                title="Remove scorecard"
                 message="Are you sure you want to remove this scorecard from this question? This will not affect other questions using this scorecard."
                 onConfirm={() => {
                     removeScorecardFromSchoolScoreboards();
@@ -2536,7 +2536,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 <div className="w-4 h-4 rounded-full border border-black flex items-center justify-center mr-2">
                                                     <Plus size={10} className="text-black" />
                                                 </div>
-                                                Add Question
+                                                Add question
                                             </button>
                                         </div>
                                     )}

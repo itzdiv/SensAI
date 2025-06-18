@@ -264,7 +264,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
                     // Set default title based on item type
                     let defaultTitle = "New learning material";
-                    if (activeItem.type === 'quiz') defaultTitle = "New Quiz";
+                    if (activeItem.type === 'quiz') defaultTitle = "New quiz";
 
                     const isTitleChanged = currentTitle !== defaultTitle && currentTitle.trim() !== '';
 
@@ -365,7 +365,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
 
             // Set default title based on item type
             let defaultTitle = "New learning material";
-            if (activeItem.type === 'quiz') defaultTitle = "New Quiz";
+            if (activeItem.type === 'quiz') defaultTitle = "New quiz";
 
             const isTitleChanged = currentTitle !== defaultTitle && currentTitle.trim() !== '';
 
@@ -754,7 +754,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                             aria-label={`Save ${activeItem?.type} draft`}
                                         >
                                             <Check size={16} className="mr-2" />
-                                            Save Draft
+                                            Save draft
                                         </button>
                                         {/* Existing Publish button */}
                                         <button

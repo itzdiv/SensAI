@@ -203,7 +203,7 @@ export default function CohortCoursesLinkerDropdown({
                                     href={`/school/admin/${schoolId}#courses`}
                                     className="mt-4 inline-block px-4 py-3 text-sm bg-white text-black rounded-full hover:opacity-90 transition-opacity"
                                 >
-                                    Go To School
+                                    Open school
                                 </Link>
                             </>
                         ) : availableCourses.length === 0 ? (

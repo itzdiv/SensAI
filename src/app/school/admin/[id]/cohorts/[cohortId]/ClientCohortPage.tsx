@@ -777,7 +777,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             at the end of the component, before the final Toast component */}
             <ConfirmationDialog
                 open={isCourseUnlinkConfirmOpen}
-                title="Remove Course From Cohort"
+                title="Remove course from cohort"
                 message={`Are you sure you want to remove "${courseToUnlink?.name}" from this cohort? Learners will no longer have access to this course`}
                 confirmButtonText="Remove"
                 onConfirm={() => courseToUnlink && removeCourseFromCohort(courseToUnlink.id)}
