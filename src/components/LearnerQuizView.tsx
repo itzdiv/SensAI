@@ -606,7 +606,8 @@ export default function LearnerQuizView({
         } else {
             // For chat type or any other type, just include feedback
             contentObj = {
-                feedback: aiResponse.feedback
+                feedback: aiResponse.feedback,
+                is_correct: aiResponse.is_correct
             };
         }
         let aiContent = JSON.stringify(contentObj);
