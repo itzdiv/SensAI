@@ -180,7 +180,7 @@ export default function ClientLeaderboardView({
                             <div className={`${view === 'admin'
                                 ? 'col-span-2'
                                 : 'col-span-2 sm:col-span-3 lg:col-span-3'} text-right pr-1 sm:pr-2`}>
-                                <span className="hidden md:inline">Tasks Completed</span>
+                                <span className="hidden md:inline">Tasks completed</span>
                                 <span className="md:hidden">Tasks</span>
                             </div>
                         </div>

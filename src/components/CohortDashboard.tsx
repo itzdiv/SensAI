@@ -232,7 +232,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                             {/* Task Completion Rate - 75% width */}
                             <div className="bg-[#111] p-8 rounded-lg w-2/3">
                                 <h3 className="text-gray-400 text-sm mb-6 flex items-center">
-                                    <span className="inline-block">Task Completion</span>
+                                    <span className="inline-block">Task completion</span>
                                     <Tooltip content="Average percentage of tasks completed by a learner" position="top">
                                         <span className="ml-2 inline-flex items-center">
                                             <HelpCircle size={14} className="relative top-[0.1em]" />
@@ -272,7 +272,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                             {/* Active Learners - 25% width */}
                             <div className="bg-[#111] p-8 rounded-lg w-1/3">
                                 <h3 className="text-gray-400 mb-2 flex items-center">
-                                    <span className="inline-block">Active Learners</span>
+                                    <span className="inline-block">Active learners</span>
                                     <Tooltip content="Number of learners who have attempted at least one task" position="top">
                                         <span className="ml-2 inline-flex items-center">
                                             <HelpCircle size={14} className="relative top-[0.1em]" />
@@ -320,7 +320,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                     {courseMetrics && Object.keys(courseMetrics).length > 0 && (
                         <div className="mt-8">
                             <h3 className="text-gray-400 mb-4 flex items-center pl-2">
-                                <span className="inline-block">Completion by Type</span>
+                                <span className="inline-block">Completion by type</span>
                                 <Tooltip content="Average completion by a learner for each type of task" position="top">
                                     <span className="ml-2 inline-flex items-center">
                                         <HelpCircle size={14} className="relative top-[0.1em]" />
@@ -354,7 +354,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                             {/* Learning Material Card */}
                                             {courseMetrics.task_type_metrics?.learning_material && (
                                                 <TaskTypeMetricCard
-                                                    title="Learning Material"
+                                                    title="Learning material"
                                                     count={courseMetrics.task_type_metrics?.learning_material?.count}
                                                     completionRate={courseMetrics.task_type_metrics?.learning_material?.completion_rate}
                                                     color="purple"
@@ -407,7 +407,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                 <div className="mt-8">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-gray-400 flex items-center pl-2">
-                            <span className="inline-block">Progress by Learner</span>
+                            <span className="inline-block">Completion by learner</span>
                             <Tooltip content="Completion rate for each learner by task type" position="top">
                                 <span className="ml-2 inline-flex items-center">
                                     <HelpCircle size={14} className="relative top-[0.1em]" />
@@ -532,7 +532,7 @@ export default function CohortDashboard({ cohort, cohortId, schoolId, onAddLearn
                                                 >
                                                     <div className="flex items-center">
                                                         <span className="text-purple-400 mr-1">●</span>
-                                                        <span>Learning Material</span>
+                                                        <span>Learning material</span>
                                                         {sortColumn === 'learning_material' && sortDirection === 'asc' && (
                                                             <ArrowUp size={14} className="ml-1" />
                                                         )}

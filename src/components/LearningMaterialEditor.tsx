@@ -120,7 +120,7 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
                             {
                                 type: "heading",
                                 props: { level: 2 },
-                                content: [{ "text": "Welcome to the Learning Material Editor!", "type": "text", styles: {} }],
+                                content: [{ "text": "Welcome to the Learning material editor!", "type": "text", styles: {} }],
                             },
                             {
                                 type: "paragraph",

@@ -263,7 +263,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                     const currentTitle = titleElement?.textContent || '';
 
                     // Set default title based on item type
-                    let defaultTitle = "New Learning Material";
+                    let defaultTitle = "New learning material";
                     if (activeItem.type === 'quiz') defaultTitle = "New Quiz";
 
                     const isTitleChanged = currentTitle !== defaultTitle && currentTitle.trim() !== '';
@@ -364,7 +364,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
             const currentTitle = titleElement?.textContent || '';
 
             // Set default title based on item type
-            let defaultTitle = "New Learning Material";
+            let defaultTitle = "New learning material";
             if (activeItem.type === 'quiz') defaultTitle = "New Quiz";
 
             const isTitleChanged = currentTitle !== defaultTitle && currentTitle.trim() !== '';
@@ -565,7 +565,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                 if (!hasContent) {
                     // Show error message
                     displayToast(
-                        "Empty Learning Material",
+                        "Empty learning material",
                         "Please add content before saving",
                         "🚫"
                     );
@@ -711,7 +711,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                     }
                                 }}
                                 className={`text-2xl font-light text-white outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none cursor-text mr-4 ${(activeItem?.status !== 'published' || isEditMode) ? 'w-full min-w-[300px]' : ''}`}
-                                data-placeholder={activeItem?.type === 'material' ? 'New Learning Material' : 'New Quiz'}
+                                data-placeholder={activeItem?.type === 'material' ? 'New learning material' : 'New quiz'}
                             >
                                 {activeItem?.title}
                             </h2>
@@ -775,7 +775,7 @@ const CourseItemDialog: React.FC<CourseItemDialogProps> = ({
                                                         if (!hasContent) {
                                                             // Show error message
                                                             displayToast(
-                                                                "Empty Learning Material",
+                                                                "Empty learning material",
                                                                 "Please add content before publishing",
                                                                 "🚫"
                                                             );

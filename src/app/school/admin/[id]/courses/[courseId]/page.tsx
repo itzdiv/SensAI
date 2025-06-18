@@ -390,7 +390,7 @@ export default function CreateCourse() {
     const addLearningMaterialToState = (moduleId: string, taskData: any, position: number) => {
         const newItem: LearningMaterial = {
             id: taskData.id.toString(),
-            title: taskData.title || "New Learning Material",
+            title: taskData.title,
             position: position,
             type: 'material',
             content: [], // Empty content, the editor will initialize with default content
@@ -465,7 +465,7 @@ export default function CreateCourse() {
                     course_id: parseInt(courseId),
                     milestone_id: parseInt(moduleId),
                     type: "learning_material",
-                    title: "New Learning Material",
+                    title: "New learning material",
                     status: "draft",
                     scheduled_publish_at: null
                 }),

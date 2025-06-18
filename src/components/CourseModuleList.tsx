@@ -951,7 +951,7 @@ export default function CourseModuleList({
                                                     className="flex items-center px-3 py-1.5 text-sm text-gray-300 hover:text-white border border-gray-400 rounded-full transition-colors cursor-pointer"
                                                 >
                                                     <Plus size={14} className="mr-1" />
-                                                    Learning Material
+                                                    Learning material
                                                 </button>
                                             </Tooltip>
                                             <Tooltip content="Create a quiz for practice or assessment" position="top">

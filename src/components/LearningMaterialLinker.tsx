@@ -253,7 +253,7 @@ const LearningMaterialLinker = ({
                         onClick={toggleLearningMaterialDropdown}
                     >
                         <Plus size={16} />
-                        <span>Link Learning Material</span>
+                        <span>Link learning material</span>
                     </button>
 
                     {isLearningMaterialDropdownOpen && (
