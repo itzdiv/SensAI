@@ -364,6 +364,7 @@ export default function CreateCourse() {
     const addItemToState = (moduleId: string, newItem: ModuleItem, position: number) => {
         setActiveItem(newItem);
         setActiveModuleId(moduleId);
+        setIsDialogOpen(true); // Open the dialog for the new item
 
         setModules(modules.map(module => {
             if (module.id === moduleId) {

@@ -938,11 +938,6 @@ export default function CourseModuleList({
                                                         if (onAddLearningMaterial) {
                                                             try {
                                                                 await onAddLearningMaterial(module.id);
-                                                                // After adding the item, find it in the module's items
-                                                                const newItem = module.items[module.items.length - 1];
-                                                                if (newItem && onOpenItem) {
-                                                                    onOpenItem(module.id, newItem.id);
-                                                                }
                                                             } catch (error) {
                                                                 console.error("Failed to add learning material:", error);
                                                             }
@@ -960,11 +955,6 @@ export default function CourseModuleList({
                                                         if (onAddQuiz) {
                                                             try {
                                                                 await onAddQuiz(module.id);
-                                                                // After adding the item, find it in the module's items
-                                                                const newItem = module.items[module.items.length - 1];
-                                                                if (newItem && onOpenItem) {
-                                                                    onOpenItem(module.id, newItem.id);
-                                                                }
                                                             } catch (error) {
                                                                 console.error("Failed to add quiz:", error);
                                                             }
