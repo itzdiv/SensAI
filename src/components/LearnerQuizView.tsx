@@ -23,7 +23,6 @@ export interface LearnerQuizViewProps {
     onSubmitAnswer?: (questionId: string, answer: string) => void;
     isDarkMode?: boolean;
     className?: string;
-    readOnly?: boolean;
     viewOnly?: boolean;
     currentQuestionId?: string;
     onQuestionChange?: (questionId: string) => void;
@@ -41,7 +40,6 @@ export default function LearnerQuizView({
     onSubmitAnswer,
     isDarkMode = true,
     className = "",
-    readOnly = false,
     viewOnly = false,
     currentQuestionId,
     onQuestionChange,
@@ -464,13 +462,13 @@ export default function LearnerQuizView({
     useEffect(() => {
         // Ensure the input is focused after a short delay to allow the DOM to fully render
         const timer = setTimeout(() => {
-            if (inputRef.current && !readOnly) {
+            if (inputRef.current) {
                 inputRef.current.focus();
             }
         }, 100);
 
         return () => clearTimeout(timer);
-    }, [currentQuestionIndex, readOnly]);
+    }, [currentQuestionIndex]);
 
     // Effect to log and validate questions when they change
     useEffect(() => {
@@ -570,13 +568,6 @@ export default function LearnerQuizView({
         setCurrentAnswer(newValue);
         currentAnswerRef.current = newValue;
     }, []); // No dependencies to ensure stability
-
-    // Handle key press in the input field
-    const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && currentAnswerRef.current.trim() && !readOnly) {
-            handleSubmitAnswerRef.current();
-        }
-    }, [readOnly]); // Only depend on readOnly
 
     // Function to store chat history in backend
     const storeChatHistory = useCallback(async (questionId: string, userMessage: ChatMessage, aiResponse: AIResponse) => {
@@ -1424,7 +1415,7 @@ export default function LearnerQuizView({
 
         // Focus the input field when returning to chat if appropriate
         setTimeout(() => {
-            if (!readOnly && inputRef.current) {
+            if (inputRef.current) {
                 inputRef.current.focus();
             }
 
@@ -1976,11 +1967,9 @@ export default function LearnerQuizView({
                             isSubmitting={isSubmitting}
                             currentAnswer={currentAnswer}
                             handleInputChange={handleInputChange}
-                            handleKeyPress={handleKeyPress}
                             handleSubmitAnswer={handleSubmitAnswer}
                             handleAudioSubmit={handleAudioSubmit}
                             handleViewScorecard={handleViewScorecard}
-                            readOnly={readOnly}
                             viewOnly={viewOnly}
                             completedQuestionIds={completedQuestionIds}
                             currentQuestionId={validQuestions[currentQuestionIndex]?.id}

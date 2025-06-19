@@ -185,11 +185,6 @@ export default function LearningMaterialViewer({
         setCurrentAnswer(e.target.value);
     };
 
-    // Handle chat key press
-    const handleChatKeyPress = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        // This is handled by the ChatView component's internal handler
-    };
-
     // Create a handle retry function to resubmit the last user message
     const handleRetry = () => {
         // Find the last user message
@@ -710,11 +705,9 @@ export default function LearningMaterialViewer({
                             isSubmitting={isSubmitting}
                             currentAnswer={currentAnswer}
                             handleInputChange={handleChatInputChange}
-                            handleKeyPress={handleChatKeyPress}
                             handleSubmitAnswer={handleChatSubmit}
                             handleAudioSubmit={handleAudioSubmit}
                             handleViewScorecard={handleViewScorecard}
-                            readOnly={false}
                             completedQuestionIds={{}}
                             handleRetry={handleRetry}
                         />

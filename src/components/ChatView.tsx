@@ -34,11 +34,9 @@ interface ChatViewProps {
     isSubmitting: boolean;
     currentAnswer: string;
     handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    handleKeyPress: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     handleSubmitAnswer: (responseType?: 'text' | 'code') => void;
     handleAudioSubmit: (audioBlob: Blob) => void;
     handleViewScorecard: (scorecard: ScorecardItem[]) => void;
-    readOnly: boolean;
     viewOnly?: boolean;
     completedQuestionIds: Record<string, boolean>;
     currentQuestionId?: string;
@@ -66,11 +64,9 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
     isSubmitting,
     currentAnswer,
     handleInputChange,
-    handleKeyPress,
     handleSubmitAnswer,
     handleAudioSubmit,
     handleViewScorecard,
-    readOnly,
     viewOnly = false,
     completedQuestionIds,
     currentQuestionId = '',
@@ -384,15 +380,15 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     // Focus the textarea when the component mounts
     useEffect(() => {
-        if (textareaRef.current && !readOnly && !isViewingCode) {
+        if (textareaRef.current && !isViewingCode) {
             textareaRef.current.focus();
         }
-    }, [readOnly, isViewingCode]);
+    }, [isViewingCode]);
 
     // Modified handleKeyPress for textarea
-    const handleTextareaKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         // Submit on Enter key without shift key
-        if (e.key === 'Enter' && !e.shiftKey && currentAnswer.trim() && !readOnly) {
+        if (e.key === 'Enter' && !e.shiftKey && currentAnswer.trim()) {
             e.preventDefault(); // Prevent new line
             handleSubmitAnswer();
         }
@@ -576,8 +572,8 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
                                                         className="ml-2 w-full bg-transparent text-white auto-expanding-textarea"
                                                         value={currentAnswer}
                                                         onChange={handleInputChange as any}
-                                                        onKeyPress={handleTextareaKeyPress}
-                                                        autoFocus={!readOnly}
+                                                        onKeyDown={handleTextareaKeyDown}
+                                                        autoFocus={true}
                                                         disabled={false}
                                                         rows={1}
                                                         style={{

@@ -2062,7 +2062,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             <LearnerQuizView
                 questions={questionsWithCorrectAnswers}
                 isDarkMode={isDarkMode}
-                readOnly={readOnly}
                 className="w-full h-full"
                 onSubmitAnswer={onSubmitAnswer}
                 currentQuestionId={activeQuestionId}
