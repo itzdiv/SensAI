@@ -252,7 +252,7 @@ describe('Scorecard Component', () => {
         expect(document.activeElement).toEqual(screen.getByDisplayValue(mockName));
     });
 
-    it('should not allow editing when in linked mode', () => {
+    it('should allow editing even in linked mode', () => {
         render(
             <Scorecard
                 name={mockName}
@@ -266,14 +266,16 @@ describe('Scorecard Component', () => {
         const nameCells = screen.getAllByText(mockCriteria[0].name);
         fireEvent.click(nameCells[0]);
 
-        // Check that we don't see an editable text field (no additional textbox appears)
-        const textboxes = screen.getAllByRole('textbox');
-        // Should only have the name input field which is read-only for linked mode
-        expect(textboxes.length).toBe(1);
-        expect(textboxes[0]).toHaveAttribute('disabled');
+        // Input field should appear for editing
+        const inputField = screen.getByDisplayValue(mockCriteria[0].name);
+        fireEvent.change(inputField, { target: { value: 'Updated Criterion' } });
+        fireEvent.keyDown(inputField, { key: 'Enter' });
 
-        // Add criterion button should not be visible
-        expect(screen.queryByTestId('plus-icon')).not.toBeInTheDocument();
+        // Check that onChange was called with updated criteria
+        expect(mockOnChange).toHaveBeenCalledWith([
+            { ...mockCriteria[0], name: 'Updated Criterion' },
+            mockCriteria[1]
+        ]);
     });
 
     it('should close the toast when close button is clicked', () => {
