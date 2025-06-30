@@ -122,12 +122,13 @@ describe('CohortCoursesLinkerDropdown', () => {
         // Click the link button
         fireEvent.click(screen.getByText('Link courses with cohort'));
 
-        // Check if onCoursesLinked was called with the selected courses
+        // Check if onCoursesLinked was called with the selected courses and dripConfig
         expect(defaultProps.onCoursesLinked).toHaveBeenCalledWith(
             expect.arrayContaining([
                 expect.objectContaining({ id: 1, name: 'JavaScript Basics' }),
                 expect.objectContaining({ id: 2, name: 'React Fundamentals' })
-            ])
+            ]),
+            undefined  // dripConfig is undefined when not configured
         );
 
         // Dropdown should be closed
@@ -179,7 +180,7 @@ describe('CohortCoursesLinkerDropdown', () => {
         expect(screen.getByText('Create courses in your school that you can publish to your cohort')).toBeInTheDocument();
 
         // Should have a link to the school
-        const link = screen.getByText('Go To School');
+        const link = screen.getByText('Open school');
         expect(link).toHaveAttribute('href', '/school/admin/school-123#courses');
     });
 

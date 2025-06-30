@@ -167,7 +167,7 @@ describe('Toast Component', () => {
         expect(toastContainer).toHaveClass('px-6');
         expect(toastContainer).toHaveClass('py-4');
         expect(toastContainer).toHaveClass('shadow-lg');
-        expect(toastContainer).toHaveClass('z-50');
+        expect(toastContainer).toHaveClass('z-100');
         expect(toastContainer).toHaveClass('flex');
         expect(toastContainer).toHaveClass('items-center');
         expect(toastContainer).toHaveClass('gap-4');

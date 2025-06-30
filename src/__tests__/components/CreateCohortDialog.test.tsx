@@ -206,9 +206,9 @@ describe('CreateCohortDialog Component', () => {
         // Submit the form
         fireEvent.click(screen.getByRole('button', { name: /create cohort/i }));
 
-        // Verify onCreateCohort called with response data
+        // Verify onCreateCohort called with response data and undefined dripConfig
         await waitFor(() => {
-            expect(mockOnCreateCohort).toHaveBeenCalledWith(mockCohortData);
+            expect(mockOnCreateCohort).toHaveBeenCalledWith(mockCohortData, undefined);
         });
     });
 

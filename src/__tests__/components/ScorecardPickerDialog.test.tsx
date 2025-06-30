@@ -23,7 +23,7 @@ describe('ScorecardPickerDialog Component', () => {
             id: 'school-scorecard-1',
             name: 'School Scorecard 1',
             criteria: [
-                { name: "Test Criterion", description: "Test description", maxScore: 5, minScore: 1 }
+                { name: "Test Criterion", description: "Test description", maxScore: 5, minScore: 1, passScore: 3 }
             ],
             new: false
         },
@@ -31,7 +31,7 @@ describe('ScorecardPickerDialog Component', () => {
             id: 'school-scorecard-2',
             name: 'School Scorecard 2',
             criteria: [
-                { name: "Another Criterion", description: "Another description", maxScore: 10, minScore: 0 }
+                { name: "Another Criterion", description: "Another description", maxScore: 10, minScore: 0, passScore: 3 }
             ],
             new: true
         }
@@ -207,22 +207,5 @@ describe('ScorecardPickerDialog Component', () => {
         const dialogContainer = screen.getByText('New scorecard').closest('div[style*="top"]');
         expect(dialogContainer).toHaveStyle(`top: ${position.top}px`);
         expect(dialogContainer).toHaveStyle(`left: ${position.left}px`);
-    });
-
-    it('should highlight newly created school scorecards', () => {
-        render(
-            <ScorecardPickerDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                onCreateNew={mockOnCreateNew}
-                onSelectTemplate={mockOnSelectTemplate}
-                schoolScorecards={mockSchoolScorecards}
-            />
-        );
-
-        // Second scorecard is marked as "new"
-        const scorecard2 = screen.getByText('School Scorecard 2').closest('div');
-        expect(scorecard2).toContainElement(screen.getByText('NEW'));
-        expect(screen.getByText('NEW')).toHaveClass('bg-green-700'); // Visual indicator for new scorecards
     });
 }); 

@@ -6,11 +6,14 @@ import { ChatMessage, ScorecardItem } from '../../types/quiz';
 // Mock the types if they're not directly importable
 // Based on the code, these seem to be the actual structures used
 interface MockScorecardItem {
-    id: string;
-    label: string;
     score: number;
-    feedback: string;
-    maxScore: number;
+    max_score: number;
+    pass_score: number;
+    category: string;
+    feedback: {
+        correct?: string;
+        wrong?: string;
+    };
 }
 
 interface MockChatMessage {
@@ -26,18 +29,23 @@ describe('ScorecardView Component', () => {
     // Mock props with the correct structure
     const mockScorecard: MockScorecardItem[] = [
         {
-            id: '1',
-            label: 'Test Criterion',
             score: 80,
-            feedback: 'Good job on this criterion',
-            maxScore: 100
+            max_score: 100,
+            pass_score: 70,
+            category: 'Test Criterion',
+            feedback: {
+                correct: 'Good job on this criterion',
+                wrong: 'Some areas need improvement'
+            }
         },
         {
-            id: '2',
-            label: 'Another Criterion',
             score: 90,
-            feedback: 'Excellent work here',
-            maxScore: 100
+            max_score: 100,
+            pass_score: 70,
+            category: 'Another Criterion',
+            feedback: {
+                correct: 'Excellent work here'
+            }
         }
     ];
 
@@ -103,7 +111,6 @@ describe('ScorecardView Component', () => {
             />
         );
 
-        expect(screen.getByText('Your Response')).toBeInTheDocument();
         expect(screen.getByText('This is my test response')).toBeInTheDocument();
     });
 
@@ -125,7 +132,6 @@ describe('ScorecardView Component', () => {
             />
         );
 
-        expect(screen.getByText('Your Response')).toBeInTheDocument();
         // Use querySelector instead of getByRole for the audio element
         const audioElement = container.querySelector('audio');
         expect(audioElement).toBeInTheDocument();

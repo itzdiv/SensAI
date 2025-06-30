@@ -37,6 +37,7 @@ describe('CohortDashboard Component', () => {
         id: 1,
         name: 'Test Cohort',
         org_id: 123,
+        joined_at: new Date().toISOString(),
         groups: [],
         courses: [
             { id: 101, name: 'Course 1' } as Course,
@@ -100,10 +101,10 @@ describe('CohortDashboard Component', () => {
         });
 
         expect(screen.getByText('Add learners to this cohort to view usage data and metrics')).toBeInTheDocument();
-        expect(screen.getByText('Add Learners')).toBeInTheDocument();
+        expect(screen.getByText('Add learners')).toBeInTheDocument();
     });
 
-    it('calls onAddLearners when Add Learners button is clicked', async () => {
+    it('calls onAddLearners when Add learners button is clicked', async () => {
         const mockOnAddLearners = jest.fn();
         const cohortWithNoLearners: CohortWithDetails = {
             ...mockCohort,
@@ -123,11 +124,11 @@ describe('CohortDashboard Component', () => {
 
         // Wait for loading to complete
         await waitFor(() => {
-            expect(screen.getByText('Add Learners')).toBeInTheDocument();
+            expect(screen.getByText('Add learners')).toBeInTheDocument();
         });
 
-        // Click the Add Learners button
-        fireEvent.click(screen.getByText('Add Learners'));
+        // Click the Add learners button
+        fireEvent.click(screen.getByText('Add learners'));
         expect(mockOnAddLearners).toHaveBeenCalled();
     });
 
@@ -147,7 +148,7 @@ describe('CohortDashboard Component', () => {
 
         // Check if course metrics are displayed - use find to wait for render
         await waitFor(() => {
-            const activeLearnersElement = screen.getAllByText('Active Learners');
+            const activeLearnersElement = screen.getAllByText('Active learners');
             expect(activeLearnersElement.length).toBeGreaterThan(0);
         });
     });
@@ -198,7 +199,7 @@ describe('CohortDashboard Component', () => {
         // Verify column headers
         expect(screen.getByText('Learner')).toBeInTheDocument();
         expect(screen.getByText('Quiz')).toBeInTheDocument();
-        expect(screen.getByText('Learning Material')).toBeInTheDocument();
+        expect(screen.getByText('Learning material')).toBeInTheDocument();
     });
 
     it('allows sorting the student metrics table', async () => {
@@ -215,15 +216,15 @@ describe('CohortDashboard Component', () => {
             expect(screen.getByText('Learner')).toBeInTheDocument();
         });
 
-        // Click on the Learning Material header to sort
-        fireEvent.click(screen.getByText('Learning Material'));
+        // Click on the Learning material header to sort
+        fireEvent.click(screen.getByText('Learning material'));
 
         // Verify sorting indicator is shown (ArrowUp/ArrowDown component)
-        expect(screen.getByText('Learning Material').closest('th')).toContainHTML('svg');
+        expect(screen.getByText('Learning material').closest('th')).toContainHTML('svg');
 
         // Click again to reverse sort
-        fireEvent.click(screen.getByText('Learning Material'));
-        expect(screen.getByText('Learning Material').closest('th')).toContainHTML('svg');
+        fireEvent.click(screen.getByText('Learning material'));
+        expect(screen.getByText('Learning material').closest('th')).toContainHTML('svg');
     });
 
     it('allows searching for students', async () => {

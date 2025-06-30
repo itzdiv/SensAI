@@ -76,7 +76,7 @@ describe('ChatPlaceholderView Component', () => {
             />
         );
 
-        expect(screen.getByText(/Think through your answer, then write your code in the code editor/)).toBeInTheDocument();
+        expect(screen.getByText(/Think through your answer carefully, then write your code in the code editor/)).toBeInTheDocument();
         expect(screen.getByText(/You can attempt the question only once/)).toBeInTheDocument();
     });
 
@@ -143,7 +143,7 @@ describe('ChatPlaceholderView Component', () => {
             />
         );
 
-        expect(screen.getByText(/Think through your answer, then type it here/)).toBeInTheDocument();
+        expect(screen.getByText(/Think through your answer carefully, then type it here/)).toBeInTheDocument();
         unmountText();
 
         // Test audio input in exam mode
@@ -155,7 +155,7 @@ describe('ChatPlaceholderView Component', () => {
             />
         );
 
-        expect(screen.getByText(/Think through your answer, then record it here/)).toBeInTheDocument();
+        expect(screen.getByText(/Think through your answer carefully, then record it here/)).toBeInTheDocument();
         unmountAudio();
 
         // Test code input in exam mode
@@ -167,6 +167,6 @@ describe('ChatPlaceholderView Component', () => {
             />
         );
 
-        expect(screen.getByText(/Think through your answer, then write your code in the code editor/)).toBeInTheDocument();
+        expect(screen.getByText(/Think through your answer carefully, then write your code in the code editor/)).toBeInTheDocument();
     });
 }); 

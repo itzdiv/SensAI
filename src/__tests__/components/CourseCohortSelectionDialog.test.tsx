@@ -35,15 +35,16 @@ describe('CourseCohortSelectionDialog Component', () => {
         errorMessage: '',
         onRetry: jest.fn(),
         cohorts: mockCohorts,
-        tempSelectedCohorts: [],
-        onRemoveCohort: jest.fn(),
+        selectedCohort: null,
         onSelectCohort: jest.fn(),
         onSearchChange: jest.fn(),
         searchQuery: '',
         filteredCohorts: mockCohorts,
         totalSchoolCohorts: 3,
         schoolId: 'school1',
-        onOpenCreateCohortDialog: jest.fn()
+        onOpenCreateCohortDialog: jest.fn(),
+        onAutoCreateAndPublish: jest.fn(),
+        onDripConfigChange: jest.fn()
     };
 
     beforeEach(() => {
@@ -51,22 +52,27 @@ describe('CourseCohortSelectionDialog Component', () => {
     });
 
     it('renders correctly when open', () => {
-        render(<CourseCohortSelectionDialog {...defaultProps} />);
+        render(
+            <CourseCohortSelectionDialog {...defaultProps} />
+        );
 
         // Check if the dialog is rendered
-        expect(screen.getByPlaceholderText('Search cohorts')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search for a cohort')).toBeInTheDocument();
 
         // Check if cohorts are displayed
         expect(screen.getByText('Cohort 1')).toBeInTheDocument();
         expect(screen.getByText('Cohort 2')).toBeInTheDocument();
         expect(screen.getByText('Cohort 3')).toBeInTheDocument();
+
+        // Check if buttons are rendered
+        expect(screen.getByText('Add course to selected cohort')).toBeInTheDocument();
     });
 
     it('does not render when isOpen is false', () => {
         render(<CourseCohortSelectionDialog {...defaultProps} isOpen={false} />);
 
         // Dialog should not be rendered
-        expect(screen.queryByPlaceholderText('Search cohorts')).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('Search for a cohort')).not.toBeInTheDocument();
     });
 
     it('displays loading state correctly', () => {
@@ -76,7 +82,7 @@ describe('CourseCohortSelectionDialog Component', () => {
         expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
 
         // Search box should not be visible when loading
-        expect(screen.queryByPlaceholderText('Search cohorts')).not.toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('Search for a cohort')).not.toBeInTheDocument();
     });
 
     it('displays error state correctly', () => {
@@ -106,47 +112,49 @@ describe('CourseCohortSelectionDialog Component', () => {
     });
 
     it('displays selected cohorts correctly', () => {
-        const selectedCohorts = [mockCohorts[0]]; // Cohort 1 is selected
+        const selectedCohort = { id: 1, name: 'Cohort 1' };
 
         render(
             <CourseCohortSelectionDialog
                 {...defaultProps}
-                tempSelectedCohorts={selectedCohorts}
+                selectedCohort={selectedCohort}
             />
         );
 
-        // Selected cohort should be displayed in the selected cohorts section
-        const selectedCohortElement = screen.getAllByText('Cohort 1')[0];
+        // Selected cohort should have a check mark
+        const selectedCohortElement = screen.getByText('Cohort 1');
         expect(selectedCohortElement).toBeInTheDocument();
 
-        // Selected cohort should have a remove button
-        const removeButton = selectedCohortElement.parentElement?.querySelector('button');
-        expect(removeButton).toBeInTheDocument();
+        // Check mark should be present next to selected cohort
+        const checkIcon = selectedCohortElement.parentElement?.querySelector('div[class*="bg-green-600"]');
+        expect(checkIcon).toBeInTheDocument();
     });
 
     it('calls onRemoveCohort when remove button is clicked', () => {
-        const selectedCohorts = [mockCohorts[0]]; // Cohort 1 is selected
+        const selectedCohort = { id: 1, name: 'Cohort 1' };
 
         render(
             <CourseCohortSelectionDialog
                 {...defaultProps}
-                tempSelectedCohorts={selectedCohorts}
+                selectedCohort={selectedCohort}
             />
         );
 
-        // Find and click the remove button
-        const removeButton = screen.getByRole('button', { name: '' });
-        fireEvent.click(removeButton);
+        // Find and click the selected cohort to deselect it
+        const selectedCohortElement = screen.getByText('Cohort 1');
+        fireEvent.click(selectedCohortElement);
 
-        // onRemoveCohort should be called with the cohort id
-        expect(defaultProps.onRemoveCohort).toHaveBeenCalledWith(1);
+        // onSelectCohort should be called with null to deselect
+        expect(defaultProps.onSelectCohort).toHaveBeenCalledWith(null);
     });
 
     it('calls onSearchChange when search input changes', () => {
-        render(<CourseCohortSelectionDialog {...defaultProps} />);
+        render(
+            <CourseCohortSelectionDialog {...defaultProps} />
+        );
 
         // Change the search input
-        const searchInput = screen.getByPlaceholderText('Search cohorts');
+        const searchInput = screen.getByPlaceholderText('Search for a cohort');
         fireEvent.change(searchInput, { target: { value: 'Cohort 1' } });
 
         // onSearchChange should be called
@@ -173,17 +181,17 @@ describe('CourseCohortSelectionDialog Component', () => {
     });
 
     it('calls onConfirm when the confirm button is clicked', () => {
-        const selectedCohorts = [mockCohorts[0]]; // Cohort 1 is selected
+        const selectedCohort = { id: 1, name: 'Cohort 1' };
 
         render(
             <CourseCohortSelectionDialog
                 {...defaultProps}
-                tempSelectedCohorts={selectedCohorts}
+                selectedCohort={selectedCohort}
             />
         );
 
         // Find and click the confirm button
-        const confirmButton = screen.getByText('Add course to cohorts');
+        const confirmButton = screen.getByText('Add course to selected cohort');
         fireEvent.click(confirmButton);
 
         // onConfirm should be called
@@ -191,19 +199,21 @@ describe('CourseCohortSelectionDialog Component', () => {
     });
 
     it('shows different button text when publishing', () => {
+        const selectedCohort = { id: 1, name: 'Cohort 1' };
+
         render(
             <CourseCohortSelectionDialog
                 {...defaultProps}
                 isPublishing={true}
+                selectedCohort={selectedCohort}
             />
         );
 
         // Button text should indicate publishing
-        expect(screen.getByText('Publish course to cohorts')).toBeInTheDocument();
+        expect(screen.getByText('Publish course to selected cohort')).toBeInTheDocument();
     });
 
-    it('shows loading text when action is in progress', () => {
-        // Test for adding
+    it('shows loading state when action is in progress', () => {
         const { unmount } = render(
             <CourseCohortSelectionDialog
                 {...defaultProps}
@@ -211,7 +221,8 @@ describe('CourseCohortSelectionDialog Component', () => {
             />
         );
 
-        expect(screen.getByText('Adding...')).toBeInTheDocument();
+        // Loading spinner should be shown
+        expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
 
         // Clean up and test for publishing
         unmount();
@@ -219,25 +230,27 @@ describe('CourseCohortSelectionDialog Component', () => {
         render(
             <CourseCohortSelectionDialog
                 {...defaultProps}
-                isPublishing={true}
                 showLoading={true}
+                isPublishing={true}
             />
         );
 
-        expect(screen.getByText('Publishing...')).toBeInTheDocument();
+        // Loading spinner should still be shown for publishing
+        expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     });
 
     it('calls onOpenCreateCohortDialog when "Create New Cohort" is clicked', () => {
-        // Render with no available cohorts to show the "Create New Cohort" button
-        render(<CourseCohortSelectionDialog
-            {...defaultProps}
-            cohorts={[]}
-            filteredCohorts={[]}
-            totalSchoolCohorts={0}
-        />);
+        render(
+            <CourseCohortSelectionDialog
+                {...defaultProps}
+                totalSchoolCohorts={0}
+                cohorts={[]}
+                filteredCohorts={[]}
+            />
+        );
 
         // Find and click the "Create New Cohort" button
-        const createButton = screen.getByText('Create Cohort');
+        const createButton = screen.getByText('Create cohort');
         fireEvent.click(createButton);
 
         // onOpenCreateCohortDialog should be called

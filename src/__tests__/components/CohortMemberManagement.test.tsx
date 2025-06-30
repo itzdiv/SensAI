@@ -26,6 +26,7 @@ describe('CohortMemberManagement Component', () => {
         name: 'Test Cohort',
         org_id: 123,
         groups: [],
+        joined_at: new Date().toISOString(),
         courses: [
             { id: 101, name: 'Course 1' } as Course,
         ],
@@ -86,7 +87,7 @@ describe('CohortMemberManagement Component', () => {
         expect(screen.queryByText('learner2@example.com')).not.toBeInTheDocument();
     });
 
-    it('opens invite dialog when "Add Learners" button is clicked', () => {
+    it('opens invite dialog when "Add learners" button is clicked', () => {
         render(
             <CohortMemberManagement
                 cohort={mockCohort}
@@ -99,7 +100,7 @@ describe('CohortMemberManagement Component', () => {
         );
 
         // Click the Add button
-        fireEvent.click(screen.getByText('Add Learners'));
+        fireEvent.click(screen.getByText('Add learners'));
 
         // Check if the invite dialog opens
         expect(screen.getByPlaceholderText('Enter email address')).toBeInTheDocument();
@@ -118,7 +119,7 @@ describe('CohortMemberManagement Component', () => {
         );
 
         // Click the Add button
-        fireEvent.click(screen.getByText('Add Mentors'));
+        fireEvent.click(screen.getByText('Add mentors'));
 
         // Check if the invite dialog opens
         expect(screen.getByPlaceholderText('Enter email address')).toBeInTheDocument();
@@ -137,7 +138,7 @@ describe('CohortMemberManagement Component', () => {
         );
 
         // Open the invite dialog
-        fireEvent.click(screen.getByText('Add Learners'));
+        fireEvent.click(screen.getByText('Add learners'));
 
         // Click the "Add another email" button
         fireEvent.click(screen.getByText('Add another email'));
@@ -219,14 +220,14 @@ describe('CohortMemberManagement Component', () => {
         );
 
         // Open the invite dialog
-        fireEvent.click(screen.getByText('Add Learners'));
+        fireEvent.click(screen.getByText('Add learners'));
 
         // Enter an invalid email
         const emailInput = screen.getByPlaceholderText('Enter email address');
         fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
 
         // Submit the form using the correct button text
-        fireEvent.click(screen.getByText('Invite Learners'));
+        fireEvent.click(screen.getByText('Invite learners'));
 
         // Should show error message
         await waitFor(() => {
@@ -250,14 +251,14 @@ describe('CohortMemberManagement Component', () => {
         );
 
         // Open the invite dialog
-        fireEvent.click(screen.getByText('Add Learners'));
+        fireEvent.click(screen.getByText('Add learners'));
 
         // Enter a valid email
         const emailInput = screen.getByPlaceholderText('Enter email address');
         fireEvent.change(emailInput, { target: { value: 'new-learner@example.com' } });
 
         // Submit the form using the correct button text
-        fireEvent.click(screen.getByText('Invite Learners'));
+        fireEvent.click(screen.getByText('Invite learners'));
 
         // API should be called
         await waitFor(() => {

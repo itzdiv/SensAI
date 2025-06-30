@@ -162,7 +162,7 @@ describe('CourseCard Component', () => {
         fireEvent.click(screen.getByLabelText('Delete course'));
 
         // Confirmation dialog should be visible - using role to find specific elements
-        const dialogHeading = screen.getByRole('heading', { name: 'Delete Course' });
+        const dialogHeading = screen.getByRole('heading', { name: 'Delete course' });
         expect(dialogHeading).toBeInTheDocument();
         expect(screen.getByText(/All the modules and tasks will be permanently deleted/)).toBeInTheDocument();
     });
@@ -172,14 +172,14 @@ describe('CourseCard Component', () => {
 
         // Open dialog
         fireEvent.click(screen.getByLabelText('Delete course'));
-        const dialogHeading = screen.getByRole('heading', { name: 'Delete Course' });
+        const dialogHeading = screen.getByRole('heading', { name: 'Delete course' });
         expect(dialogHeading).toBeInTheDocument();
 
         // Click cancel
         fireEvent.click(screen.getByText('Cancel'));
 
         // Dialog should be closed
-        expect(screen.queryByRole('heading', { name: 'Delete Course' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('heading', { name: 'Delete course' })).not.toBeInTheDocument();
     });
 
     it('should call API to delete course when confirmed', async () => {
@@ -189,12 +189,13 @@ describe('CourseCard Component', () => {
         // Open dialog
         fireEvent.click(screen.getByLabelText('Delete course'));
 
-        // Click delete button - use a more specific selector
-        const deleteButton = screen.getByRole('button', { name: /Delete Course/ });
+        // Click delete button - use the correct button text "Delete" not "Delete course"
+        const deleteButton = screen.getByRole('button', { name: 'Delete' });
         fireEvent.click(deleteButton);
 
-        // Should show loading state
-        expect(screen.getByRole('button', { name: /Delete Course/ }).querySelector('.animate-spin')).toBeInTheDocument();
+        // Should show loading state - check for the spinner element within the button
+        const buttonAfterClick = screen.getByRole('button', { name: 'Delete' });
+        expect(buttonAfterClick.querySelector('.animate-spin')).toBeInTheDocument();
 
         // Should call fetch with correct URL and method
         expect(mockFetch).toHaveBeenCalledWith(
@@ -213,7 +214,7 @@ describe('CourseCard Component', () => {
             expect(onDeleteMock).toHaveBeenCalledWith(123);
 
             // Dialog should be closed
-            expect(screen.queryByRole('heading', { name: 'Delete Course' })).not.toBeInTheDocument();
+            expect(screen.queryByRole('heading', { name: 'Delete course' })).not.toBeInTheDocument();
         });
     });
 
@@ -231,7 +232,7 @@ describe('CourseCard Component', () => {
         fireEvent.click(screen.getByLabelText('Delete course'));
 
         // Click delete button - use a more specific selector
-        const deleteButton = screen.getByRole('button', { name: /Delete Course/ });
+        const deleteButton = screen.getByRole('button', { name: 'Delete' });
         fireEvent.click(deleteButton);
 
         // Wait for error message
@@ -240,7 +241,7 @@ describe('CourseCard Component', () => {
         });
 
         // Dialog should still be open
-        expect(screen.getByRole('heading', { name: 'Delete Course' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Delete course' })).toBeInTheDocument();
     });
 
     it('should prevent event propagation when delete button is clicked', () => {
@@ -255,7 +256,7 @@ describe('CourseCard Component', () => {
         fireEvent.click(deleteButton);
 
         // Dialog should be open
-        expect(screen.getByRole('heading', { name: 'Delete Course' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Delete course' })).toBeInTheDocument();
 
         // And the link shouldn't have been navigated to
         // We know this because the test doesn't throw an error about navigation

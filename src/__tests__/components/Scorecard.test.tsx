@@ -10,7 +10,11 @@ jest.mock('lucide-react', () => ({
     Plus: () => <div data-testid="plus-icon" />,
     X: () => <div data-testid="x-icon" />,
     Info: () => <div data-testid="info-icon" />,
-    HelpCircle: () => <div data-testid="help-circle-icon" />
+    HelpCircle: () => <div data-testid="help-circle-icon" />,
+    Check: () => <div data-testid="check-icon" />,
+    Copy: () => <div data-testid="copy-icon" />,
+    RefreshCw: () => <div data-testid="refresh-icon" />,
+    Save: () => <div data-testid="save-icon" />
 }));
 
 // Mock the SimpleTooltip component
@@ -43,8 +47,8 @@ describe('Scorecard Component', () => {
     // Test data
     const mockName = 'Test Scorecard';
     const mockCriteria: CriterionData[] = [
-        { name: "Clarity", description: "How clear is the content", maxScore: 5, minScore: 1 },
-        { name: "Grammar", description: "How grammatically correct is the content", maxScore: 5, minScore: 1 }
+        { name: "Clarity", description: "How clear is the content", maxScore: 5, minScore: 1, passScore: 3 },
+        { name: "Grammar", description: "How grammatically correct is the content", maxScore: 5, minScore: 1, passScore: 3 }
     ];
     const mockOnDelete = jest.fn();
     const mockOnChange = jest.fn();
@@ -102,25 +106,14 @@ describe('Scorecard Component', () => {
             />
         );
 
-        // Name should be read-only
-        expect(screen.getByDisplayValue(mockName)).toHaveAttribute('readonly');
+        // Name should be disabled
+        expect(screen.getByDisplayValue(mockName)).toHaveAttribute('disabled');
 
         // No add or delete buttons should be present
         expect(screen.queryByTestId('plus-icon')).not.toBeInTheDocument();
         expect(screen.queryByTestId('trash-icon')).not.toBeInTheDocument();
     });
 
-    it('should display linked scorecard message when linked is true', () => {
-        render(
-            <Scorecard
-                name={mockName}
-                criteria={mockCriteria}
-                linked={true}
-            />
-        );
-
-        expect(screen.getByText('Read-only Scorecard')).toBeInTheDocument();
-    });
 
     it('should call onDelete when delete button is clicked', () => {
         render(
@@ -173,7 +166,7 @@ describe('Scorecard Component', () => {
         // Check that onChange was called with updated criteria
         expect(mockOnChange).toHaveBeenCalledWith([
             ...mockCriteria,
-            { name: '', description: '', maxScore: 5, minScore: 1 }
+            { name: '', description: '', maxScore: 5, minScore: 1, passScore: 3 }
         ]);
     });
 
@@ -242,7 +235,7 @@ describe('Scorecard Component', () => {
 
         // Toast should appear with error message
         expect(screen.getByTestId('toast')).toBeInTheDocument();
-        expect(screen.getByTestId('toast')).toHaveAttribute('data-title', 'Invalid Value');
+        expect(screen.getByTestId('toast')).toHaveAttribute('data-title', 'Incorrect Value');
 
         // onChange should not be called with invalid value
         expect(mockOnChange).not.toHaveBeenCalled();
@@ -277,7 +270,7 @@ describe('Scorecard Component', () => {
         const textboxes = screen.getAllByRole('textbox');
         // Should only have the name input field which is read-only for linked mode
         expect(textboxes.length).toBe(1);
-        expect(textboxes[0]).toHaveAttribute('readonly');
+        expect(textboxes[0]).toHaveAttribute('disabled');
 
         // Add criterion button should not be visible
         expect(screen.queryByTestId('plus-icon')).not.toBeInTheDocument();
