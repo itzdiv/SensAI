@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { BookOpen, X, Plus } from "lucide-react";
 import Link from "next/link";
 import { Course } from "@/types";
+import DripPublishingConfig, { DripPublishingConfigRef } from "./DripPublishingConfig";
+import { DripConfig } from "@/types/course";
 
 interface CohortCoursesLinkerDropdownProps {
     isOpen: boolean;
@@ -12,7 +14,7 @@ interface CohortCoursesLinkerDropdownProps {
     courseError: string | null;
     schoolId: string;
     cohortId: string;
-    onCoursesLinked: (courses: Course[]) => void;
+    onCoursesLinked: (courses: Course[], dripConfig?: DripConfig) => void;
     onFetchAvailableCourses: () => void;
 }
 
@@ -32,6 +34,9 @@ export default function CohortCoursesLinkerDropdown({
     const [courseSearchQuery, setCourseSearchQuery] = useState('');
     const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const dripConfigRef = useRef<DripPublishingConfigRef>(null);
+
+    const [dripConfig, setDripConfig] = useState<DripConfig | undefined>(undefined);
 
     // Initialize filtered courses when available courses change
     useEffect(() => {
@@ -43,6 +48,7 @@ export default function CohortCoursesLinkerDropdown({
         if (isOpen) {
             setTempSelectedCourses([]);
             setCourseSearchQuery('');
+            setDripConfig(undefined);
         }
     }, [isOpen]);
 
@@ -127,11 +133,19 @@ export default function CohortCoursesLinkerDropdown({
             return;
         }
 
-        // Call the parent component's callback with the selected courses
-        onCoursesLinked(tempSelectedCourses);
+        // Validate drip config if enabled
+        if (dripConfigRef.current) {
+            const dripError = dripConfigRef.current.validateDripConfig();
+            if (dripError) {
+                return;
+            }
+        }
+
+        onCoursesLinked(tempSelectedCourses, dripConfig);
 
         // Clear temporary selection and close dropdown
         setTempSelectedCourses([]);
+        setDripConfig(undefined);
         onClose();
     };
 
@@ -177,7 +191,7 @@ export default function CohortCoursesLinkerDropdown({
                 )}
             </div>
 
-            <div className="max-h-72 overflow-y-auto py-2 px-2">
+            <div className="max-h-96 overflow-y-auto py-2 px-2">
                 {isLoadingCourses ? (
                     <div className="flex justify-center items-center py-6">
                         <div className="w-8 h-8 border-2 border-t-purple-500 border-r-purple-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
@@ -233,35 +247,42 @@ export default function CohortCoursesLinkerDropdown({
                         )}
                     </div>
                 ) : (
-                    <div className="space-y-0.5">
-                        {filteredCourses.map(course => (
-                            <div
-                                key={course.id}
-                                className="flex items-center px-3 py-1.5 hover:bg-[#222] rounded-md cursor-pointer"
-                                onClick={() => selectCourse(course)}
-                            >
-                                <div className="w-6 h-6 bg-purple-900 rounded-md flex items-center justify-center mr-2">
-                                    <BookOpen size={14} className="text-white" />
+                    <div className="max-h-[10rem] overflow-y-auto py-2 px-2">
+                        <div className="space-y-0.5">
+                            {filteredCourses.map(course => (
+                                <div
+                                    key={course.id}
+                                    className="flex items-center px-3 py-1.5 hover:bg-[#222] rounded-md cursor-pointer"
+                                    onClick={() => selectCourse(course)}
+                                >
+                                    <div className="w-6 h-6 bg-purple-900 rounded-md flex items-center justify-center mr-2">
+                                        <BookOpen size={14} className="text-white" />
+                                    </div>
+                                    <p className="text-white text-sm font-light">{course.name}</p>
                                 </div>
-                                <p className="text-white text-sm font-light">{course.name}</p>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 )}
 
                 {/* Add button at the end of the list */}
-                {(filteredCourses.length > 0 || tempSelectedCourses.length > 0) && (
-                    <div className="px-2 pt-4 pb-1">
-                        <button
-                            className="w-full bg-white text-black py-3 rounded-full text-sm hover:bg-gray-200 transition-colors cursor-pointer"
-                            onClick={handleAddSelectedCourses}
-                            disabled={isLoadingCourses}
-                        >
-                            {isLoadingCourses ? "Linking..." : "Link courses with cohort"}
-                        </button>
-                    </div>
+                {(tempSelectedCourses.length > 0) && (
+                    <DripPublishingConfig
+                        ref={dripConfigRef}
+                        onConfigChange={setDripConfig}
+                    />
                 )}
             </div>
+            <div className="px-2 py-1">
+                <button
+                    className="w-full bg-white text-black py-3 rounded-full text-sm hover:bg-gray-200 transition-colors cursor-pointer"
+                    onClick={handleAddSelectedCourses}
+                    disabled={isLoadingCourses}
+                >
+                    {isLoadingCourses ? "Linking..." : "Link courses with cohort"}
+                </button>
+            </div>
         </div>
+
     );
 } 

@@ -33,6 +33,7 @@ export interface Module {
   backgroundColor?: string;
   isEditing?: boolean;
   progress?: number;
+  unlockAt?: string;
 }
 
 export interface CourseDetails {
@@ -40,4 +41,11 @@ export interface CourseDetails {
   name: string;
   description?: string;
   modules?: Module[];
-} 
+}
+
+export interface DripConfig {
+    is_drip_enabled: boolean;
+    frequency_value: number;
+    frequency_unit: string;
+    publish_at: Date | null;
+}

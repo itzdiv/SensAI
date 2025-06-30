@@ -1,24 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import DripPublishingConfig, { DripPublishingConfigRef } from './DripPublishingConfig';
+import { DripConfig } from '@/types/course';
 
 interface CreateCohortDialogProps {
     open: boolean;
     onClose: () => void;
-    onCreateCohort: (cohort: any) => void;
+    onCreateCohort: (cohort: any, dripConfig?: DripConfig) => void;
     schoolId?: string;
+    showDripPublishSettings?: boolean;
 }
 
-export default function CreateCohortDialog({ open, onClose, onCreateCohort, schoolId }: CreateCohortDialogProps) {
+export default function CreateCohortDialog({ open, onClose, onCreateCohort, schoolId, showDripPublishSettings }: CreateCohortDialogProps) {
     const [cohortName, setCohortName] = useState('');
+    const [dripConfig, setDripConfig] = useState<DripConfig | undefined>(undefined);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const dripConfigRef = useRef<DripPublishingConfigRef>(null);
 
     // Reset form state when dialog is opened
     useEffect(() => {
         if (open) {
             setCohortName('');
+            setDripConfig(undefined);
             setError('');
             setIsLoading(false);
         }
@@ -29,6 +34,14 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
         if (!cohortName.trim()) {
             setError('Cohort name is required');
             return;
+        }
+
+        // Validate drip config if enabled and showDripPublishSettings is true
+        if (showDripPublishSettings && dripConfigRef.current) {
+            const dripError = dripConfigRef.current.validateDripConfig();
+            if (dripError) {
+                return;
+            }
         }
 
         // Set loading state to true
@@ -55,11 +68,12 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
             // Get the new cohort data
             const newCohortData = await response.json();
 
-            // Pass the created cohort back to the parent
-            onCreateCohort(newCohortData);
+            // Pass the created cohort back to the parent with drip config if applicable
+            onCreateCohort(newCohortData, showDripPublishSettings ? dripConfig : undefined);
 
             // Reset form state
             setCohortName('');
+            setDripConfig(undefined);
             setError('');
 
         } catch (error) {
@@ -99,6 +113,16 @@ export default function CreateCohortDialog({ open, onClose, onCreateCohort, scho
                                 <p className="mt-1 text-sm text-red-500">{error}</p>
                             )}
                         </div>
+
+                        {/* Conditionally render DripPublishingConfig */}
+                        {showDripPublishSettings && (
+                            <div>
+                                <DripPublishingConfig
+                                    ref={dripConfigRef}
+                                    onConfigChange={setDripConfig}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 

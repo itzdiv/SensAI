@@ -21,7 +21,7 @@ const Toast: React.FC<ToastProps> = ({
     if (!show) return null;
 
     return (
-        <div className={`fixed ${isMobileView ? 'top-0 left-0 right-0 w-full rounded-none' : 'bottom-4 right-4 rounded-lg max-w-md'} bg-white text-black px-6 py-4 shadow-lg z-50 flex items-center gap-4`}>
+        <div className={`fixed ${isMobileView ? 'top-0 left-0 right-0 w-full rounded-none' : 'bottom-4 right-4 rounded-lg max-w-md'} bg-white text-black px-6 py-4 shadow-lg z-100 flex items-center gap-4`}>
             <div className="flex items-center justify-center w-10 h-10 bg-amber-50 rounded-full">
                 <span className="text-xl">{emoji}</span>
             </div>
