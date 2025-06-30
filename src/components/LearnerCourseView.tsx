@@ -902,7 +902,7 @@ export default function LearnerCourseView({
         if (modules && modules.length > 0) {
             const initialExpandedState: Record<string, boolean> = {};
             modules.forEach(module => {
-                if (module.isExpanded) {
+                if (module.isExpanded && !module.unlockAt) {
                     initialExpandedState[module.id] = true;
                 }
             });

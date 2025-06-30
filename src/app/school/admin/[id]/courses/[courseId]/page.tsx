@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles, Loader2, Share } from "lucide-react";
+import { ChevronUp, ChevronDown, X, ChevronRight, ChevronDown as ChevronDownExpand, Plus, BookOpen, HelpCircle, Trash, Zap, Eye, Check, FileEdit, Clipboard, ArrowLeft, Pencil, Users, UsersRound, ExternalLink, Sparkles, Loader2, Share, Settings } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { useRouter, useParams } from "next/navigation";
@@ -9,13 +9,14 @@ import CourseModuleList from "@/components/CourseModuleList";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import Toast from "@/components/Toast";
 import CoursePublishSuccessBanner from "@/components/CoursePublishSuccessBanner";
-import { Module, ModuleItem, LearningMaterial, Quiz } from "@/types/course";
+import { Module, ModuleItem, LearningMaterial, Quiz, DripConfig } from "@/types/course";
 import { Milestone } from "@/types";
 import { transformMilestonesToModules } from "@/lib/course";
 import { CourseCohortSelectionDialog } from "@/components/CourseCohortSelectionDialog";
 import { addModule } from "@/lib/api";
 import Tooltip from "@/components/Tooltip";
 import GenerateWithAIDialog, { GenerateWithAIFormData } from '@/components/GenerateWithAIDialog';
+import SettingsDialog from "@/components/SettingsDialog";
 
 // Import the QuizQuestion type
 import { QuizQuestion, QuizQuestionConfig } from "../../../../../../types/quiz";
@@ -127,6 +128,10 @@ export default function CreateCourse() {
 
     // Add state for selected cohort
     const [selectedCohort, setSelectedCohort] = useState<any | null>(null);
+
+    const [dripConfig, setDripConfig] = useState<DripConfig | undefined>(undefined);
+
+    const [selectedCohortForSettings, setSelectedCohortForSettings] = useState<any | null>(null);
 
     // Update the refs whenever the state changes
     useEffect(() => {
@@ -1079,8 +1084,9 @@ export default function CreateCourse() {
             // Show loading state
             setIsLoadingCohorts(true);
 
-            // Link the course to the selected cohort
-            await linkCourseToCohort(selectedCohort.id, selectedCohort.name);
+             // Link the course to the selected cohort
+            await linkCourseToCohort(selectedCohort.id, selectedCohort.name, dripConfig);
+            setDripConfig(undefined);
         } catch (error) {
             console.error("Error publishing course:", error);
             setCohortError("Failed to publish course. Please try again later.");
@@ -1090,15 +1096,20 @@ export default function CreateCourse() {
     };
 
     // Create a reusable function for linking a course to cohorts
-    const linkCourseToCohort = async (cohortId: number, cohortName: string) => {
-        // Make a single API call with all cohort IDs
+    const linkCourseToCohort = async (
+        cohortId: number, 
+        cohortName: string,
+        dripConfig?: DripConfig
+    ) => {
+        // Make a single API call with all cohort IDs and drip config
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/courses/${courseId}/cohorts`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                cohort_ids: [cohortId]
+                cohort_ids: [cohortId],
+                drip_config: dripConfig
             }),
         });
 
@@ -1234,7 +1245,7 @@ export default function CreateCourse() {
 
                     // If no cohorts exist at all, auto-create one and publish
                     if (allCohorts.length === 0) {
-                        await handleAutoCreateAndPublish();
+                        openCreateCohortDialog(true);
                         return;
                     }
 
@@ -1275,48 +1286,6 @@ export default function CreateCourse() {
         }
     };
 
-    // Add new function to handle auto-create and publish
-    const handleAutoCreateAndPublish = async () => {
-        try {
-            // Create a new cohort with the name "New Cohort"
-            const createResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: "New Cohort",
-                    org_id: parseInt(schoolId)
-                }),
-            });
-
-            if (!createResponse.ok) {
-                throw new Error(`Failed to create cohort: ${createResponse.status}`);
-            }
-
-            const newCohort = await createResponse.json();
-
-            // Link the course to the newly created cohort
-            await linkCourseToCohort(newCohort.id, newCohort.name);
-
-        } catch (error) {
-            console.error("Error auto-creating cohort and publishing:", error);
-
-            // Show error toast
-            setToast({
-                show: true,
-                title: 'Publishing Failed',
-                description: 'Failed to create cohort and publish course. Please try again.',
-                emoji: '❌'
-            });
-
-            // Auto-hide toast after 5 seconds
-            setTimeout(() => {
-                setToast(prev => ({ ...prev, show: false }));
-            }, 5000);
-        }
-    };
-
     // Update to handle dialog closing
     const closeCohortDialog = () => {
         setShowPublishDialog(false);
@@ -1324,6 +1293,7 @@ export default function CreateCourse() {
         setCohortSearchQuery('');
         setFilteredCohorts([]);
         setCohortError(null);
+        setDripConfig(undefined);
     };
 
     // Add handler for opening the create cohort dialog directly
@@ -1341,13 +1311,13 @@ export default function CreateCourse() {
     };
 
     // Add handler for cohort creation and linking
-    const handleCohortCreated = async (cohort: any) => {
+    const handleCohortCreated = async (cohort: any, dripConfig?: DripConfig) => {
         try {
             // Close the create cohort dialog first
             setShowCreateCohortDialog(false);
 
             // Link the course to the newly created cohort using the reusable function
-            await linkCourseToCohort(cohort.id, cohort.name);
+            await linkCourseToCohort(cohort.id, cohort.name, dripConfig);
 
 
         } catch (error) {
@@ -1840,6 +1810,16 @@ export default function CreateCourse() {
         }
     };
 
+    // Function to handle opening settings dialog
+    const handleOpenSettingsDialog = (cohort: any) => {
+        setSelectedCohortForSettings(cohort);
+    };
+
+    // Function to close settings dialog
+    const handleCloseSettingsDialog = () => {
+        setSelectedCohortForSettings(null);
+    };
+
     return (
         <div className="min-h-screen bg-black">
             {/* Use the reusable Header component with showCreateCourseButton set to false */}
@@ -2021,7 +2001,7 @@ export default function CreateCourse() {
                                 <div className="mt-10">
                                     <h2 className="text-sm font-light text-gray-400 mb-1">Cohorts</h2>
                                     <p className="text-xs text-gray-500 mb-3 mr-4">
-                                        Invite learners to a cohort by clicking the share button beside the cohort name or add them manually from the cohort page
+                                        View the course settings for each cohort and add learners to it using an invite link from the settings
                                     </p>
                                     <div className="flex flex-wrap gap-3">
                                         {courseCohorts.map((cohort: { id: number; name: string }) => (
@@ -2029,22 +2009,13 @@ export default function CreateCourse() {
                                                 key={cohort.id}
                                                 className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
                                             >
-                                                <Tooltip content="Open" position="top">
+                                                <Tooltip content="Settings" position="top">
                                                     <button
-                                                        onClick={() => window.open(`/school/admin/${schoolId}/cohorts/${cohort.id}`, '_blank')}
+                                                        onClick={() => handleOpenSettingsDialog(cohort)}
                                                         className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
-                                                        aria-label="Open cohort page"
+                                                        aria-label="View settings"
                                                     >
-                                                        <ExternalLink size={16} />
-                                                    </button>
-                                                </Tooltip>
-                                                <Tooltip content="Copy invite link" position="top">
-                                                    <button
-                                                        onClick={() => handleCopyCohortInviteLink(cohort.id, cohort.name)}
-                                                        className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
-                                                        aria-label="Copy cohort invite link"
-                                                    >
-                                                        <Share size={16} />
+                                                        <Settings size={16} />
                                                     </button>
                                                 </Tooltip>
                                                 <span className="text-white text-sm font-light">{cohort.name}</span>
@@ -2172,7 +2143,8 @@ export default function CreateCourse() {
                 courseId={courseId}
                 onCohortCreated={handleCohortCreated}
                 onOpenCreateCohortDialog={openCreateCohortDialog}
-                onAutoCreateAndPublish={handleAutoCreateAndPublish}
+                onAutoCreateAndPublish={openCreateCohortDialog}
+                onDripConfigChange={setDripConfig}
             />
 
             {/* Confirmation Dialog for Cohort Removal */}
@@ -2214,6 +2186,7 @@ export default function CreateCourse() {
                 onClose={closeCreateCohortDialog}
                 onCreateCohort={handleCohortCreated}
                 schoolId={schoolId}
+                showDripPublishSettings={true}
             />
 
             {/* Generate with AI Dialog */}
@@ -2221,6 +2194,23 @@ export default function CreateCourse() {
                 open={showGenerateDialog}
                 onClose={() => setShowGenerateDialog(false)}
                 onSubmit={handleGenerateCourse}
+            />
+
+            {/* Add SettingsDialog component */}
+            <SettingsDialog
+                isOpen={!!selectedCohortForSettings}
+                onClose={handleCloseSettingsDialog}
+                courseName={selectedCohortForSettings?.name}
+                dripConfig={{
+                    is_drip_enabled: selectedCohortForSettings?.drip_config?.is_drip_enabled,
+                    frequency_value: selectedCohortForSettings?.drip_config?.frequency_value,
+                    frequency_unit: selectedCohortForSettings?.drip_config?.frequency_unit,
+                    publish_at: selectedCohortForSettings?.drip_config?.publish_at
+                }}
+                schoolId={schoolId}
+                courseId={undefined}
+                cohortId={selectedCohortForSettings?.id}
+                onCopyCohortInviteLink={handleCopyCohortInviteLink}
             />
         </div>
     );

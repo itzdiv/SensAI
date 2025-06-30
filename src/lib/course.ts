@@ -55,6 +55,7 @@ export function transformMilestonesToModules(milestones: Milestone[] | undefined
       items: moduleItems,
       isExpanded: false,
       backgroundColor: `${milestone.color}80`, // Add 50% opacity for UI display
+      unlockAt: milestone.unlock_at
     };
   });
 
@@ -75,10 +76,11 @@ export function transformMilestonesToModules(milestones: Milestone[] | undefined
  * @param course - Course object with milestones array
  * @returns Array of modules
  */
+
 export function transformCourseToModules(course: { milestones?: Milestone[] } | null | undefined): Module[] {
   if (!course) {
     return [];
   }
-  
+
   return transformMilestonesToModules(course.milestones);
-} 
+}

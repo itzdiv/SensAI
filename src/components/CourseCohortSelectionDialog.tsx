@@ -2,6 +2,8 @@ import { useRef, useState, useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 import Link from 'next/link';
 import CreateCohortDialog from './CreateCohortDialog';
+import DripPublishingConfig, { DripPublishingConfigRef } from './DripPublishingConfig';
+import { DripConfig } from '@/types/course';
 
 // Define interface for CourseCohortSelectionDialog props
 interface CourseCohortSelectionDialogProps {
@@ -26,6 +28,7 @@ interface CourseCohortSelectionDialogProps {
     onCohortCreated?: (cohort: any) => void; // Callback when a cohort is created and linked
     onOpenCreateCohortDialog: () => void; // New callback to open the CreateCohortDialog
     onAutoCreateAndPublish: () => void; // New callback for auto-creating cohort and publishing
+    onDripConfigChange: (config: DripConfig | undefined) => void;
 }
 
 // Add CohortSelectionDialog component
@@ -51,10 +54,12 @@ export const CourseCohortSelectionDialog = ({
     onCohortCreated,
     onOpenCreateCohortDialog,
     onAutoCreateAndPublish,
+    onDripConfigChange,
 }: CourseCohortSelectionDialogProps) => {
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const dripConfigRef = useRef<DripPublishingConfigRef>(null);
     const [position, setPosition] = useState({ top: 0, left: 0 });
-
+    
     // Calculate position when button or isOpen changes
     useEffect(() => {
         const updatePosition = () => {
@@ -126,6 +131,18 @@ export const CourseCohortSelectionDialog = ({
     const handleCreateCohortClick = (e: React.MouseEvent) => {
         e.preventDefault();
         onOpenCreateCohortDialog();
+    };
+
+    const handleConfirm = () => {
+        // Validate drip config if publishing and drip config is enabled
+        if (isPublishing && dripConfigRef.current) {
+            const dripError = dripConfigRef.current.validateDripConfig();
+            if (dripError) {
+                return;
+            }
+        }
+
+        onConfirm();
     };
 
     if (!isOpen) return null;
@@ -223,7 +240,7 @@ export const CourseCohortSelectionDialog = ({
             ) : (
                 <>
                     {/* Scrollable cohorts list - limited to height of ~4 cohorts */}
-                    <div className="max-h-[10rem] overflow-y-auto py-2 px-2">
+                    <div className="max-h-[10rem] overflow-y-auto py-2 px-4">
                         <div className="space-y-0.5">
                             {filteredCohorts.map(cohort => {
                                 const isSelected = selectedCohort && selectedCohort.id === cohort.id;
@@ -245,11 +262,21 @@ export const CourseCohortSelectionDialog = ({
                         </div>
                     </div>
 
+                    {/* Drip Publishing UI - Only show when publishing and a cohort is selected */}
+                    {isPublishing && selectedCohort && (
+                        <div className="px-4 py-2 space-y-2">
+                            <DripPublishingConfig
+                                ref={dripConfigRef}
+                                onConfigChange={onDripConfigChange}
+                            />
+                        </div>
+                    )}
+
                     {/* Buttons always visible at bottom */}
-                    <div className="px-4 pt-4 pb-2 space-y-2">
+                    <div className="px-4 pb-4 space-y-2">
                         <button
                             className="w-full bg-[#016037] text-white py-3 rounded-full text-sm hover:bg-[#017045] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            onClick={onConfirm}
+                                        onClick={handleConfirm}
                             disabled={showLoading || !selectedCohort}
                         >
                             {buttonText}

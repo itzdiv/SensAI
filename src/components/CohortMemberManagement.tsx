@@ -412,7 +412,7 @@ export default function CohortMemberManagement({
                 body: JSON.stringify({
                     org_id: schoolId,
                     emails,
-                    roles,
+                    roles
                 }),
             });
 

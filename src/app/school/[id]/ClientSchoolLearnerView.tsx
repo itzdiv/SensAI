@@ -23,6 +23,7 @@ interface Course {
     id: number;
     name: string;
     milestones?: Milestone[];
+    course_generation_status?: string | null;
 }
 
 export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
@@ -106,9 +107,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
                 const transformedCohorts: Cohort[] = cohortsData.map((cohort: any) => ({
                     id: cohort.id,
                     name: cohort.name,
-                    courseCount: cohort.courseCount || 0,
-                    memberCount: cohort.memberCount || 0,
-                    description: cohort.description || ''
+                    joined_at: cohort.joined_at
                 }));
 
                 setCohorts(transformedCohorts);
@@ -151,15 +150,18 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
         setCourseError(null);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses?include_tree=true`);
+            const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses?include_tree=true`;
+
+            // Check if 'joined_at' exists, as older learners may not have this timestamp.
+            const cohortUrl = activeCohort?.joined_at ? `${url}&joined_at=${activeCohort.joined_at}` : url;
+            const response = await fetch(cohortUrl);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch courses: ${response.status}`);
             }
 
-            const coursesData = await response.json();
+            const coursesData: Course[] = await response.json();
             setCourses(coursesData);
-
             // Reset active course index when cohort changes
             setActiveCourseIndex(0);
 
@@ -229,7 +231,7 @@ export default function ClientSchoolLearnerView({ slug }: { slug: string }) {
             return;
         }
         setActiveCourseIndex(index);
-        const modules = transformCourseToModules(courses[index]);
+        const modules = transformCourseToModules(courses[index], activeCohort?.joined_at);
         setCourseModules(modules);
 
         // Update URL with course ID

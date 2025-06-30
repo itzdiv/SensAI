@@ -28,6 +28,7 @@ export interface Course {
 export interface Cohort {
     id: number;
     name: string;
+    joined_at: string | undefined;
 }
 
 export interface CohortWithDetails extends Cohort {
@@ -57,6 +58,7 @@ export interface Milestone {
     color: string;
     ordering: number;
     tasks?: Task[];
+    unlock_at?: string;
 }
 
 // Export all quiz types

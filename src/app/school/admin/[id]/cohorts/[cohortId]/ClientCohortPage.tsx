@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "@/components/layout/header";
-import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight, GraduationCap, School, HelpCircle, Pencil, ExternalLink } from "lucide-react";
+import { Users, BookOpen, Layers, ArrowLeft, UsersRound, X, Plus, Trash2, Upload, Mail, ChevronDown, Check, FileText, ChevronRight, GraduationCap, School, HelpCircle, Pencil, ExternalLink, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
@@ -13,19 +13,16 @@ import Tooltip from "@/components/Tooltip";
 import CohortMemberManagement from "@/components/CohortMemberManagement";
 import CohortDashboard from "@/components/CohortDashboard";
 import CohortCoursesLinkerDropdown from "@/components/CohortCoursesLinkerDropdown";
+import SettingsDialog from "@/components/SettingsDialog";
 import { CohortWithDetails as Cohort } from "@/types";
+import { DripConfig } from "@/types/course";
 
 interface Course {
     id: number;
     name: string;
     description?: string;
     moduleCount?: number;
-}
-
-interface EmailInput {
-    id: string;
-    email: string;
-    error?: string;
+    drip_config?: DripConfig;
 }
 
 type TabType = 'dashboard' | 'learners' | 'mentors';
@@ -106,6 +103,8 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
     // Add state for school slug
     const [schoolSlug, setSchoolSlug] = useState<string>('');
+
+    const [selectedCourseForSettings, setSelectedCourseForSettings] = useState<any | null>(null);
 
     // Function to switch to learners tab and open invite dialog
     const handleOpenLearnerInviteDialog = () => {
@@ -247,7 +246,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     };
 
     // Add a function to handle the course linking from the dropdown component
-    const handleCoursesLinked = async (selectedCourses: Course[]) => {
+    const handleCoursesLinked = async (selectedCourses: Course[], dripConfig?: DripConfig) => {
         // Show loading state
         setIsLoadingCourses(true);
 
@@ -255,14 +254,15 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             // Extract all course IDs from the selected courses
             const courseIds = selectedCourses.map(course => course.id);
 
-            // Make a single API call with all selected course IDs
+            // Make a single API call with all selected course IDs and drip config
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    course_ids: courseIds
+                    course_ids: courseIds,
+                    drip_config: dripConfig
                 }),
             });
 
@@ -280,9 +280,15 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                 // Filter out any courses that are already in the cohort
                 const newCourses = selectedCourses.filter(c => !existingCourseIds.includes(c.id));
 
+                // Add course settings to the new courses if provided
+                const updatedCourses = newCourses.map(course => ({
+                    ...course,
+                    drip_config: dripConfig
+                }));
+
                 return {
                     ...prev,
-                    courses: [...(prev.courses || []), ...newCourses]
+                    courses: [...(prev.courses || []), ...updatedCourses]
                 };
             });
 
@@ -422,6 +428,16 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             setToastEmoji('❌');
             setShowToast(true);
         }
+    };
+
+    // Function to handle opening settings dialog
+    const handleOpenSettingsDialog = (course: Course) => {
+        setSelectedCourseForSettings(course);
+    };
+
+    // Function to close settings dialog
+    const handleCloseSettingsDialog = () => {
+        setSelectedCourseForSettings(null);
     };
 
     useEffect(() => {
@@ -652,13 +668,13 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                     key={course.id}
                                                     className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
                                                 >
-                                                    <Tooltip content="Open" position="top">
+                                                    <Tooltip content="Settings" position="top">
                                                         <button
-                                                            onClick={() => window.open(`/school/admin/${schoolId}/courses/${course.id}`, '_blank')}
+                                                            onClick={() => handleOpenSettingsDialog(course)}
                                                             className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
-                                                            aria-label="Open course page"
+                                                            aria-label="View settings"
                                                         >
-                                                            <ExternalLink size={16} />
+                                                            <Settings size={16} />
                                                         </button>
                                                     </Tooltip>
                                                     <span className="text-white text-sm font-light">{course.name}</span>
@@ -805,6 +821,22 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                 courseCount={courseLinkDetails.courseCount}
                 courseNames={courseLinkDetails.courseNames}
                 source="cohort"
+            />
+
+            {/* Add SettingsDialog component */}
+            <SettingsDialog
+                isOpen={!!selectedCourseForSettings}
+                onClose={handleCloseSettingsDialog}
+                courseName={selectedCourseForSettings?.name}
+                dripConfig={{
+                    is_drip_enabled: selectedCourseForSettings?.drip_config?.is_drip_enabled,
+                    frequency_value: selectedCourseForSettings?.drip_config?.frequency_value,
+                    frequency_unit: selectedCourseForSettings?.drip_config?.frequency_unit,
+                    publish_at: selectedCourseForSettings?.drip_config?.publish_at
+                }}
+                schoolId={schoolId}
+                courseId={selectedCourseForSettings?.id}
+                cohortId={undefined}
             />
         </>
     );
