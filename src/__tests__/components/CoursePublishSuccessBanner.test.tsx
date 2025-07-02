@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CoursePublishSuccessBanner from '../../components/CoursePublishSuccessBanner';
 
@@ -24,6 +24,21 @@ describe('CoursePublishSuccessBanner Component', () => {
             },
             writable: true
         });
+
+        // Mock navigator.clipboard
+        Object.assign(navigator, {
+            clipboard: {
+                writeText: jest.fn()
+            }
+        });
+
+        // Mock timers
+        jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+        jest.runOnlyPendingTimers();
+        jest.useRealTimers();
     });
 
     it('should not render anything when isOpen is false', () => {
@@ -185,5 +200,109 @@ describe('CoursePublishSuccessBanner Component', () => {
         const adminLink = screen.getByText('cohort admin dashboard');
         expect(adminLink).toBeInTheDocument();
         expect(adminLink.closest('a')).toHaveAttribute('href', `/school/admin/${defaultProps.schoolId}/cohorts/${defaultProps.cohortId}`);
+    });
+
+    it('should copy invite link to clipboard when copy button is clicked', async () => {
+        const mockWriteText = navigator.clipboard.writeText as jest.MockedFunction<typeof navigator.clipboard.writeText>;
+        mockWriteText.mockResolvedValueOnce(undefined);
+
+        render(
+            <CoursePublishSuccessBanner
+                {...defaultProps}
+            />
+        );
+
+        const copyButton = screen.getByText('Copy invite link');
+
+        await act(async () => {
+            fireEvent.click(copyButton);
+        });
+
+        const expectedInviteLink = `http://localhost:3000/school/${defaultProps.schoolSlug}/join?cohortId=${defaultProps.cohortId}`;
+        expect(mockWriteText).toHaveBeenCalledWith(expectedInviteLink);
+    });
+
+    it('should show "Copied" text and check icon when copy is successful', async () => {
+        const mockWriteText = navigator.clipboard.writeText as jest.MockedFunction<typeof navigator.clipboard.writeText>;
+        mockWriteText.mockResolvedValueOnce(undefined);
+
+        render(
+            <CoursePublishSuccessBanner
+                {...defaultProps}
+            />
+        );
+
+        const copyButton = screen.getByText('Copy invite link');
+
+        await act(async () => {
+            fireEvent.click(copyButton);
+        });
+
+        // Wait for the state update
+        await waitFor(() => {
+            expect(screen.getByText('Copied')).toBeInTheDocument();
+        });
+    });
+
+    it('should reset copied state after 2 seconds', async () => {
+        const mockWriteText = navigator.clipboard.writeText as jest.MockedFunction<typeof navigator.clipboard.writeText>;
+        mockWriteText.mockResolvedValueOnce(undefined);
+
+        render(
+            <CoursePublishSuccessBanner
+                {...defaultProps}
+            />
+        );
+
+        const copyButton = screen.getByText('Copy invite link');
+
+        await act(async () => {
+            fireEvent.click(copyButton);
+        });
+
+        // Verify it shows "Copied"
+        await waitFor(() => {
+            expect(screen.getByText('Copied')).toBeInTheDocument();
+        });
+
+        // Fast forward time by 2 seconds
+        act(() => {
+            jest.advanceTimersByTime(2000);
+        });
+
+        // Should now show "Copy invite link" again
+        await waitFor(() => {
+            expect(screen.getByText('Copy invite link')).toBeInTheDocument();
+        });
+    });
+
+    it('should handle clipboard write failure and log error', async () => {
+        const mockWriteText = navigator.clipboard.writeText as jest.MockedFunction<typeof navigator.clipboard.writeText>;
+        const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => { });
+        const testError = new Error('Clipboard API not supported');
+        mockWriteText.mockRejectedValueOnce(testError);
+
+        render(
+            <CoursePublishSuccessBanner
+                {...defaultProps}
+            />
+        );
+
+        const copyButton = screen.getByText('Copy invite link');
+
+        await act(async () => {
+            fireEvent.click(copyButton);
+        });
+
+        // Should log the error
+        await waitFor(() => {
+            expect(mockConsoleError).toHaveBeenCalledWith('Failed to copy to clipboard:', testError);
+        });
+
+        // Should not show "Copied" since it failed
+        expect(screen.queryByText('Copied')).not.toBeInTheDocument();
+        expect(screen.getByText('Copy invite link')).toBeInTheDocument();
+
+        mockConsoleError.mockRestore();
     });
 }); 

@@ -275,6 +275,7 @@ export default function CohortCoursesLinkerDropdown({
             </div>
             <div className="px-2 py-1">
                 <button
+                    data-testid="link-courses"
                     className="w-full bg-white text-black py-3 rounded-full text-sm hover:bg-gray-200 transition-colors cursor-pointer"
                     onClick={handleAddSelectedCourses}
                     disabled={isLoadingCourses}

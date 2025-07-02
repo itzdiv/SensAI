@@ -377,7 +377,7 @@ export default function ClientSchoolAdminView({ id }: { id: string }) {
             window.location.hash = tab;
         } else {
             // Remove hash if it's the courses tab
-            if (window.location.hash) {
+            if (window.location.hash && typeof window !== 'undefined' && window.history) {
                 history.pushState("", document.title, window.location.pathname);
             }
         }

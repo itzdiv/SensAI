@@ -190,7 +190,6 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     // Make sure we reset questions when component mounts for draft quizzes
     useEffect(() => {
         if (status === 'draft') {
-            console.log('Initializing empty questions array for draft quiz');
             setQuestions([]);
         }
     }, [status]);
@@ -1977,10 +1976,14 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
             return isValid;
         },
         getCurrentQuestionType: () => {
+            // Return null if there are no questions
+            if (questions.length === 0) return null;
             // Return the current question's type, defaulting to 'objective' if not set
             return currentQuestionConfig.questionType;
         },
         getCurrentQuestionInputType: () => {
+            // Return null if there are no questions
+            if (questions.length === 0) return null;
             // Return the current question's input type, defaulting to 'text' if not set
             return currentQuestionConfig.inputType;
         },
@@ -2009,6 +2012,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
         },
         validateBeforePublish: validateAllQuestions,
         getCurrentQuestionConfig: () => {
+            // Return undefined if there are no questions
+            if (questions.length === 0) return undefined;
             // Return the current question's configuration
             return currentQuestionConfig;
         },
@@ -2434,7 +2439,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     }, [currentQuestionConfig.scorecardData, originalScorecardData, handleConfigChange, schoolScorecards, syncLinkedScorecards]);
 
     return (
-        <div className="flex flex-col h-full relative" key={`quiz-${taskId}-${isEditMode ? 'edit' : 'view'}`}>
+        <div className={`flex flex-col h-full relative ${className}`} key={`quiz-${taskId}-${isEditMode ? 'edit' : 'view'}`}>
             {/* Scorecard delete confirmation modal */}
             <ConfirmationDialog
                 show={showScorecardDeleteConfirm && !isPreviewMode}

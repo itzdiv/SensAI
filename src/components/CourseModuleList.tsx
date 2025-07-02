@@ -11,7 +11,7 @@ import { formatScheduleDate } from "@/lib/utils/dateFormat"; // Import the utili
 interface CourseModuleListProps {
     modules: Module[];
     mode: 'edit' | 'view'; // 'edit' for teacher editing, 'view' for learner viewing
-    onToggleModule?: (moduleId: string) => void;
+    onToggleModule: (moduleId: string) => void;
     onOpenItem?: (moduleId: string, itemId: string) => void;
     onMoveItemUp?: (moduleId: string, itemId: string) => void;
     onMoveItemDown?: (moduleId: string, itemId: string) => void;
@@ -87,8 +87,6 @@ export default function CourseModuleList({
     setShowPublishConfirmation = () => { },
     onDuplicateItem,
 }: CourseModuleListProps) {
-    // For editor mode where we need to keep track of expanded modules internally
-    const [internalExpandedModules, setInternalExpandedModules] = useState<Record<string, boolean>>({});
 
     // Track completed items - initialize with completedTaskIds prop
     const [completedItems, setCompletedItems] = useState<Record<string, boolean>>(completedTaskIds);
@@ -397,15 +395,7 @@ export default function CourseModuleList({
             return;
         }
 
-        if (onToggleModule) {
-            onToggleModule(moduleId);
-        } else {
-            // If no handler provided, handle internally
-            setInternalExpandedModules(prev => ({
-                ...prev,
-                [moduleId]: !prev[moduleId]
-            }));
-        }
+        onToggleModule(moduleId);
     };
 
     // Function to handle task deletion with API call
@@ -559,14 +549,7 @@ export default function CourseModuleList({
                                             // Prevent toggling locked modules
                                             if (module.unlockAt) return;
 
-                                            if (onToggleModule) {
-                                                onToggleModule(module.id);
-                                            } else {
-                                                setInternalExpandedModules(prev => ({
-                                                    ...prev,
-                                                    [module.id]: !prev[module.id]
-                                                }));
-                                            }
+                                            onToggleModule(module.id);
                                         }}
                                         className={`hidden sm:block mr-2 transition-colors ${module.unlockAt ? 'text-gray-500 cursor-not-allowed' : 'text-gray-400 hover:text-white cursor-pointer'}`}
                                         aria-label={getIsExpanded(module.id) ? "Collapse module" : "Expand module"}
@@ -711,14 +694,8 @@ export default function CourseModuleList({
                                                 // Prevent toggling locked modules
                                                 if (module.unlockAt) return;
 
-                                                if (onToggleModule) {
-                                                    onToggleModule(module.id);
-                                                } else {
-                                                    setInternalExpandedModules(prev => ({
-                                                        ...prev,
-                                                        [module.id]: !prev[module.id]
-                                                    }));
-                                                }
+                                                onToggleModule(module.id);
+
                                             }}
                                             className={`flex items-center px-3 py-1 text-sm focus:outline-none focus:ring-0 focus:border-0 transition-colors rounded-full border ${module.unlockAt ? 'text-gray-500 border-gray-600 bg-gray-800 cursor-not-allowed' : 'text-gray-400 hover:text-white border-gray-700 bg-gray-900 cursor-pointer'}`}
                                             aria-label={getIsExpanded(module.id) ? "Collapse module" : "Expand module"}
@@ -782,6 +759,7 @@ export default function CourseModuleList({
                                         {module.items.map((item, itemIndex) => (
                                             <div
                                                 key={item.id}
+                                                data-testid={`module-item-${item.id}`}
                                                 className={`flex items-center group p-2 rounded-md cursor-pointer transition-all relative mt-2 hover:bg-gray-700/50 ${completedItems[item.id] ? "opacity-60" : ""
                                                     } ${item.isGenerating ? "opacity-40 pointer-events-none" : ""
                                                     }`}
@@ -1049,6 +1027,7 @@ export default function CourseModuleList({
                 onConfirm={handleConfirmModuleDelete}
                 onCancel={handleCancelModuleDelete}
                 type="delete"
+                data-testid="module-delete-dialog"
             />
 
             {/* Task deletion confirmation dialog */}
@@ -1062,6 +1041,7 @@ export default function CourseModuleList({
                         onConfirm={handleConfirmTaskDelete}
                         onCancel={handleCancelTaskDelete}
                         type="delete"
+                        data-testid="task-delete-dialog"
                     />
                 )
             }

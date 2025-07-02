@@ -7,10 +7,18 @@ import { Document, Page } from 'react-pdf';
 import { pdfjs } from 'react-pdf';
 
 // Set worker source using CDN (keeps the bundle smaller)
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-).toString();
+// Only set this in non-test environments to avoid import.meta.url issues
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') {
+    try {
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+            'pdfjs-dist/build/pdf.worker.min.mjs',
+            import.meta.url,
+        ).toString();
+    } catch (error) {
+        // Fallback for environments that don't support import.meta.url
+        console.warn('Could not set PDF worker source:', error);
+    }
+}
 
 interface GenerateWithAIDialogProps {
     open: boolean;

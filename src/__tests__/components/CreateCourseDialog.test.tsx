@@ -278,4 +278,41 @@ describe('CreateCourseDialog Component', () => {
         const newInputField = screen.getByPlaceholderText('What will you name your course?');
         expect(newInputField).toHaveValue('');
     });
+
+    it('should handle fetch exceptions and log errors', async () => {
+        // Mock fetch to throw an exception
+        (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+        // Spy on console.error to verify it's called
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+        render(
+            <CreateCourseDialog
+                open={true}
+                onClose={mockOnClose}
+                onSuccess={mockOnSuccess}
+                schoolId={mockSchoolId}
+            />
+        );
+
+        // Enter course name
+        const inputField = screen.getByPlaceholderText('What will you name your course?');
+        fireEvent.change(inputField, { target: { value: 'My New Course' } });
+
+        // Submit the form
+        fireEvent.click(screen.getByRole('button', { name: /create course/i }));
+
+        // Verify console.error was called (this covers line 98)
+        await waitFor(() => {
+            expect(consoleSpy).toHaveBeenCalledWith('Error creating course:', expect.any(Error));
+        });
+
+        // Verify error message is displayed
+        await waitFor(() => {
+            expect(screen.getByText('Failed to create course. Please try again.')).toBeInTheDocument();
+        });
+
+        // Clean up spy
+        consoleSpy.mockRestore();
+    });
 }); 

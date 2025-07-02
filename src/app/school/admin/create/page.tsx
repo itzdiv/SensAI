@@ -242,7 +242,7 @@ export default function CreateSchool() {
                 <main className="container mt-10 sm:mt-20 mx-auto px-4 sm:px-6 py-8 max-w-3xl">
                     {isLoadingSchools ? (
                         <div className="flex justify-center items-center py-12">
-                            <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
+                            <div className="w-12 h-12 border-t-2 border-b-2 border-white rounded-full animate-spin" data-testid="loading-spinner"></div>
                         </div>
                     ) : (
                         <>

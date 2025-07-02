@@ -302,13 +302,13 @@ export default function CreateCourse() {
     };
 
     const updateModuleTitle = (id: string, title: string) => {
-        setModules(modules.map(module =>
+        setModules(prevModules => prevModules.map(module =>
             module.id === id ? { ...module, title } : module
         ));
     };
 
     const toggleModuleEditing = (id: string, isEditing: boolean) => {
-        setModules(modules.map(module =>
+        setModules(prevModules => prevModules.map(module =>
             module.id === id ? { ...module, isEditing } : module
         ));
     };
@@ -359,7 +359,7 @@ export default function CreateCourse() {
     };
 
     const toggleModule = (id: string) => {
-        setModules(modules.map(module =>
+        setModules(prevModules => prevModules.map(module =>
             module.id === id ? { ...module, isExpanded: !module.isExpanded } : module
         ));
     };
@@ -371,7 +371,7 @@ export default function CreateCourse() {
         setActiveModuleId(moduleId);
         setIsDialogOpen(true); // Open the dialog for the new item
 
-        setModules(modules.map(module => {
+        setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
                 // Insert the new item at the correct position and update positions of items below
                 const items = [
@@ -526,7 +526,7 @@ export default function CreateCourse() {
     };
 
     const deleteItem = (moduleId: string, itemId: string) => {
-        setModules(modules.map(module => {
+        setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
                 const filteredItems = module.items.filter(item => item.id !== itemId);
                 return {
@@ -542,7 +542,7 @@ export default function CreateCourse() {
     };
 
     const moveItemUp = (moduleId: string, itemId: string) => {
-        setModules(modules.map(module => {
+        setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
                 const index = module.items.findIndex(item => item.id === itemId);
                 if (index <= 0) return module;
@@ -563,7 +563,7 @@ export default function CreateCourse() {
     };
 
     const moveItemDown = (moduleId: string, itemId: string) => {
-        setModules(modules.map(module => {
+        setModules(prevModules => prevModules.map(module => {
             if (module.id === moduleId) {
                 const index = module.items.findIndex(item => item.id === itemId);
                 if (index === -1 || index === module.items.length - 1) return module;
@@ -1084,7 +1084,7 @@ export default function CreateCourse() {
             // Show loading state
             setIsLoadingCohorts(true);
 
-             // Link the course to the selected cohort
+            // Link the course to the selected cohort
             await linkCourseToCohort(selectedCohort.id, selectedCohort.name, dripConfig);
             setDripConfig(undefined);
         } catch (error) {
@@ -1097,7 +1097,7 @@ export default function CreateCourse() {
 
     // Create a reusable function for linking a course to cohorts
     const linkCourseToCohort = async (
-        cohortId: number, 
+        cohortId: number,
         cohortName: string,
         dripConfig?: DripConfig
     ) => {
@@ -1245,7 +1245,7 @@ export default function CreateCourse() {
 
                     // If no cohorts exist at all, auto-create one and publish
                     if (allCohorts.length === 0) {
-                        openCreateCohortDialog(true);
+                        openCreateCohortDialog();
                         return;
                     }
 
@@ -1947,6 +1947,7 @@ export default function CreateCourse() {
                         </button>
 
                         <CourseModuleList
+                            data-testid="course-module-list"
                             modules={modules}
                             mode="edit"
                             onToggleModule={toggleModule}
@@ -2123,6 +2124,7 @@ export default function CreateCourse() {
 
             {/* Render the CourseCohortSelectionDialog */}
             <CourseCohortSelectionDialog
+                data-testid="cohort-selection-dialog"
                 isOpen={showPublishDialog}
                 onClose={closeCohortDialog}
                 originButtonRef={dialogOrigin === 'publish' ? publishButtonRef : addCohortButtonRef}
@@ -2149,6 +2151,7 @@ export default function CreateCourse() {
 
             {/* Confirmation Dialog for Cohort Removal */}
             <ConfirmationDialog
+                data-testid="confirmation-dialog"
                 open={showRemoveCohortConfirmation}
                 title="Remove course from cohort"
                 message={`Are you sure you want to remove this course from "${cohortToRemove?.name}"? Learners in that cohort will no longer have access to this course`}
@@ -2163,6 +2166,7 @@ export default function CreateCourse() {
 
             {/* Toast notification */}
             <Toast
+                data-testid="toast"
                 show={toast.show}
                 title={toast.title}
                 description={toast.description}
@@ -2172,6 +2176,7 @@ export default function CreateCourse() {
 
             {/* Celebratory Banner for course publication */}
             <CoursePublishSuccessBanner
+                data-testid="success-banner"
                 isOpen={showCelebratoryBanner}
                 onClose={closeCelebratoryBanner}
                 cohortId={celebrationDetails.cohortId}
@@ -2182,6 +2187,7 @@ export default function CreateCourse() {
 
             {/* Add the standalone CreateCohortDialog */}
             <CreateCohortDialog
+                data-testid="create-cohort-dialog"
                 open={showCreateCohortDialog}
                 onClose={closeCreateCohortDialog}
                 onCreateCohort={handleCohortCreated}
@@ -2191,6 +2197,7 @@ export default function CreateCourse() {
 
             {/* Generate with AI Dialog */}
             <GenerateWithAIDialog
+                data-testid="generate-ai-dialog"
                 open={showGenerateDialog}
                 onClose={() => setShowGenerateDialog(false)}
                 onSubmit={handleGenerateCourse}
@@ -2198,6 +2205,7 @@ export default function CreateCourse() {
 
             {/* Add SettingsDialog component */}
             <SettingsDialog
+                data-testid="settings-dialog"
                 isOpen={!!selectedCohortForSettings}
                 onClose={handleCloseSettingsDialog}
                 courseName={selectedCohortForSettings?.name}

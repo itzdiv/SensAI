@@ -97,6 +97,13 @@ describe('LearningMaterialViewer Component', () => {
         (global.fetch as jest.Mock).mockReset();
         mockLocalStorage.getItem.mockReset();
         mockLocalStorage.setItem.mockReset();
+
+        // Reset window.innerWidth to default desktop size
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 1200,
+        });
     });
 
     it('should render the viewer in loading state initially', () => {
@@ -237,6 +244,13 @@ describe('LearningMaterialViewer Component', () => {
             json: async () => mockTaskData
         });
 
+        // Set mobile view BEFORE rendering
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 800,
+        });
+
         // Render with onMarkComplete prop
         render(
             <LearningMaterialViewer
@@ -250,9 +264,20 @@ describe('LearningMaterialViewer Component', () => {
             expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
         });
 
-        // For mobile menu, first click the help circle button
-        const helpButton = screen.getByRole('button', { name: /ask a doubt/i });
-        fireEvent.click(helpButton);
+        // Trigger resize event to ensure mobile view is detected
+        fireEvent(window, new Event('resize'));
+
+        // Wait a bit for the resize handler to execute
+        await waitFor(() => {
+            // For mobile with onMarkComplete, the button should toggle mobile menu 
+            const toggleButton = screen.getByRole('button', { name: /ask a doubt/i });
+            fireEvent.click(toggleButton);
+        });
+
+        // Now mobile menu should be visible - look for mark complete button
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /mark as complete/i })).toBeInTheDocument();
+        });
 
         // Then find and click the mark complete button in the menu
         const markCompleteButton = screen.getByRole('button', { name: /mark as complete/i });
@@ -349,5 +374,521 @@ describe('LearningMaterialViewer Component', () => {
         await waitFor(() => {
             expect(screen.getByRole('button', { name: /ask a doubt/i })).toBeInTheDocument();
         });
+    });
+
+    it('should render in viewOnly mode without action buttons', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+                viewOnly={true}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // In viewOnly mode, action buttons should not be present
+        expect(screen.queryByRole('button', { name: /ask a doubt/i })).not.toBeInTheDocument();
+    });
+
+    it('should handle window resize to mobile view', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Simulate window resize to mobile
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 800,
+        });
+
+        // Trigger resize event
+        fireEvent(window, new Event('resize'));
+
+        // The component should still render correctly
+        expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+    });
+
+    it('should close mobile menu when clicking outside', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        // Set mobile view BEFORE rendering
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 800,
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+                onMarkComplete={mockOnMarkComplete}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Trigger resize event to ensure mobile view is detected
+        fireEvent(window, new Event('resize'));
+
+        // Wait for resize handler and then open mobile menu
+        await waitFor(() => {
+            const helpButton = screen.getByRole('button', { name: /ask a doubt/i });
+            fireEvent.click(helpButton);
+        });
+
+        // Mobile menu should be open
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /mark as complete/i })).toBeInTheDocument();
+        });
+
+        // Click outside the menu
+        fireEvent.mouseDown(document.body);
+
+        // Menu should close
+        await waitFor(() => {
+            expect(screen.queryByRole('button', { name: /mark as complete/i })).not.toBeInTheDocument();
+        });
+    });
+
+    it('should handle empty response in chat correctly', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Open chat view
+        const askDoubtButton = screen.getByRole('button', { name: /ask a doubt/i });
+        fireEvent.click(askDoubtButton);
+
+        // Try to submit empty message
+        fireEvent.click(screen.getByTestId('submit-button'));
+
+        // Should not make any API call for empty message
+        expect(global.fetch).toHaveBeenCalledTimes(1); // Only the initial task fetch
+    });
+
+    it('should handle different isDarkMode props', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+                isDarkMode={false}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Component should render with light mode
+        expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+    });
+
+    it('should handle readOnly prop being false', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+                readOnly={false}
+            />
+        );
+
+        await waitFor(() => {
+            const editor = screen.getByTestId('block-note-editor');
+            expect(editor).toBeInTheDocument();
+            expect(editor.getAttribute('data-read-only')).toBe('true'); // Still true because the component forces readOnly=true
+        });
+    });
+
+    it('should render without taskId', () => {
+        render(
+            <LearningMaterialViewer
+                userId={mockUserId}
+            />
+        );
+
+        // Should not make any API calls
+        expect(global.fetch).not.toHaveBeenCalled();
+
+        // Without taskId, component shows loading spinner since isLoading defaults to true
+        expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    });
+
+    it('should save localStorage when clicking action button for first time', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        // Mock localStorage to indicate user hasn't clicked before
+        mockLocalStorage.getItem.mockReturnValueOnce(null);
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Click the action button
+        const askDoubtButton = screen.getByRole('button', { name: /ask a doubt/i });
+        fireEvent.click(askDoubtButton);
+
+        // Should save to localStorage  
+        expect(mockLocalStorage.setItem).toHaveBeenCalledWith('hasClickedFabButton', 'true');
+    });
+
+    it('should handle fetch error in task loading', async () => {
+        console.error = jest.fn(); // Suppress error logs
+
+        (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        // Component should still render with action button even if task loading failed
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /ask a doubt/i })).toBeInTheDocument();
+        });
+
+        // Editor should still be present with undefined initial content
+        expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+    });
+
+    it('should handle fetch non-ok response', async () => {
+        console.error = jest.fn(); // Suppress error logs
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: false,
+            status: 404
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /ask a doubt/i })).toBeInTheDocument();
+        });
+
+        // Editor should still be present with undefined initial content
+        expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+    });
+
+    it('should handle chat error during streaming', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Open chat
+        const askDoubtButton = screen.getByRole('button', { name: /ask a doubt/i });
+        fireEvent.click(askDoubtButton);
+
+        // Type a message
+        const chatInput = screen.getByTestId('chat-input');
+        fireEvent.change(chatInput, { target: { value: 'Test question' } });
+
+        // Mock streaming error response
+        const mockReader = {
+            read: jest.fn().mockRejectedValueOnce(new Error('Stream error'))
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            body: {
+                getReader: () => mockReader
+            }
+        });
+
+        // Submit chat
+        fireEvent.click(screen.getByTestId('submit-button'));
+
+        // Should handle the error gracefully
+        await waitFor(() => {
+            expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+        });
+    });
+
+    it('should handle chat API error response', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Open chat
+        const askDoubtButton = screen.getByRole('button', { name: /ask a doubt/i });
+        fireEvent.click(askDoubtButton);
+
+        // Type a message
+        const chatInput = screen.getByTestId('chat-input');
+        fireEvent.change(chatInput, { target: { value: 'Test question' } });
+
+        // Mock API error
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: false,
+            status: 500
+        });
+
+        // Submit chat
+        fireEvent.click(screen.getByTestId('submit-button'));
+
+        // Should handle the error gracefully
+        await waitFor(() => {
+            expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+        });
+    });
+
+    it('should handle retry functionality', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Open chat
+        const askDoubtButton = screen.getByRole('button', { name: /ask a doubt/i });
+        fireEvent.click(askDoubtButton);
+
+        // Type a message
+        const chatInput = screen.getByTestId('chat-input');
+        fireEvent.change(chatInput, { target: { value: 'Test question' } });
+
+        // Mock successful response for initial request
+        const mockReader = {
+            read: jest.fn()
+                .mockResolvedValueOnce({
+                    done: false,
+                    value: new Uint8Array(Buffer.from(JSON.stringify({ response: 'Initial response' })))
+                })
+                .mockResolvedValueOnce({
+                    done: true,
+                    value: undefined
+                })
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            body: {
+                getReader: () => mockReader
+            }
+        });
+
+        // Submit initial message
+        fireEvent.click(screen.getByTestId('submit-button'));
+
+        // Wait for the message to be added to chat history (the user message should appear)
+        await waitFor(() => {
+            expect(screen.getByTestId('chat-history')).toHaveTextContent('Test question');
+        });
+
+        // Mock retry response
+        const retryMockReader = {
+            read: jest.fn()
+                .mockResolvedValueOnce({
+                    done: false,
+                    value: new Uint8Array(Buffer.from(JSON.stringify({ response: 'Retry response' })))
+                })
+                .mockResolvedValueOnce({
+                    done: true,
+                    value: undefined
+                })
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            body: {
+                getReader: () => retryMockReader
+            }
+        });
+
+        // Now test retry functionality
+        const retryButton = screen.getByTestId('retry-button');
+        fireEvent.click(retryButton);
+
+        // Should trigger another API call
+        expect(global.fetch).toHaveBeenCalledTimes(3); // task fetch + initial chat + retry
+    });
+
+    it('should handle mobile chat closing animation', async () => {
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => mockTaskData
+        });
+
+        // Set mobile view 
+        Object.defineProperty(window, 'innerWidth', {
+            writable: true,
+            configurable: true,
+            value: 800,
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Trigger resize event
+        fireEvent(window, new Event('resize'));
+
+        // Open chat 
+        const askDoubtButton = screen.getByRole('button', { name: /ask a doubt/i });
+        fireEvent.click(askDoubtButton);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+        });
+
+        // Close chat - should trigger animation
+        const closeButton = screen.getByRole('button', { name: /close chat/i });
+        fireEvent.click(closeButton);
+
+        // Chat should still be visible during animation
+        expect(screen.getByTestId('chat-view')).toBeInTheDocument();
+    });
+
+    it('should handle empty task blocks', async () => {
+        const emptyTaskData = {
+            ...mockTaskData,
+            blocks: []
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => emptyTaskData
+        });
+
+        render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+        });
+
+        // Should render editor even with empty blocks
+        expect(screen.getByTestId('block-note-editor')).toBeInTheDocument();
+    });
+
+    it('should handle component cleanup on unmount', async () => {
+        (global.fetch as jest.Mock).mockImplementationOnce(() =>
+            new Promise(resolve => setTimeout(() => resolve({
+                ok: true,
+                json: async () => mockTaskData
+            }), 100))
+        );
+
+        const { unmount } = render(
+            <LearningMaterialViewer
+                taskId={mockTaskId}
+                userId={mockUserId}
+            />
+        );
+
+        // Unmount before fetch completes
+        unmount();
+
+        // Should not throw any errors
+        expect(true).toBe(true);
     });
 }); 

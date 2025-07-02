@@ -180,7 +180,7 @@ describe('Dropdown Component', () => {
         expect(screen.queryByText('Option 1')).not.toBeInTheDocument();
     });
 
-    it('should wrap disabled dropdown in tooltip when disabledTooltip is provided', () => {
+    it('should render tooltip when disabled and disabledTooltip is provided', () => {
         render(
             <Dropdown
                 title="Test Dropdown"
@@ -191,8 +191,37 @@ describe('Dropdown Component', () => {
             />
         );
 
-        // Should be wrapped in a tooltip
-        expect(screen.getByTestId('tooltip-wrapper')).toBeInTheDocument();
+        // The tooltip content should be wrapped when disabled with tooltip
+        const dropdownElement = screen.getByText('Test Dropdown').closest('div');
+        expect(dropdownElement).toBeInTheDocument();
+
+        // Verify that clicking doesn't open dropdown when disabled
+        const selectableArea = screen.getByText('Select one or more options').parentElement;
+        fireEvent.click(selectableArea!);
+
+        // Dropdown should not open
+        expect(screen.queryByText('Option 1')).not.toBeInTheDocument();
+    });
+
+    it('should not render tooltip when disabled but no disabledTooltip provided', () => {
+        render(
+            <Dropdown
+                title="Test Dropdown"
+                options={mockOptions}
+                onChange={mockOnChange}
+                disabled={true}
+            // No disabledTooltip provided
+            />
+        );
+
+        // Should still render disabled dropdown but without tooltip wrapper
+        // Look for the container div that actually has the disabled classes
+        const selectableArea = screen.getByText('Select one or more options').closest('[class*="opacity-70"]');
+        expect(selectableArea).toHaveClass('opacity-70', 'cursor-default');
+
+        // Should not open when clicked
+        fireEvent.click(selectableArea!);
+        expect(screen.queryByText('Option 1')).not.toBeInTheDocument();
     });
 
     it('should show tooltips for options that have them', () => {

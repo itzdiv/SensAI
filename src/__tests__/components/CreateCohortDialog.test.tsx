@@ -1,12 +1,42 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CreateCohortDialog from '../../components/CreateCohortDialog';
+import React from 'react';
 
 // Mock fetch globally
 global.fetch = jest.fn();
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_BACKEND_URL = 'http://test-api.example.com';
+
+// Mock DripPublishingConfig with a controllable validation function
+let mockValidateDripConfig = jest.fn<string | null, []>(() => null);
+
+jest.mock('../../components/DripPublishingConfig', () => {
+    // Import React inside the mock function to avoid initialization issues
+    const ReactForMock = require('react');
+    return ReactForMock.forwardRef((props: any, ref: any) => {
+        ReactForMock.useImperativeHandle(ref, () => ({
+            validateDripConfig: mockValidateDripConfig
+        }));
+        return (
+            <div data-testid="drip-publishing-config">
+                <div className="p-4 border-t border-gray-800 bg-[#23282d] rounded-lg">
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="drip-enabled"
+                            className="mr-3 h-4 w-4 cursor-pointer bg-[#181818] border-gray-600 rounded focus:ring-2 focus:ring-[#016037] focus:ring-offset-0 checked:bg-[#016037] checked:border-[#016037] transition-colors"
+                        />
+                        <label htmlFor="drip-enabled" className="text-white text-sm font-light cursor-pointer select-none">
+                            Release modules gradually using a drip schedule
+                        </label>
+                    </div>
+                </div>
+            </div>
+        );
+    });
+});
 
 describe('CreateCohortDialog Component', () => {
     const mockOnClose = jest.fn();
@@ -17,6 +47,8 @@ describe('CreateCohortDialog Component', () => {
         jest.clearAllMocks();
         // Reset the fetch mock
         (global.fetch as jest.Mock).mockReset();
+        // Reset the validation mock to return null by default
+        mockValidateDripConfig.mockReturnValue(null);
     });
 
     it('should not render anything when open is false', () => {
@@ -325,5 +357,78 @@ describe('CreateCohortDialog Component', () => {
         const newInputField = screen.getByPlaceholderText('What will you name this cohort?');
         expect(newInputField).toHaveValue('');
         expect(screen.queryByText('Cohort name is required')).not.toBeInTheDocument();
+    });
+
+    it('should not proceed with cohort creation if drip config validation fails', async () => {
+        // Configure the mock to return a validation error
+        mockValidateDripConfig.mockReturnValue('Invalid drip configuration');
+
+        render(
+            <CreateCohortDialog
+                open={true}
+                onClose={mockOnClose}
+                onCreateCohort={mockOnCreateCohort}
+                schoolId="123"
+                showDripPublishSettings={true}
+            />
+        );
+
+        // Enter cohort name
+        const input = screen.getByPlaceholderText('What will you name this cohort?');
+        fireEvent.change(input, { target: { value: 'Test Cohort' } });
+
+        // Try to submit
+        fireEvent.click(screen.getByText('Create cohort'));
+
+        // Should call validation
+        await waitFor(() => {
+            expect(mockValidateDripConfig).toHaveBeenCalled();
+        });
+
+        // Should not make API call since validation failed
+        expect(global.fetch).not.toHaveBeenCalled();
+        expect(mockOnCreateCohort).not.toHaveBeenCalled();
+    });
+
+    it('should proceed with cohort creation if drip config validation passes', async () => {
+        // Mock successful API response
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ id: 'new-cohort-id', name: 'Test Cohort' }),
+        });
+
+        // Configure the mock to return no validation error
+        mockValidateDripConfig.mockReturnValue(null);
+
+        render(
+            <CreateCohortDialog
+                open={true}
+                onClose={mockOnClose}
+                onCreateCohort={mockOnCreateCohort}
+                schoolId="123"
+                showDripPublishSettings={true}
+            />
+        );
+
+        // Enter cohort name
+        const input = screen.getByPlaceholderText('What will you name this cohort?');
+        fireEvent.change(input, { target: { value: 'Test Cohort' } });
+
+        // Submit the form
+        fireEvent.click(screen.getByText('Create cohort'));
+
+        // Should call validation and then proceed
+        await waitFor(() => {
+            expect(mockValidateDripConfig).toHaveBeenCalled();
+            expect(global.fetch).toHaveBeenCalled();
+        });
+
+        // Should call onCreateCohort with the new cohort data
+        await waitFor(() => {
+            expect(mockOnCreateCohort).toHaveBeenCalledWith(
+                { id: 'new-cohort-id', name: 'Test Cohort' },
+                undefined
+            );
+        });
     });
 }); 
