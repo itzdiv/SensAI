@@ -91,7 +91,6 @@ export default function Home() {
 
   return (
     <>
-      {/* Global styles to remove focus outlines */}
       <style jsx global>{`
         button:focus {
           outline: none !important;
@@ -103,7 +102,8 @@ export default function Home() {
           height: 100%;
           overflow-y: auto;
         }
-      `}</style>
+      `}
+      </style>
 
       <div className="min-h-screen bg-black text-white overflow-y-auto">
         {/* Use the reusable Header component */}

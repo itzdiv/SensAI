@@ -307,4 +307,32 @@ describe('InviteMembersDialog Component', () => {
         // Icon should return to normal state
         expect(mailIcon).not.toHaveClass('text-white');
     });
+
+    it('should clear validation error when invalid email becomes valid', () => {
+        render(
+            <InviteMembersDialog
+                open={true}
+                onClose={mockOnClose}
+                onInvite={mockOnInvite}
+            />
+        );
+
+        const emailInput = screen.getByPlaceholderText('Enter email address');
+
+        // First enter an invalid email
+        fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
+
+        // Verify error exists after blur
+        fireEvent.blur(emailInput);
+
+        // Then correct it to a valid email (this should trigger line 71)
+        fireEvent.change(emailInput, { target: { value: 'valid@example.com' } });
+
+        // The error should be cleared (but won't show because input is focused)
+        // We can verify by trying to submit - it should succeed
+        fireEvent.click(screen.getByRole('button', { name: /invite/i }));
+
+        // Should call onInvite since email is now valid
+        expect(mockOnInvite).toHaveBeenCalledWith(['valid@example.com']);
+    });
 }); 

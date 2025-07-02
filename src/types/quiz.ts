@@ -7,8 +7,8 @@ export interface QuizEditorHandle {
     hasContent: () => boolean;
     hasChanges: () => boolean;
     hasQuestionContent: () => boolean;
-    getCurrentQuestionType: () => 'objective' | 'subjective';
-    getCurrentQuestionInputType: () => 'text' | 'code' | 'audio';
+    getCurrentQuestionType: () => 'objective' | 'subjective' | null;
+    getCurrentQuestionInputType: () => 'text' | 'code' | 'audio' | null;
     hasCorrectAnswer: () => boolean;
     hasCodingLanguages: () => boolean;
     hasScorecard: () => boolean;

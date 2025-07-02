@@ -208,7 +208,7 @@ describe('ConfirmationDialog Component', () => {
         expect(screen.getByText('Custom Dialog Content')).toBeInTheDocument();
     });
 
-    it('should render close button when showCloseButton is true', () => {
+    it('should show close button when showCloseButton is true', () => {
         render(
             <ConfirmationDialog
                 onConfirm={mockOnConfirm}
@@ -218,12 +218,12 @@ describe('ConfirmationDialog Component', () => {
             />
         );
 
-        // The close button has an X icon, so we need to find it by its role and position
+        // Should have a close button (X icon) in the top-right corner
         const closeButton = document.querySelector('button.absolute.top-4.right-4');
         expect(closeButton).toBeInTheDocument();
     });
 
-    it('should call onClose when close button is clicked if provided', () => {
+    it('should call onClose when close button is clicked and onClose is provided', () => {
         render(
             <ConfirmationDialog
                 onConfirm={mockOnConfirm}
@@ -234,13 +234,21 @@ describe('ConfirmationDialog Component', () => {
             />
         );
 
-        const closeButton = document.querySelector('button.absolute.top-4.right-4');
-        fireEvent.click(closeButton!);
+        // Find the close button by its specific classes and click it
+        const closeButton = screen.getByRole('button', {
+            name: '', // X button has no text
+        });
+        // Ensure it's the close button by checking its position class
+        expect(closeButton).toHaveClass('absolute', 'top-4', 'right-4');
+
+        fireEvent.click(closeButton);
+
+        // Should call onClose, not onCancel
         expect(mockOnClose).toHaveBeenCalledTimes(1);
         expect(mockOnCancel).not.toHaveBeenCalled();
     });
 
-    it('should call onCancel when close button is clicked if onClose is not provided', () => {
+    it('should call onCancel when close button is clicked and onClose is not provided', () => {
         render(
             <ConfirmationDialog
                 onConfirm={mockOnConfirm}
@@ -250,9 +258,21 @@ describe('ConfirmationDialog Component', () => {
             />
         );
 
-        const closeButton = document.querySelector('button.absolute.top-4.right-4');
+        // Find the close button by looking for a button with the specific positioning classes
+        // This test specifically covers the else branch in handleClose (line 118)
+        const buttons = screen.getAllByRole('button');
+        const closeButton = buttons.find(button =>
+            button.classList.contains('absolute') &&
+            button.classList.contains('top-4') &&
+            button.classList.contains('right-4')
+        );
+
+        expect(closeButton).toBeDefined();
         fireEvent.click(closeButton!);
+
+        // Should call onCancel when onClose is not provided (this tests the else branch)
         expect(mockOnCancel).toHaveBeenCalledTimes(1);
+        expect(mockOnClose).not.toHaveBeenCalled();
     });
 
     it('should apply correct button styling based on type', () => {

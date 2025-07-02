@@ -74,4 +74,23 @@ describe('ModuleCompletionSound Component', () => {
         // Verify AudioContext was not created
         expect(mockAudioContextConstructor).not.toHaveBeenCalled();
     });
+
+    it('should handle AudioContext errors gracefully', () => {
+        // Mock console.error to verify it's called
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+        // Mock AudioContext constructor to throw an error
+        const errorMessage = 'AudioContext failed';
+        mockAudioContextConstructor.mockImplementationOnce(() => {
+            throw new Error(errorMessage);
+        });
+
+        render(<ModuleCompletionSound play={true} />);
+
+        // Verify console.error was called with the error (this covers line 50)
+        expect(consoleSpy).toHaveBeenCalledWith('Error creating module completion sound:', expect.any(Error));
+
+        // Clean up spy
+        consoleSpy.mockRestore();
+    });
 }); 

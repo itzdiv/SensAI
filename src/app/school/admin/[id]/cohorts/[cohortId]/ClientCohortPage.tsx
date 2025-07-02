@@ -161,7 +161,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                     if (!prev) return prev;
                     return {
                         ...prev,
-                        courses: cohortCoursesData
+                        courses: cohortCoursesData || []
                     };
                 });
                 setSelectedCourseIds(cohortCoursesData.map(course => course.id));
@@ -193,9 +193,14 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
             setSelectedCourseIds(prev => prev.filter(id => id !== courseId));
 
-            if (cohort?.courses) {
-                const removedCourse = cohort.courses.find(course => course.id === courseId);
-                const updatedCourses = cohort.courses.filter(course => course.id !== courseId);
+            const currentCourses = Array.isArray(cohort?.courses) ? cohort.courses : [];
+            if (currentCourses.length > 0) {
+                const removedCourse = currentCourses.find(course => course.id === courseId);
+                const updatedCourses = currentCourses.filter(course => course.id !== courseId);
+
+                if (!removedCourse) {
+                    return;
+                }
 
                 // Check if this was the last course and set tab to 'learners' if so
                 if (updatedCourses.length === 0) {
@@ -247,14 +252,12 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
     // Add a function to handle the course linking from the dropdown component
     const handleCoursesLinked = async (selectedCourses: Course[], dripConfig?: DripConfig) => {
-        // Show loading state
+        setIsDropdownOpen(false);
         setIsLoadingCourses(true);
 
         try {
-            // Extract all course IDs from the selected courses
             const courseIds = selectedCourses.map(course => course.id);
 
-            // Make a single API call with all selected course IDs and drip config
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses`, {
                 method: 'POST',
                 headers: {
@@ -274,8 +277,9 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             setCohort(prev => {
                 if (!prev) return prev;
 
-                // Get existing course IDs to avoid duplicates
-                const existingCourseIds = prev.courses?.map(c => c.id) || [];
+                // Get existing course IDs to avoid duplicates - ensure courses is always an array
+                const existingCourses = Array.isArray(prev.courses) ? prev.courses : [];
+                const existingCourseIds = existingCourses.map(c => c.id);
 
                 // Filter out any courses that are already in the cohort
                 const newCourses = selectedCourses.filter(c => !existingCourseIds.includes(c.id));
@@ -288,7 +292,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
                 return {
                     ...prev,
-                    courses: [...(prev.courses || []), ...updatedCourses]
+                    courses: [...existingCourses, ...updatedCourses]
                 };
             });
 
@@ -329,7 +333,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
     // Function to enable cohort name editing
     const enableCohortNameEditing = () => {
-        if (cohort) {
+        if (cohort && cohort.name) {
             setEditedCohortName(cohort.name);
             setIsEditingCohortName(true);
             setTimeout(() => {
@@ -349,7 +353,18 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
     // Function to save edited cohort name
     const saveCohortName = async () => {
-        if (!editedCohortName.trim() || !cohort) return;
+        const trimmedName = (editedCohortName || '').trim();
+
+        // Check if name is empty and show toast
+        if (!trimmedName) {
+            setToastTitle('Invalid name');
+            setToastDescription('Cohort name cannot be empty');
+            setToastEmoji('❌');
+            setShowToast(true);
+            return;
+        }
+
+        if (!cohort) return;
 
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}`, {
@@ -358,7 +373,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    name: editedCohortName
+                    name: trimmedName
                 }),
             });
 
@@ -369,7 +384,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
             // Update local state with new name
             setCohort(prev => prev ? {
                 ...prev,
-                name: editedCohortName
+                name: trimmedName
             } : null);
 
             // Show success toast
@@ -394,6 +409,11 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
     const cancelCohortNameEditing = () => {
         setIsEditingCohortName(false);
         setEditedCohortName('');
+
+        // Restore the original cohort name in the contentEditable element
+        if (cohortNameRef.current && cohort?.name) {
+            cohortNameRef.current.textContent = cohort.name;
+        }
     };
 
     // Function to handle cohort name input
@@ -413,6 +433,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
 
     // Function to copy invite link and show toast
     const handleInviteLearners = async () => {
+        if (!schoolSlug) return;
         const inviteLink = `${window.location.origin}/school/${schoolSlug}/join?cohortId=${cohortId}`;
 
         try {
@@ -478,28 +499,48 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                     const cohortCoursesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/cohorts/${cohortId}/courses`);
                     if (cohortCoursesResponse.ok) {
                         const cohortCoursesData = await cohortCoursesResponse.json();
+                        const courses = Array.isArray(cohortCoursesData) ? cohortCoursesData : [];
                         setCohort(prev => {
                             if (!prev) return prev;
                             return {
                                 ...prev,
-                                courses: cohortCoursesData
+                                courses: courses
                             };
                         });
-                        setSelectedCourseIds(cohortCoursesData.map((course: Course) => course.id));
+                        setSelectedCourseIds(courses.map((course: Course) => course.id));
 
                         // Set default tab to dashboard if courses exist
-                        if (cohortCoursesData.length > 0) {
+                        if (courses.length > 0) {
                             setTab('dashboard');
                         } else {
                             // Set default tab to learners if no courses exist
                             setTab('learners');
                         }
+                    } else {
+                        // If cohort courses fetch fails, set empty array
+                        setCohort(prev => {
+                            if (!prev) return prev;
+                            return {
+                                ...prev,
+                                courses: []
+                            };
+                        });
+                        setTab('learners');
                     }
 
                     // Fetch available courses
                     fetchAvailableCourses();
                 } catch (error) {
                     console.error("Error fetching cohort courses:", error);
+                    // Ensure cohort has empty courses array on error
+                    setCohort(prev => {
+                        if (!prev) return prev;
+                        return {
+                            ...prev,
+                            courses: []
+                        };
+                    });
+                    setTab('learners');
                 }
             } catch (error) {
                 console.error("Error fetching cohort:", error);
@@ -508,7 +549,8 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                     name: "Cohort (Data Unavailable)",
                     org_id: 0,
                     members: [],
-                    groups: []
+                    groups: [],
+                    joined_at: undefined
                 });
                 setLoading(false);
             }
@@ -593,6 +635,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                 <button
                                                     onClick={saveCohortName}
                                                     className="flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 text-white text-sm font-medium rounded-full hover:bg-green-700 transition-colors cursor-pointer"
+                                                    data-testid="save-cohort-name-button"
                                                 >
                                                     <Check size={16} />
                                                     <span>Save</span>
@@ -600,6 +643,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                 <button
                                                     onClick={cancelCohortNameEditing}
                                                     className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#333] text-white text-sm font-medium rounded-full hover:bg-[#444] transition-colors cursor-pointer"
+                                                    data-testid="cancel-cohort-name-button"
                                                 >
                                                     <X size={16} />
                                                     <span>Cancel</span>
@@ -610,6 +654,7 @@ export default function ClientCohortPage({ schoolId, cohortId }: ClientCohortPag
                                                 <button
                                                     onClick={enableCohortNameEditing}
                                                     className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#333] text-white text-sm font-medium rounded-full hover:bg-[#444] transition-colors cursor-pointer"
+                                                    data-testid="edit-cohort-name-button"
                                                 >
                                                     <Pencil size={16} />
                                                     <span>Edit</span>

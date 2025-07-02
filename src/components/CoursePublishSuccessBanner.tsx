@@ -73,7 +73,7 @@ const CoursePublishSuccessBanner: React.FC<CoursePublishSuccessBannerProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div data-testid="course-publish-success-banner" className="fixed inset-0 flex items-center justify-center z-50">
             <div className="absolute inset-0 bg-black bg-opacity-90"></div>
 
             {/* Main Modal Container */}

@@ -306,7 +306,7 @@ export default function LearnerCohortView({
     }, []);
 
     return (
-        <div className="bg-black min-h-screen pb-16 lg:pb-0">
+        <div className="bg-black min-h-screen pb-16 lg:pb-0" role="main">
             {courseTitle && (
                 <h1 className="text-2xl md:text-3xl font-light text-white mb-4 md:mb-6 px-1 sm:px-0">
                     {courseTitle}

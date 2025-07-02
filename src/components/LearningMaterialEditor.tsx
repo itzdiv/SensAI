@@ -342,6 +342,10 @@ const LearningMaterialEditor = forwardRef<LearningMaterialEditorHandle, Learning
             return () => {
                 controller.abort();
             };
+        } else {
+            // If no taskId is provided, set loading to false immediately
+            // so the component can render the editor
+            setIsLoading(false);
         }
     }, [taskId]);
 

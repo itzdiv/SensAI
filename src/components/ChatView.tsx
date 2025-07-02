@@ -614,8 +614,7 @@ const ChatView = forwardRef<ChatViewHandle, ChatViewProps>(({
 
     return (
         <div className="flex-1 flex flex-col px-3 sm:px-6 py-6 overflow-auto h-full chat-view-wrapper">
-            {/* Global style for maximum specificity - this will apply regardless of Next.js styling restrictions */}
-            <style global jsx>{`
+            <style jsx global>{`
                 /* Target the specific textarea with an important ID */
                 #no-border-textarea {
                     border: none !important;
