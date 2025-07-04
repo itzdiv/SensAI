@@ -452,7 +452,7 @@ describe('QuizEditor Component', () => {
 
             // Check sidebar elements
             expect(screen.getByText('Questions')).toBeInTheDocument();
-            expect(screen.getByText('Question 1')).toBeInTheDocument();
+            expect(screen.getByTestId('sidebar-question-label')).toBeInTheDocument();
             expect(screen.getByTestId('dropdown-purpose')).toBeInTheDocument();
             expect(screen.getByTestId('dropdown-question-type')).toBeInTheDocument();
             expect(screen.getByTestId('dropdown-answer-type')).toBeInTheDocument();
@@ -471,7 +471,7 @@ describe('QuizEditor Component', () => {
             // Wait for the first question to be fully rendered
             await waitFor(() => {
                 expect(screen.getByText('Questions')).toBeInTheDocument();
-                expect(screen.getByText('Question 1')).toBeInTheDocument();
+                expect(screen.getByTestId('sidebar-question-label')).toBeInTheDocument();
             });
 
             // Verify onChange was called with one question
@@ -486,7 +486,7 @@ describe('QuizEditor Component', () => {
             );
 
             // Test navigation by clicking on the first question
-            const firstQuestion = screen.getByText('Question 1');
+            const firstQuestion = screen.getByTestId('sidebar-question-label');
             await act(async () => {
                 fireEvent.click(firstQuestion);
             });
@@ -1852,7 +1852,7 @@ describe('QuizEditor Component', () => {
 
             // Wait for first question to be created
             await waitFor(() => {
-                expect(screen.getByText('Question 1')).toBeInTheDocument();
+                expect(screen.getByTestId('sidebar-question-label')).toBeInTheDocument();
             });
 
             // Verify that onChange was called with at least one question
@@ -1865,7 +1865,7 @@ describe('QuizEditor Component', () => {
             );
 
             // Click on the first question to test navigation
-            const firstQuestion = screen.getByText('Question 1');
+            const firstQuestion = screen.getByTestId('sidebar-question-label');
             await act(async () => {
                 fireEvent.click(firstQuestion);
             });
@@ -1886,11 +1886,11 @@ describe('QuizEditor Component', () => {
             });
 
             await waitFor(() => {
-                expect(screen.getByText('Question 1')).toBeInTheDocument();
+                expect(screen.getByTestId('sidebar-question-label')).toBeInTheDocument();
             });
 
             // Click on the question in sidebar
-            const questionItem = screen.getByText('Question 1');
+            const questionItem = screen.getByTestId('sidebar-question-label');
             await act(async () => {
                 fireEvent.click(questionItem);
             });
@@ -2073,7 +2073,7 @@ describe('Additional Coverage Tests', () => {
             // Should create question with template content
             await waitFor(() => {
                 expect(screen.getByText('Questions')).toBeInTheDocument();
-                expect(screen.getByText('Question 1')).toBeInTheDocument();
+                expect(screen.getByTestId('sidebar-question-label')).toBeInTheDocument();
             });
         });
 
@@ -2320,7 +2320,7 @@ describe('Additional Coverage Tests', () => {
             });
 
             // Question should still exist
-            expect(screen.getByText('Question 1')).toBeInTheDocument();
+            expect(screen.getByTestId('sidebar-question-label')).toBeInTheDocument();
         });
 
         it('should handle API errors gracefully', async () => {
@@ -2744,7 +2744,7 @@ describe('Additional Coverage Tests', () => {
 
             await waitFor(() => {
                 expect(screen.getByText('Questions')).toBeInTheDocument();
-                expect(screen.getByText('Question 1')).toBeInTheDocument();
+                expect(screen.getByTestId('sidebar-question-label')).toBeInTheDocument();
             });
         });
 
@@ -3437,5 +3437,114 @@ describe('Final Coverage Push - Uncovered Lines', () => {
         unmount();
 
         // This definitively covers line 3049: export default QuizEditor;
+    });
+});
+
+describe('Question Title Handlers', () => {
+    let quizEditorRef: React.RefObject<any>;
+    beforeEach(() => {
+        quizEditorRef = React.createRef();
+    });
+
+    function setupWithQuestion() {
+        render(<QuizEditor {...defaultProps} ref={quizEditorRef} status="draft" />);
+        const addButton = screen.getByText('Add question');
+        act(() => {
+            fireEvent.click(addButton);
+        });
+    }
+
+    it('should truncate title to 200 characters on input', () => {
+        setupWithQuestion();
+        const titleSpan = screen.getByTestId('question-title-span');
+        // Simulate input with >200 chars
+        const longText = 'A'.repeat(250);
+        act(() => {
+            fireEvent.input(titleSpan, { target: { textContent: longText } });
+        });
+        // Simulate blur to trigger update
+        act(() => {
+            fireEvent.blur(titleSpan);
+        });
+        // Should be truncated in the sidebar label
+        expect(screen.getByTestId('question-title-span').textContent!.length).toBe(200);
+        expect(screen.getByTestId('sidebar-question-label').textContent!.length).toBe(200);
+    });
+
+    it('should not change title if input is exactly 200 characters', () => {
+        setupWithQuestion();
+        const titleSpan = screen.getByTestId('question-title-span');
+        const exactText = 'B'.repeat(200);
+        act(() => {
+            fireEvent.input(titleSpan, { target: { textContent: exactText } });
+        });
+        act(() => {
+            fireEvent.blur(titleSpan);
+        });
+        expect(screen.getByTestId('sidebar-question-label').textContent).toBe(exactText);
+        expect(screen.getByTestId('question-title-span').textContent).toBe(exactText);
+    });
+
+    it('should update title on blur if changed', () => {
+        setupWithQuestion();
+        const titleSpan = screen.getByTestId('question-title-span');
+        act(() => {
+            fireEvent.input(titleSpan, { target: { textContent: 'New Title' } });
+        });
+        act(() => {
+            fireEvent.blur(titleSpan);
+        });
+        expect(screen.getByTestId('question-title-span').textContent).toBe('New Title');
+        expect(screen.getByTestId('sidebar-question-label').textContent).toBe('New Title');
+    });
+
+    it('should set default title on blur if empty', () => {
+        setupWithQuestion();
+        const titleSpan = screen.getByTestId('question-title-span');
+        act(() => {
+            fireEvent.input(titleSpan, { target: { textContent: '   ' } });
+        });
+        act(() => {
+            fireEvent.blur(titleSpan);
+        });
+        expect(screen.getByTestId('question-title-span').textContent).toMatch(/^Question 1$/);
+        expect(screen.getByTestId('sidebar-question-label').textContent).toMatch(/^Question 1$/);
+    });
+
+    it('should not update title on blur if unchanged', () => {
+        setupWithQuestion();
+        const original = screen.getByTestId('sidebar-question-label').textContent;
+        const titleSpan = screen.getByTestId('question-title-span');
+        act(() => {
+            fireEvent.blur(titleSpan);
+        });
+        expect(screen.getByTestId('question-title-span').textContent).toBe(original);
+        expect(screen.getByTestId('sidebar-question-label').textContent).toBe(original);
+    });
+
+    it('should blur and prevent newline on Enter key', () => {
+        setupWithQuestion();
+        const titleSpan = screen.getByTestId('question-title-span');
+        // Focus the span
+        titleSpan.focus();
+        // Spy on blur
+        const blurSpy = jest.spyOn(titleSpan, 'blur');
+        act(() => {
+            fireEvent.keyDown(titleSpan, { key: 'Enter', code: 'Enter', charCode: 13 });
+        });
+        expect(blurSpy).toHaveBeenCalled();
+    });
+
+    it('should do nothing on other keys', () => {
+        setupWithQuestion();
+        const titleSpan = screen.getByTestId('question-title-span');
+        // Focus the span
+        titleSpan.focus();
+        // Spy on blur
+        const blurSpy = jest.spyOn(titleSpan, 'blur');
+        act(() => {
+            fireEvent.keyDown(titleSpan, { key: 'a', code: 'KeyA', charCode: 65 });
+        });
+        expect(blurSpy).not.toHaveBeenCalled();
     });
 });

@@ -3,7 +3,7 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from "react";
-import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck, Search, BookOpen, Code, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, FileText, Trash2, FileCode, AudioLines, Check, HelpCircle, X, ChevronDown, Pen, ClipboardCheck, Search, BookOpen, Code, Sparkles, Tag } from "lucide-react";
 
 // Add custom styles for dark mode
 import "./editor-styles.css";
@@ -39,7 +39,8 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     responseType: 'chat',
     questionType: 'objective',
     knowledgeBaseBlocks: [],
-    linkedMaterialIds: []
+    linkedMaterialIds: [],
+    title: ''
 };
 
 // Add these new interfaces after your existing interfaces
@@ -322,7 +323,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                     scorecardData: scorecardData,
                                     knowledgeBaseBlocks: knowledgeBaseBlocks,
                                     linkedMaterialIds: linkedMaterialIds,
-                                    codingLanguages: question.coding_languages || []
+                                    codingLanguages: question.coding_languages || [],
+                                    title: question.title
                                 }
                             };
                         });
@@ -1512,7 +1514,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                 questionType: questionType as 'objective' | 'subjective',
                 inputType: inputType,
                 codingLanguages: codingLanguages,
-                responseType: responseType
+                responseType: responseType,
+                title: 'Question ' + (questions.length + 1),
             }
         };
 
@@ -1746,6 +1749,7 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     is_feedback_shown: question.config.responseType === 'exam' ? false : true,
                     scorecard_id: scorecardId,
                     context: getKnowledgeBaseContent(question.config),
+                    title: question.config.title,
                 };
             });
 
@@ -1834,7 +1838,8 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                     input_type: inputType,
                     response_type: question.config.responseType,
                     scorecard_id: scorecardId,
-                    context: getKnowledgeBaseContent(question.config)
+                    context: getKnowledgeBaseContent(question.config),
+                    title: question.config.title,
                 };
             });
 
@@ -2099,6 +2104,44 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
 
     const getPurposeOption = useCallback((purpose: string = 'practice') => {
         return questionPurposeOptions.find(option => option.value === purpose) || questionPurposeOptions[0];
+    }, []);
+
+    // Handle title change
+    const handleQuestionTitleChange = useCallback((newTitle: string) => {
+        // Update the question config with the new question title
+        handleConfigChange({
+            title: newTitle
+        });
+    }, [handleConfigChange]);
+
+    // Handle question title input validation
+    const handleQuestionTitleInput = useCallback((e: React.FormEvent<HTMLSpanElement>) => {
+        const el = e.currentTarget;
+        if (el.textContent && el.textContent.length > 200) {
+            el.textContent = el.textContent.slice(0, 200);
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+        }
+    }, []);
+
+    // Handle question title blur
+    const handleQuestionTitleBlur = useCallback((e: React.FocusEvent<HTMLSpanElement>) => {
+        const newValue = e.currentTarget.textContent?.trim();
+        if (newValue !== currentQuestionConfig.title) {
+            handleQuestionTitleChange(newValue || 'Question ' + (currentQuestionIndex + 1));
+        }
+    }, [currentQuestionConfig.title, handleQuestionTitleChange, currentQuestionIndex]);
+
+    // Handle question title key down
+    const handleQuestionTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLSpanElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.blur();
+        }
     }, []);
 
     // Handle question type change
@@ -2577,11 +2620,12 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                                 }}
                                             >
                                                 <div className="flex items-center flex-1 min-w-0">
-
                                                     <div className="flex-1 min-w-0">
-                                                        <div className={`text-sm truncate ${index === currentQuestionIndex ? "text-white" : "text-gray-300"
-                                                            }`}>
-                                                            Question {index + 1}
+                                                        <div
+                                                            className={`text-sm ${index === currentQuestionIndex ? "text-white" : "text-gray-300"} break-words whitespace-normal`}
+                                                            data-testid="sidebar-question-label"
+                                                        >
+                                                            {question.config.title}
                                                         </div>
                                                         <div className={`text-xs truncate ${index === currentQuestionIndex ? "text-gray-300" : "text-gray-500"
                                                             }`}>
@@ -2612,6 +2656,24 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
                                 <div className="flex-1 flex flex-col">
                                     {/* Question Configuration Header */}
                                     <div className="flex flex-col space-y-2 p-4 border-b bg-[#111111]">
+                                        <div className="flex items-center w-full">
+                                            <span className="text-gray-500 text-sm flex-shrink-0 w-1/6 mr-2 flex items-center hover:bg-[#2A2A2A] px-3 py-2 rounded-md">
+                                                <span className="mr-2"><Tag size={16} /></span>
+                                                Title
+                                            </span>
+                                            <span
+                                                className="text-base text-white w-full outline-none p-1 rounded-md"
+                                                contentEditable={!readOnly}
+                                                suppressContentEditableWarning={true}
+                                                onBlur={handleQuestionTitleBlur}
+                                                onInput={handleQuestionTitleInput}
+                                                onKeyDown={handleQuestionTitleKeyDown}
+                                                onClick={e => e.stopPropagation()}
+                                                data-testid="question-title-span"
+                                            >
+                                                {currentQuestionConfig.title}
+                                            </span>
+                                        </div>
                                         <div className="flex items-center">
                                             <Dropdown
                                                 icon={<Sparkles size={16} />}
@@ -3052,4 +3114,5 @@ const QuizEditor = forwardRef<QuizEditorHandle, QuizEditorProps>(({
     );
 });
 
+QuizEditor.displayName = 'QuizEditor';
 export default QuizEditor;
