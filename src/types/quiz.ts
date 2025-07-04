@@ -37,6 +37,7 @@ export interface QuizQuestionConfig {
     scorecardData?: ScorecardTemplate;
     knowledgeBaseBlocks: any[]; // Add knowledge base content blocks
     linkedMaterialIds: string[]; // Add IDs of linked learning materials
+    title: string;
 }
 
 export interface QuizQuestion {
@@ -83,6 +84,7 @@ export interface ScorecardCriterion {
 // Define the API response question interface
 export interface APIQuestionResponse {
     id: number;
+    title: string;
     blocks: any[];
     answer?: string;
     type: string;

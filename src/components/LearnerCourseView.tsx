@@ -339,6 +339,7 @@ export default function LearnerCourseView({
                             correctAnswer: q.answer,
                             questionType: q.type,
                             codingLanguages: q.coding_languages || [],
+                            title: q.title,
                             scorecardData: {
                                 id: q.scorecard_id,
                             }
@@ -1088,8 +1089,8 @@ export default function LearnerCourseView({
                                                                     && <CheckCircle size={14} />
                                                                 }
                                                             </div>
-                                                            <div className={`flex-1 text-sm ${completedQuestions[question.id] ? "text-green-500" : "text-gray-300"} truncate`}>
-                                                                Question {index + 1}
+                                                            <div className={`flex-1 text-sm ${completedQuestions[question.id] ? "text-green-500" : "text-gray-300"} break-words whitespace-normal min-w-0`}>
+                                                                {question.config.title}
                                                             </div>
                                                         </div>
                                                     ))}
