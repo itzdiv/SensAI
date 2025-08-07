@@ -50,23 +50,27 @@ export function useCourses() {
   // Fetch courses immediately when user ID is available
   useEffect(() => {
     if (!isAuthenticated || !user?.id || authLoading) {
+      console.log('useCourses: Skipping fetch - auth not ready', { isAuthenticated, userId: user?.id, authLoading });
       return;
     }
     
+    console.log('useCourses: Starting fetch for user', user.id);
     setIsLoading(true);
     
     // Simple fetch without caching
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${user.id}/courses`)
       .then(response => {
+        console.log('useCourses: Response status', response.status);
         if (!response.ok) {
           throw new Error(`Request failed: ${response.status}`);
         }
         return response.json();
       })
       .then(data => {
+        console.log('useCourses: Raw data received', data);
         // Transform the API response to match the expected format
         const formattedCourses: Course[] = data.map((course: any) => ({
-          id: course.id,
+          id: String(course.id), // Convert to string as expected by frontend
           title: course.name,
           role: course.role,
           cohort_id: course.cohort_id,
@@ -77,6 +81,7 @@ export function useCourses() {
           updatedAt: course.updatedAt
         }));
         
+        console.log('useCourses: Formatted courses', formattedCourses);
         setCourses(formattedCourses);
       })
       .catch(err => {
@@ -84,6 +89,7 @@ export function useCourses() {
         setError(err);
       })
       .finally(() => {
+        console.log('useCourses: Fetch completed');
         setIsLoading(false);
       });
   }, [user?.id, isAuthenticated, authLoading]);
@@ -107,31 +113,37 @@ export function useSchools() {
   // Fetch schools immediately when user ID is available
   useEffect(() => {
     if (!isAuthenticated || !user?.id || authLoading) {
+      console.log('useSchools: Skipping fetch - auth not ready', { isAuthenticated, userId: user?.id, authLoading });
       return;
     }
     
+    console.log('useSchools: Starting fetch for user', user.id);
     setIsLoading(true);
     
     // Simple fetch without caching
     fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/users/${user.id}/orgs`)
       .then(response => {
+        console.log('useSchools: Response status', response.status);
         if (!response.ok) {
           throw new Error(`Request failed: ${response.status}`);
         }
         return response.json();
       })
       .then(data => {
+        console.log('useSchools: Raw data received', data);
         // Transform the API response to match the expected format
         const formattedSchools: School[] = data.map((org: any) => ({
-          id: org.id,
+          id: String(org.id), // Convert to string as expected by frontend
           name: org.name,
           description: org.description,
           url: org.url,
           role: org.role,
+          slug: org.slug,
           createdAt: org.createdAt,
           updatedAt: org.updatedAt
         }));
         
+        console.log('useSchools: Formatted schools', formattedSchools);
         setSchools(formattedSchools);
       })
       .catch(err => {
@@ -139,6 +151,7 @@ export function useSchools() {
         setError(err);
       })
       .finally(() => {
+        console.log('useSchools: Fetch completed');
         setIsLoading(false);
       });
   }, [user?.id, isAuthenticated, authLoading]);

@@ -329,30 +329,12 @@ export default function LearnerQuizView({
                     let audioData = undefined;
                     if (message.response_type === 'audio') {
                         try {
-                            // Get presigned URL
+                            // Get file directly from local storage
                             const file_uuid = message.content;
-                            const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${file_uuid}&file_extension=wav`, {
-                                method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                            });
-
-                            let audioResponse = null;
-
-                            if (!presignedResponse.ok) {
-                                audioResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${message.content}&file_extension=wav`);
-                                if (!audioResponse.ok) {
-                                    throw new Error('Failed to fetch audio data from backend');
-                                }
-                            }
-                            else {
-                                const { url: presignedUrl } = await presignedResponse.json();
-                                // Fetch the audio data using the presigned URL
-                                audioResponse = await fetch(presignedUrl);
-                                if (!audioResponse.ok) {
-                                    throw new Error('Failed to fetch audio data from presigned URL');
-                                }
+                            const audioResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/download-local/?uuid=${file_uuid}&file_extension=wav`);
+                            
+                            if (!audioResponse.ok) {
+                                throw new Error('Failed to fetch audio data from backend');
                             }
 
                             // Convert the audio data to base64
@@ -818,101 +800,50 @@ export default function LearnerQuizView({
             // Track if we've received any feedback
             let receivedAnyFeedback = false;
 
-            // For audio responses, get a presigned URL to upload the audio file
+            // For audio responses, upload directly to local storage
             if (responseType === 'audio' && audioData) {
-                let presigned_url = '';
                 let file_uuid = '';
 
                 try {
-                    // First, get a presigned URL for the audio file
-                    const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            content_type: "audio/wav"
-                        })
+                    console.log("Uploading audio to local storage");
+
+                    // Convert base64 audio data to a Blob
+                    const binaryData = atob(audioData);
+                    const arrayBuffer = new ArrayBuffer(binaryData.length);
+                    const uint8Array = new Uint8Array(arrayBuffer);
+
+                    for (let i = 0; i < binaryData.length; i++) {
+                        uint8Array[i] = binaryData.charCodeAt(i);
+                    }
+
+                    // Create audio blob with WAV format
+                    const audioBlob = new Blob([uint8Array], { type: 'audio/wav' });
+
+                    // Create FormData for the file upload
+                    const formData = new FormData();
+                    formData.append('file', audioBlob, 'audio.wav');
+                    formData.append('content_type', 'audio/wav');
+
+                    // Upload directly to the backend
+                    const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+                        method: 'POST',
+                        body: formData
                     });
 
-                    if (!presignedUrlResponse.ok) {
-                        throw new Error('Failed to get presigned URL');
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Failed to upload audio to backend: ${uploadResponse.status}`);
                     }
 
-                    const presignedData = await presignedUrlResponse.json();
-                    presigned_url = presignedData.presigned_url;
-                    file_uuid = presignedData.file_uuid;
+                    const uploadData = await uploadResponse.json();
+                    file_uuid = uploadData.file_uuid;
+
+                    console.log('Audio file uploaded successfully to backend');
+                    // Update the request body with the file information
+                    requestBody.user_response = file_uuid || '';
+                    userMessage.content = file_uuid || '';
                 } catch (error) {
-                    console.error("Error getting presigned URL for audio:", error);
-                }
-
-                // Convert base64 audio data to a Blob
-                const binaryData = atob(audioData);
-                const arrayBuffer = new ArrayBuffer(binaryData.length);
-                const uint8Array = new Uint8Array(arrayBuffer);
-
-                for (let i = 0; i < binaryData.length; i++) {
-                    uint8Array[i] = binaryData.charCodeAt(i);
-                }
-
-                // Create audio blob with WAV format
-                const audioBlob = new Blob([uint8Array], { type: 'audio/wav' });
-
-                if (!presigned_url) {
-                    // If we couldn't get a presigned URL, try direct upload to the backend
-                    try {
-                        console.log("Attempting direct upload to backend");
-
-                        // Create FormData for the file upload
-                        const formData = new FormData();
-                        formData.append('file', audioBlob, 'audio.wav');
-                        formData.append('content_type', 'audio/wav');
-
-                        // Upload directly to the backend
-                        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Failed to upload audio to backend: ${uploadResponse.status}`);
-                        }
-
-                        const uploadData = await uploadResponse.json();
-                        file_uuid = uploadData.file_uuid;
-
-                        console.log('Audio file uploaded successfully to backend');
-                        // Update the request body with the file information
-                        requestBody.user_response = file_uuid || '';
-                        userMessage.content = file_uuid || '';
-                    } catch (error) {
-                        console.error('Error with direct upload to backend:', error);
-                        throw error;
-                    }
-                } else {
-                    // Upload the audio file to S3 using the presigned URL
-                    try {
-                        // Upload to S3 using the presigned URL with WAV content type
-                        const uploadResponse = await fetch(presigned_url, {
-                            method: 'PUT',
-                            body: audioBlob,
-                            headers: {
-                                'Content-Type': 'audio/wav'
-                            }
-                        });
-
-                        if (!uploadResponse.ok) {
-                            throw new Error(`Failed to upload audio to S3: ${uploadResponse.status}`);
-                        }
-
-                        console.log('Audio file uploaded successfully to S3');
-                        // Update the request body with the file information
-                        requestBody.user_response = file_uuid;
-                        userMessage.content = file_uuid || '';
-                    } catch (error) {
-                        console.error('Error uploading audio to S3:', error);
-                        throw error;
-                    }
+                    console.error('Error uploading audio to backend:', error);
+                    throw error;
                 }
             }
 

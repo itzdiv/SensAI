@@ -28,121 +28,57 @@ async function uploadFile(file: File) {
         return ''
     }
 
-    let presigned_url = '';
-
     try {
-        // First, get a presigned URL for the file
-        const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                content_type: file.type
-            })
+        console.log("Uploading file to local storage");
+
+        // Create FormData for the file upload
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+        formData.append('content_type', file.type);
+
+        // Upload directly to the backend
+        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+            method: 'POST',
+            body: formData
         });
 
-        if (!presignedUrlResponse.ok) {
-            throw new Error('Failed to get presigned URL');
+        if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload file to backend: ${uploadResponse.status}`);
         }
 
-        const presignedData = await presignedUrlResponse.json();
+        const uploadData = await uploadResponse.json();
+        const file_static_path = uploadData.static_url;
 
-        presigned_url = presignedData.presigned_url;
+        const static_url = `${process.env.NEXT_PUBLIC_BACKEND_URL}${file_static_path}`;
+
+        console.log('File uploaded successfully to backend');
+
+        return static_url;
     } catch (error) {
-        console.error("Error getting presigned URL for file:", error);
-    }
-
-    if (!presigned_url) {
-        // If we couldn't get a presigned URL, try direct upload to the backend
-        try {
-            console.log("Attempting direct upload to backend");
-
-            // Create FormData for the file upload
-            const formData = new FormData();
-            formData.append('file', file, file.name);
-            formData.append('content_type', file.type);
-
-            // Upload directly to the backend
-            const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!uploadResponse.ok) {
-                throw new Error(`Failed to upload audio to backend: ${uploadResponse.status}`);
-            }
-
-            const uploadData = await uploadResponse.json();
-            const file_static_path = uploadData.static_url;
-
-            const static_url = `${process.env.NEXT_PUBLIC_BACKEND_URL}${file_static_path}`;
-
-            console.log('File uploaded successfully to backend');
-
-            return static_url;
-        } catch (error) {
-            console.error('Error with direct upload to backend:', error);
-            throw error;
-        }
-    } else {
-        // Upload the file to S3 using the presigned URL
-        try {
-            let fileBlob = new Blob([file], { type: file.type });
-
-            // Upload to S3 using the presigned URL with WAV content type
-            const uploadResponse = await fetch(presigned_url, {
-                method: 'PUT',
-                body: fileBlob,
-                headers: {
-                    'Content-Type': file.type
-                }
-            });
-
-            if (!uploadResponse.ok) {
-                throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
-            }
-
-            console.log('File uploaded successfully to S3');
-            // Update the request body with the file information
-            return uploadResponse.url
-        } catch (error) {
-            console.error('Error uploading file to S3:', error);
-            throw error;
-        }
+        console.error('Error uploading file to backend:', error);
+        throw error;
     }
 }
 
 async function resolveFileUrl(url: string) {
+    // If it's already a local URL, return as is
+    if (url.includes(`${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/`)) {
+        return url;
+    }
+
+    // If it's not a local URL and doesn't contain S3 signature, return as is
     if (!url || !url.includes("?X-Amz-Algorithm=AWS4-HMAC-SHA256")) {
         return url;
     }
 
-    if (url.includes(`${process.env.NEXT_PUBLIC_BACKEND_URL}/`)) {
-        return url;
-    }
-
+    // Extract UUID and file extension from S3 URL
     let uuid = url.split('/').pop()?.split('.')[0] || '';
     let fileType = url.split('.').pop()?.split('?')[0] || '';
 
-    try {
-        // Get presigned URL
-        const presignedResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/get?uuid=${uuid}&file_extension=${fileType}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!presignedResponse.ok) {
-            throw new Error('Failed to get presigned URL for file');
-        }
-
-        const { url } = await presignedResponse.json();
-        return url;
-    } catch (error) {
-        console.error('Error fetching file:', error);
-    }
+    // Construct local file URL
+    const localUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/${uuid}.${fileType}`;
+    
+    return localUrl;
 }
 
 // Function to check if a URL is a YouTube link

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend API Test</title>
+</head>
+<body>
+    <h1>Backend API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        async function testAPI() {
+            try {
+                // Test health endpoint
+                const healthResponse = await fetch('http://localhost:8001/health');
+                const healthData = await healthResponse.json();
+                results.innerHTML += `<p>Health: ${JSON.stringify(healthData)}</p>`;
+                
+                // Test courses endpoint with a dummy user ID
+                const coursesResponse = await fetch('http://localhost:8001/users/1/courses');
+                const coursesData = await coursesResponse.json();
+                results.innerHTML += `<p>Courses: ${JSON.stringify(coursesData)}</p>`;
+                
+                // Test orgs endpoint with a dummy user ID
+                const orgsResponse = await fetch('http://localhost:8001/users/1/orgs');
+                const orgsData = await orgsResponse.json();
+                results.innerHTML += `<p>Orgs: ${JSON.stringify(orgsData)}</p>`;
+                
+            } catch (error) {
+                results.innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>
+

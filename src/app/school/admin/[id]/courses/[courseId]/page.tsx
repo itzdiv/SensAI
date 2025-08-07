@@ -37,6 +37,7 @@ const defaultQuestionConfig: QuizQuestionConfig = {
     questionType: 'objective',
     knowledgeBaseBlocks: [],
     linkedMaterialIds: [],
+    title: ''
 };
 
 
@@ -132,6 +133,17 @@ export default function CreateCourse() {
     const [dripConfig, setDripConfig] = useState<DripConfig | undefined>(undefined);
 
     const [selectedCohortForSettings, setSelectedCohortForSettings] = useState<any | null>(null);
+
+    // Add state for content safety errors
+    const [contentSafetyError, setContentSafetyError] = useState<{
+        error: string;
+        message: string;
+        reason: string;
+        is_safe: boolean;
+    } | null>(null);
+
+    // Add state for showing content safety error dialog
+    const [showContentSafetyDialog, setShowContentSafetyDialog] = useState(false);
 
     // Update the refs whenever the state changes
     useEffect(() => {
@@ -1604,92 +1616,36 @@ export default function CreateCourse() {
                 heartbeatIntervalRef.current = null;
             }
 
-            // For now, we'll just log the data
-            // In a real implementation, this would be an API call to start the generation process
-            let presigned_url = '';
             let file_key = '';
 
             setGenerationProgress(["Uploading reference material"]);
 
+            // Upload file directly to local storage
             try {
-                // First, get a presigned URL for the file
-                const presignedUrlResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/presigned-url/create`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        content_type: 'application/pdf'
-                    })
+                console.log("Uploading file to local storage");
+
+                // Create FormData for the file upload
+                const formData = new FormData();
+                formData.append('file', data.referencePdf, 'reference_material.pdf');
+                formData.append('content_type', 'application/pdf');
+
+                // Upload directly to the backend
+                const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
+                    method: 'POST',
+                    body: formData
                 });
 
-                if (!presignedUrlResponse.ok) {
-                    throw new Error('Failed to get presigned URL');
+                if (!uploadResponse.ok) {
+                    throw new Error(`Failed to upload file to backend: ${uploadResponse.status}`);
                 }
 
-                const presignedData = await presignedUrlResponse.json();
+                const uploadData = await uploadResponse.json();
+                file_key = uploadData.file_key;
 
-                console.log('Presigned url generated');
-                presigned_url = presignedData.presigned_url;
-                file_key = presignedData.file_key;
-
+                console.log('Reference material uploaded successfully to backend');
             } catch (error) {
-                console.error("Error getting presigned URL for file:", error);
-            }
-
-            if (!presigned_url) {
-                // If we couldn't get a presigned URL, try direct upload to the backend
-                try {
-                    console.log("Attempting direct upload to backend");
-
-                    // Create FormData for the file upload
-                    const formData = new FormData();
-                    formData.append('file', data.referencePdf, 'reference_material.pdf');
-                    formData.append('content_type', 'application/pdf');
-
-                    // Upload directly to the backend
-                    const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/file/upload-local`, {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!uploadResponse.ok) {
-                        throw new Error(`Failed to upload audio to backend: ${uploadResponse.status}`);
-                    }
-
-                    const uploadData = await uploadResponse.json();
-                    file_key = uploadData.file_key;
-
-                    console.log('Reference material uploaded successfully to backend');
-                } catch (error) {
-                    console.error('Error with direct upload to backend:', error);
-                    throw error;
-                }
-            } else {
-
-                // Upload the file to S3 using the presigned URL
-                try {
-                    // Use data.referencePdf instead of undefined 'file' variable
-                    const pdfFile = data.referencePdf;
-
-                    // Upload to S3 using the presigned URL
-                    const uploadResponse = await fetch(presigned_url, {
-                        method: 'PUT',
-                        body: pdfFile, // Use the file directly, no need to create a Blob
-                        headers: {
-                            'Content-Type': 'application/pdf'
-                        }
-                    });
-
-                    if (!uploadResponse.ok) {
-                        throw new Error(`Failed to upload file to S3: ${uploadResponse.status}`);
-                    }
-
-                    console.log('File uploaded successfully to S3');
-                } catch (error) {
-                    console.error('Error uploading file to S3:', error);
-                    throw error;
-                }
+                console.error('Error uploading file to backend:', error);
+                throw error;
             }
 
             setGenerationProgress(["Uploaded reference material", 'Generating course plan']);
@@ -1716,7 +1672,7 @@ export default function CreateCourse() {
                         course_description: data.courseDescription,
                         intended_audience: data.intendedAudience,
                         instructions: data.instructionsForAI || undefined,
-                        reference_material_s3_key: file_key
+                        reference_material_file_key: file_key
                     }),
                 });
 
@@ -1726,6 +1682,23 @@ export default function CreateCourse() {
                         wsRef.current.close();
                         wsRef.current = null;
                     }
+
+                    // Handle content safety violations (HTTP 400)
+                    if (response.status === 400) {
+                        try {
+                            const errorData = await response.json();
+                            if (errorData.error === "Content Safety Violation") {
+                                setContentSafetyError(errorData);
+                                setShowContentSafetyDialog(true);
+                                setIsGeneratingCourse(false);
+                                setGenerationProgress([]);
+                                return Promise.reject(new Error('Content safety violation'));
+                            }
+                        } catch (parseError) {
+                            console.error('Error parsing content safety error:', parseError);
+                        }
+                    }
+
                     throw new Error(`Failed to generate course: ${response.status}`);
                 }
 
@@ -1760,18 +1733,29 @@ export default function CreateCourse() {
                 heartbeatIntervalRef.current = null;
             }
 
-            // Add error message to progress
-            setGenerationProgress(prev => [...prev, "There was an error generating your course. Please try again."]);
+            // Don't show generic error if it's a content safety violation
+            if (error instanceof Error && error.message !== 'Content safety violation') {
+                // Add error message to progress
+                setGenerationProgress(prev => [...prev, "There was an error generating your course. Please try again."]);
 
-            // Reset generating state after delay
-            setTimeout(() => {
-                setIsGeneratingCourse(false);
-                setIsCourseStructureGenerated(false);
-                setGenerationProgress([]);
-            }, 3000);
+                // Reset generating state after delay
+                setTimeout(() => {
+                    setIsGeneratingCourse(false);
+                    setIsCourseStructureGenerated(false);
+                    setGenerationProgress([]);
+                }, 3000);
+            }
 
             return Promise.reject(error);
         }
+    };
+
+    // Add function to handle content safety dialog close
+    const handleContentSafetyDialogClose = () => {
+        setShowContentSafetyDialog(false);
+        setContentSafetyError(null);
+        // Reopen the generate dialog so user can edit and resubmit
+        setShowGenerateDialog(true);
     };
 
     // Add handler for copying cohort invite link
@@ -2220,6 +2204,50 @@ export default function CreateCourse() {
                 cohortId={selectedCohortForSettings?.id}
                 onCopyCohortInviteLink={handleCopyCohortInviteLink}
             />
+
+            {/* Content Safety Error Dialog */}
+            {showContentSafetyDialog && contentSafetyError && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                        <div className="flex items-center mb-4">
+                            <div className="flex-shrink-0">
+                                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="text-lg font-medium text-gray-900">
+                                    Content Safety Violation
+                                </h3>
+                            </div>
+                        </div>
+                        
+                        <div className="mb-4">
+                            <p className="text-sm text-gray-600 mb-3">
+                                {contentSafetyError.message}
+                            </p>
+                            
+                            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                                <h4 className="text-sm font-medium text-red-800 mb-2">Why was this blocked?</h4>
+                                <p className="text-sm text-red-700">
+                                    {contentSafetyError.reason}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={handleContentSafetyDialogClose}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                                Edit & Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

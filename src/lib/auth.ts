@@ -25,6 +25,8 @@ export const useAuth = () => {
     const isAuthenticated = status === "authenticated";
     const isLoading = status === "loading";
     
+
+    
     // Only process authenticated sessions
     if (isAuthenticated && session?.user) {
       const userId = session.user.id;
