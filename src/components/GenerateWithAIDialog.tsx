@@ -2,7 +2,7 @@
 
 import { useState, useRef, Fragment, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, Upload, File, ArrowLeft, ArrowRight, Check, AlertCircle } from 'lucide-react';
+import { X, Upload, File, ArrowLeft, ArrowRight, Check, AlertCircle, Sparkles } from 'lucide-react';
 import { Document, Page } from 'react-pdf';
 import { pdfjs } from 'react-pdf';
 
@@ -32,6 +32,7 @@ export interface GenerateWithAIFormData {
     intendedAudience: string;
     referencePdf: File | null;
     instructionsForAI: string;
+    courseLevel: number;
 }
 
 type Step = 'description' | 'audience' | 'reference' | 'instructions' | 'review';
@@ -47,7 +48,8 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
         courseDescription: '',
         intendedAudience: '',
         referencePdf: null,
-        instructionsForAI: ''
+        instructionsForAI: '',
+        courseLevel: 1
     });
 
     // Add form errors state
@@ -63,19 +65,32 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
     const [fileValidating, setFileValidating] = useState(false);
     const [fileError, setFileError] = useState<string | null>(null);
 
+    // Add state for AI Magic functionality
+    const [isAiMagicLoading, setIsAiMagicLoading] = useState(false);
+    const [isBlurred, setIsBlurred] = useState(false);
+    
+    // Add state for Know Your Audience functionality
+    const [isKnowAudienceLoading, setIsKnowAudienceLoading] = useState(false);
+    const [isAudienceBlurred, setIsAudienceBlurred] = useState(false);
+    
+    // Hook to store the course description when user clicks continue
+    const [storedCourseDescription, setStoredCourseDescription] = useState<string>('');
+
     // Reset state when dialog is opened
     const resetState = () => {
         setFormData({
             courseDescription: '',
             intendedAudience: '',
             referencePdf: null,
-            instructionsForAI: ''
+            instructionsForAI: '',
+            courseLevel: 1
         });
         setFileName('');
         setCurrentStep('description');
         setIsSubmitting(false);
         setErrors({});
-        setFileError(null)
+        setFileError(null);
+        setStoredCourseDescription('');
     };
 
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -200,6 +215,11 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
             return;
         }
 
+        // Store course description when moving from description to audience step
+        if (currentStep === 'description') {
+            setStoredCourseDescription(formData.courseDescription);
+        }
+
         // Move to next step based on current step
         switch (currentStep) {
             case 'description':
@@ -250,6 +270,89 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
     // Simple no-op function that ignores all outside clicks
     const noop = () => {
         // Intentionally empty - this prevents the dialog from closing on outside clicks
+    };
+
+    // Add AI Magic function
+    const handleAiMagic = async () => {
+        if (!formData.courseDescription.trim()) {
+            return;
+        }
+
+        setIsAiMagicLoading(true);
+        setIsBlurred(true);
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/enhance-prompt`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: formData.courseDescription,
+                    context: 'course_description'
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to enhance prompt');
+            }
+
+            const data = await response.json();
+            
+            // Update the form data with the enhanced description
+            setFormData(prev => ({
+                ...prev,
+                courseDescription: data.enhanced_prompt || data.prompt
+            }));
+
+        } catch (error) {
+            console.error('Error enhancing prompt:', error);
+            // You could show a toast notification here
+        } finally {
+            setIsAiMagicLoading(false);
+            setIsBlurred(false);
+        }
+    };
+
+    // Add Know Your Audience function
+    const handleKnowAudience = async () => {
+        if (!formData.intendedAudience.trim()) {
+            return;
+        }
+
+        setIsKnowAudienceLoading(true);
+        setIsAudienceBlurred(true);
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ai/know-your-audience`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    course_description: storedCourseDescription
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate audience description');
+            }
+
+            const data = await response.json();
+            
+            // Update the form data with the generated audience description
+            setFormData(prev => ({
+                ...prev,
+                intendedAudience: data.audience_description || data.prompt
+            }));
+
+        } catch (error) {
+            console.error('Error generating audience description:', error);
+            // You could show a toast notification here
+        } finally {
+            setIsKnowAudienceLoading(false);
+            setIsAudienceBlurred(false);
+        }
     };
 
     // Get step heading and description based on current step
@@ -365,7 +468,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
                                                 value={formData.courseDescription}
                                                 onChange={handleTextChange}
                                                 placeholder="A comprehensive guide to personal finance for beginners, covering budgeting essentials, debt management, building credit, emergency funds, and basic investment principles for long-term financial stability."
-                                                className={`w-full h-32 px-4 py-3 bg-[#0D0D0D] text-white rounded-lg font-light placeholder-gray-500 outline-none ${errors.courseDescription ? 'border-2 border-red-500' : 'border-none'} focus:ring-2 focus:ring-white/20`}
+                                                className={`w-full h-32 px-4 py-3 bg-[#0D0D0D] text-white rounded-lg font-light placeholder-gray-500 outline-none ${errors.courseDescription ? 'border-2 border-red-500' : 'border-none'} focus:ring-2 focus:ring-white/20 ${isBlurred ? 'blur-sm' : ''}`}
                                             />
                                             {errors.courseDescription && (
                                                 <div className="flex items-center text-red-500 text-sm mt-1">
@@ -385,7 +488,7 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
                                                 value={formData.intendedAudience}
                                                 onChange={handleTextChange}
                                                 placeholder="Recent graduates and young professionals starting their first full-time job, individuals with no prior financial education, or anyone looking to establish healthy financial habits and avoid common money mistakes in early career stages."
-                                                className={`w-full h-32 px-4 py-3 bg-[#0D0D0D] text-white rounded-lg font-light placeholder-gray-500 outline-none ${errors.intendedAudience ? 'border-2 border-red-500' : 'border-none'} focus:ring-2 focus:ring-white/20`}
+                                                className={`w-full h-32 px-4 py-3 bg-[#0D0D0D] text-white rounded-lg font-light placeholder-gray-500 outline-none ${errors.intendedAudience ? 'border-2 border-red-500' : 'border-none'} focus:ring-2 focus:ring-white/20 ${isAudienceBlurred ? 'blur-sm' : ''}`}
                                             />
                                             {errors.intendedAudience && (
                                                 <div className="flex items-center text-red-500 text-sm mt-1">
@@ -398,57 +501,76 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
 
                                     {/* Reference Material Step */}
                                     {currentStep === 'reference' && (
-                                        <div className="space-y-2">
-                                            <input
-                                                type="file"
-                                                ref={fileInputRef}
-                                                onChange={handleFileChange}
-                                                accept="application/pdf"
-                                                className="hidden"
-                                            />
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    onChange={handleFileChange}
+                                                    accept="application/pdf"
+                                                    className="hidden"
+                                                />
 
-                                            {!fileName ? (
-                                                <div
-                                                    onClick={triggerFileInput}
-                                                    className={`flex items-center justify-center w-full h-36 px-4 py-3 bg-[#0A0A0A] rounded-lg cursor-pointer hover:bg-[#111] transition-colors ${(errors.referencePdf || fileError) ? 'border-2 border-red-500' : 'border border-dashed border-gray-600 hover:border-white'}`}
-                                                >
-                                                    <div className="flex flex-col items-center text-gray-400">
-                                                        <Upload size={24} className="mb-2" />
-                                                        <p className="text-sm">Upload a PDF to use as reference material</p>
-                                                        <p className="text-xs mt-1">Click or drag and drop</p>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center justify-between w-full px-4 py-4 bg-[#0A0A0A] border border-gray-700 rounded-lg">
-                                                    <div className="flex items-center text-white">
-                                                        {fileValidating ? (
-                                                            <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
-                                                        ) : (
-                                                            <File size={20} className="mr-2" />
-                                                        )}
-                                                        <span className="text-sm truncate max-w-xs">
-                                                            {fileValidating ? "Validating PDF..." : fileName}
-                                                        </span>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={removeFile}
-                                                        className="text-gray-400 hover:text-white cursor-pointer"
-                                                        aria-label="Remove file"
+                                                {!fileName ? (
+                                                    <div
+                                                        onClick={triggerFileInput}
+                                                        className={`flex items-center justify-center w-full h-36 px-4 py-3 bg-[#0A0A0A] rounded-lg cursor-pointer hover:bg-[#111] transition-colors ${(errors.referencePdf || fileError) ? 'border-2 border-red-500' : 'border border-dashed border-gray-600 hover:border-white'}`}
                                                     >
-                                                        <X size={18} />
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {(errors.referencePdf || fileError) && (
-                                                <div className="flex items-start text-red-500 text-sm mt-2">
-                                                    <AlertCircle size={14} className="mr-1 mt-1 flex-shrink-0" />
-                                                    <div>
-                                                        {fileError || errors.referencePdf}
+                                                        <div className="flex flex-col items-center text-gray-400">
+                                                            <Upload size={24} className="mb-2" />
+                                                            <p className="text-sm">Upload a PDF to use as reference material</p>
+                                                            <p className="text-xs mt-1">Click or drag and drop</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                ) : (
+                                                    <div className="flex items-center justify-between w-full px-4 py-4 bg-[#0A0A0A] border border-gray-700 rounded-lg">
+                                                        <div className="flex items-center text-white">
+                                                            {fileValidating ? (
+                                                                <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                                                            ) : (
+                                                                <File size={20} className="mr-2" />
+                                                            )}
+                                                            <span className="text-sm truncate max-w-xs">
+                                                                {fileValidating ? "Validating PDF..." : fileName}
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={removeFile}
+                                                            className="text-gray-400 hover:text-white cursor-pointer"
+                                                            aria-label="Remove file"
+                                                        >
+                                                            <X size={18} />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {(errors.referencePdf || fileError) && (
+                                                    <div className="flex items-start text-red-500 text-sm mt-2">
+                                                        <AlertCircle size={14} className="mr-1 mt-1 flex-shrink-0" />
+                                                        <div>
+                                                            {fileError || errors.referencePdf}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Course Level Dropdown */}
+                                            <div className="space-y-2">
+                                                <label className="text-white text-sm font-medium">
+                                                    Course Level
+                                                </label>
+                                                <select
+                                                    value={formData.courseLevel}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, courseLevel: parseInt(e.target.value) }))}
+                                                    className="w-full px-4 py-3 bg-[#0D0D0D] text-white rounded-lg font-light outline-none border-none focus:ring-2 focus:ring-white/20"
+                                                >
+                                                    <option value={1}>Level 1 - Beginner</option>
+                                                    <option value={2}>Level 2 - Intermediate</option>
+                                                    <option value={3}>Level 3 - Advanced</option>
+                                                    <option value={4}>Level 4 - Expert</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     )}
 
@@ -487,6 +609,17 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
                                                 </div>
                                             </div>
 
+                                            <div className="space-y-3">
+                                                <h4 className="text-white font-medium">Course Level</h4>
+                                                <div className="text-gray-300 bg-[#0D0D0D] p-3 rounded-lg">
+                                                    <span>Level {formData.courseLevel} - {
+                                                        formData.courseLevel === 1 ? 'Beginner' :
+                                                        formData.courseLevel === 2 ? 'Intermediate' :
+                                                        formData.courseLevel === 3 ? 'Advanced' : 'Expert'
+                                                    }</span>
+                                                </div>
+                                            </div>
+
                                             {formData.instructionsForAI && (
                                                 <div className="space-y-3">
                                                     <h4 className="text-white font-medium">Instructions for AI</h4>
@@ -512,29 +645,67 @@ export default function GenerateWithAIDialog({ open, onClose, onSubmit, validati
                                         <div></div> // Empty div to maintain layout
                                     )}
 
-                                    <button
-                                        type="button"
-                                        onClick={nextStep}
-                                        disabled={isSubmitting}
-                                        className="px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer"
-                                    >
-                                        {isSubmitting && currentStep === 'review' ? (
-                                            <>
-                                                <div className="w-4 h-4 border-t-2 border-b-2 border-black rounded-full animate-spin mr-2"></div>
-                                                Generating...
-                                            </>
-                                        ) : currentStep === 'review' ? (
-                                            <>
-                                                <span>Generate Course</span>
-                                                <Check size={16} className="ml-2" />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span>Continue</span>
-                                                <ArrowRight size={16} className="ml-2" />
-                                            </>
+                                    <div className="flex items-center space-x-4">
+                                        {currentStep === 'description' && (
+                                            <button
+                                                type="button"
+                                                onClick={handleAiMagic}
+                                                disabled={isAiMagicLoading || !formData.courseDescription.trim()}
+                                                className="px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isAiMagicLoading ? (
+                                                    <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles size={16} className="mr-2" />
+                                                        AI Magic
+                                                    </>
+                                                )}
+                                            </button>
                                         )}
-                                    </button>
+
+                                        {currentStep === 'audience' && (
+                                            <button
+                                                type="button"
+                                                onClick={handleKnowAudience}
+                                                disabled={isKnowAudienceLoading || !formData.intendedAudience.trim()}
+                                                className="px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isKnowAudienceLoading ? (
+                                                    <div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles size={16} className="mr-2" />
+                                                        Know Your Audience
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={nextStep}
+                                            disabled={isSubmitting}
+                                            className="px-6 py-2 bg-white text-black text-sm font-medium rounded-full hover:opacity-90 transition-opacity flex items-center justify-center cursor-pointer"
+                                        >
+                                            {isSubmitting && currentStep === 'review' ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-t-2 border-b-2 border-black rounded-full animate-spin mr-2"></div>
+                                                    Generating...
+                                                </>
+                                            ) : currentStep === 'review' ? (
+                                                <>
+                                                    <span>Generate Course</span>
+                                                    <Check size={16} className="ml-2" />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>Continue</span>
+                                                    <ArrowRight size={16} className="ml-2" />
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {formData.referencePdf && (
