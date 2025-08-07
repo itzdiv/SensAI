@@ -689,6 +689,7 @@ class GenerateCourseStructureRequest(BaseModel):
     intended_audience: str
     instructions: Optional[str] = None
     reference_material_s3_key: Optional[str] = None
+    course_level: int = 1  # Default to Level 1 (Beginner)
 
 
 class LanguageCodeDraft(BaseModel):

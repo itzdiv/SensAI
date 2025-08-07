@@ -5,7 +5,7 @@ import random
 import traceback
 from collections import defaultdict
 import asyncio
-from fastapi import APIRouter, HTTPException, Body, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Body, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 from typing import List, Optional, Dict, Literal, AsyncGenerator
 import json
@@ -656,6 +656,7 @@ async def _generate_course_structure(
     course_id: int,
     course_job_uuid: str,
     job_details: Dict,
+    course_level: int = 1,
 ):
     logger.info(f"Starting course structure generation for course {course_id}, job {course_job_uuid}")
     logger.info(f"OpenAI file ID: {openai_file_id}")
@@ -683,6 +684,25 @@ async def _generate_course_structure(
         # name: str = Field(description="The name of the course")
         modules: List[Module] = Field(description="A list of modules for the course")
 
+    # Build level-specific instructions based on user's exact prompts
+    level_instructions = ""
+    if course_level == 1:
+        level_instructions = """
+        
+COURSE LEVEL 1 (Creative Interpretation): You are a creative AI assistant. Use the provided reference material as inspiration for the topic. You have the freedom to introduce new concepts, add relevant examples not found in the text, and structure the content in a fresh and engaging way to best meet the user's request. Your primary goal is to create high-quality, comprehensive content on the subject, not to simply summarize the source."""
+    elif course_level == 2:
+        level_instructions = """
+        
+COURSE LEVEL 2 (Balanced Adherence): You are an expert AI assistant. Your task is to generate content based on the provided reference material. Follow the main points, arguments, and overall structure of the source text. You may rephrase sentences for clarity, expand on key ideas with logical explanations, and add illustrative examples to enhance understanding. Do not introduce major topics or arguments not present in the original text."""
+    elif course_level == 3:
+        level_instructions = """
+        
+COURSE LEVEL 3 (Faithful Adherence): You are a meticulous AI assistant. Your task is to generate content that faithfully represents the provided reference material. You must adhere strictly to the information, facts, and concepts presented in the source text. You may rephrase for clarity and combine sentences for better flow, but you must not add any new information, examples, or concepts not explicitly mentioned in the reference material."""
+    elif course_level == 4:
+        level_instructions = """
+        
+COURSE LEVEL 4 (Strict Adherence): You are a literal Data Extractor AI. Your task is to process the provided reference material by extracting the key information exactly as it is presented. You must not add any new information, rephrase sentences significantly, or make any inferences. Your output should be a direct and literal representation of the source text, with changes limited to correcting basic spelling or grammar errors."""
+
     system_prompt = f"""You are an expert course creator. The user will give you some instructions for creating a course along with the reference material to be used as the source for the course content.
 
 You need to thoroughly analyse the reference material given to you and come up with a structure for the course. Each course should be structured into modules where each modules represents a full topic.
@@ -697,7 +717,7 @@ No need to come up with the questions inside the quizzes for now. Just focus on 
 Don't keep any concept too big. Break a topic down into multiple smaller, ideally independent, concepts. For each concept, follow the sequence of learning material -> quiz before moving to the next concept in that topic.
 End the course with a conclusion module (with the appropriate name for the module suited to the course) which ties everything taught in the course together and ideally ends with a capstone project where the learner has to apply everything they have learnt in the course.
 
-Make sure to never skip a single concept from the reference material provided.
+Make sure to never skip a single concept from the reference material provided.{level_instructions}
 
 The final output should be a JSON in the following format:
 
@@ -898,6 +918,7 @@ async def generate_course_structure(
                 course_id,
                 job_uuid,
                 job_details,
+                request.course_level,
             )
         except Exception as e:
             logger.error(f"Error in course structure generation: {str(e)}")
@@ -927,6 +948,107 @@ async def check_content_safety(content: str = Body(..., embed=True)):
         "reason": safety_result.reason,
         "content_checked": content[:100] + "..." if len(content) > 100 else content
     }
+
+
+class EnhancePromptRequest(BaseModel):
+    prompt: str
+    context: str
+
+class EnhancePromptResponse(BaseModel):
+    enhanced_prompt: str
+
+@router.post("/enhance-prompt", response_model=EnhancePromptResponse)
+async def enhance_prompt(request: EnhancePromptRequest):
+    if request.context != "course_description":
+        raise HTTPException(status_code=400, detail="Unsupported context")
+
+    system_prompt = '''You are an expert Course Architect AI. Your purpose is to help educators transform their specific course topic into a comprehensive, well-structured, and detailed prompt. This new, detailed prompt will then be used to generate the full course content.
+
+Given a user's initial topic for a course, your task is to generate a new, "redefined" prompt that expands on their idea with the following sections:
+
+Target Audience: Clearly define the intended learners. Specify their likely age/grade level, prior knowledge, and learning goals.
+
+Learning Objectives: List 5-7 clear and measurable learning objectives. Each objective should start with an action verb (e.g., "Analyze," "Create," "Implement," "Compare") and describe what a student will be able to do upon completing the course.
+
+Detailed Course Outline: Create a logical, multi-module course structure. Each module should have a clear title and be broken down into 3-5 specific lesson topics.
+
+Key Concepts & Vocabulary: Identify and list the most important terms, concepts, and vocabulary that will be covered in the course.
+
+Instructional Tone & Style: Describe the recommended tone for the course content (e.g., "conversational and encouraging," "formal and academic," "engaging and hands-on").
+
+Suggested Activities & Assessments: Propose at least one practical activity, project, or assessment for each module to reinforce learning and measure understanding.
+
+Your Process
+Receive the user's course topic.
+
+Analyze the core topic and infer the user's intent.
+
+Generate a new, detailed prompt that contains all six sections listed above.
+
+Format your output clearly using Markdown for readability.'''
+
+    async_client = openai.AsyncOpenAI(
+        api_key=settings.openai_api_key,
+        base_url="https://agent.dev.hyperverge.org",
+    )
+    try:
+        completion = await async_client.chat.completions.create(
+            model="openai/gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": request.prompt},
+            ],
+            max_tokens=2048,
+        )
+        enhanced = completion.choices[0].message.content.strip()
+        return EnhancePromptResponse(enhanced_prompt=enhanced)
+    except Exception as e:
+        logger.error(f"Error enhancing prompt: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="AI enhancement failed")
+
+
+class KnowYourAudienceRequest(BaseModel):
+    course_description: str
+
+class KnowYourAudienceResponse(BaseModel):
+    audience_description: str
+
+@router.post("/know-your-audience", response_model=KnowYourAudienceResponse)
+async def know_your_audience(request: KnowYourAudienceRequest):
+    system_prompt = '''You are an expert Audience Analyst AI. Your specialty is identifying the ideal learner for any given educational topic.
+
+Your task is to analyze the course topic provided by an educator and generate a short, crisp, and relevant summary of the most likely target audience.
+
+Based on the course topic, you will infer:
+
+- Their likely prior knowledge (e.g., beginner, intermediate, no experience).
+- Their potential age group or professional level (e.g., high school students, working professionals, university undergraduates).
+- Their primary goals or motivations for taking the course (e.g., career change, hobby, skill enhancement, academic requirement).
+
+Synthesize these points into a concise summary of 2-3 sentences. The output should be a single, easy-to-read paragraph.
+
+Example:
+User's Course Topic: "A course about creating a personal budget and saving for retirement."
+Your Generated Audience Summary: "The ideal audience for this course is young adults and working professionals (ages 25-40) who have little to no experience with financial planning. Their primary motivation is to gain control over their finances, reduce financial stress, and start building long-term wealth for retirement."'''
+
+    async_client = openai.AsyncOpenAI(
+        api_key=settings.openai_api_key,
+        base_url="https://agent.dev.hyperverge.org",
+    )
+    try:
+        completion = await async_client.chat.completions.create(
+            model="openai/gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": request.course_description},
+            ],
+            max_tokens=1024,
+        )
+        audience_description = completion.choices[0].message.content.strip()
+        return KnowYourAudienceResponse(audience_description=audience_description)
+    except Exception as e:
+        logger.error(f"Error analyzing audience: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Audience analysis failed")
 
 
 def task_generation_schemas():
@@ -1057,7 +1179,7 @@ Use appropriate formatting for the `blocks` in the learning material. Make use o
 
 Do not use the name of the learning material as a heading to mark the start of the learning material in the `blocks`.  The name of the learning material will already be visible to the student."""
 
-    task_type_prompt = quiz_prompt if task_type == "quiz" else learning_material_prompt
+    task_type_prompt = quiz_prompt if task_type == TaskType.QUIZ else learning_material_prompt
 
     system_prompt = f"""You are an expert course creator. The user will give you an outline for a concept in a course they are creating along with the reference material to be used as the source for the course content and the name of one of the tasks from the outline.
 
@@ -1081,12 +1203,11 @@ async def generate_course_task(
     course_job_uuid: str,
     course_id: int,
 ):
+    try:
+        system_prompt = get_system_prompt_for_task_generation(task["type"])
+        model = openai_plan_to_model_name["text"]
 
-    system_prompt = get_system_prompt_for_task_generation(task["type"])
-
-    model = openai_plan_to_model_name["text"]
-
-    generation_prompt = f"""Concept details:
+        generation_prompt = f"""Concept details:
 
 {concept}
 
@@ -1094,69 +1215,81 @@ Task to generate:
 
 {task['name']}"""
 
-    # Build messages conditionally based on whether we have a file
-    messages = [{"role": "system", "content": system_prompt}]
-    
-    if file_id:
-        # If we have a file, include it in the message
-        messages.append({
-            "role": "user",
-            "content": [
-                {
-                    "type": "file",
-                    "file": {
-                        "file_id": file_id,
+        # Build messages conditionally based on whether we have a file
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        if file_id:
+            # If we have a file, include it in the message
+            messages.append({
+                "role": "user",
+                "content": [
+                    {
+                        "type": "file",
+                        "file": {
+                            "file_id": file_id,
+                        },
                     },
-                },
-            ],
-        })
-    
-    # Add the task generation prompt
-    messages.append({"role": "user", "content": generation_prompt})
+                ],
+            })
+        
+        # Add the task generation prompt
+        messages.append({"role": "user", "content": generation_prompt})
 
-    LearningMaterial, Quiz = task_generation_schemas()
-    response_model = (
-        LearningMaterial if task["type"] == TaskType.LEARNING_MATERIAL else Quiz
-    )
-
-    output = await client.chat.completions.create(
-        model=model,
-        messages=messages,
-        response_model=response_model,
-        max_completion_tokens=16000,
-        store=True,
-    )
-
-    task["details"] = output.model_dump(exclude_none=True)
-
-    if task["type"] == TaskType.LEARNING_MATERIAL:
-        await add_generated_learning_material(task["id"], task)
-    else:
-        await add_generated_quiz(task["id"], task)
-
-    await update_task_generation_job_status(
-        task_job_uuid, GenerateTaskJobStatus.COMPLETED
-    )
-
-    course_jobs_status = await get_course_task_generation_jobs_status(course_id)
-
-    websocket_manager = get_manager()
-
-    await websocket_manager.send_item_update(
-        course_id,
-        {
-            "event": "task_completed",
-            "task": {
-                "id": task["id"],
-            },
-            "total_completed": course_jobs_status[str(GenerateTaskJobStatus.COMPLETED)],
-        },
-    )
-
-    if not course_jobs_status[str(GenerateTaskJobStatus.STARTED)]:
-        await update_course_generation_job_status(
-            course_job_uuid, GenerateCourseJobStatus.COMPLETED
+        LearningMaterial, Quiz = task_generation_schemas()
+        response_model = (
+            LearningMaterial if task["type"] == TaskType.LEARNING_MATERIAL else Quiz
         )
+
+        # Simple API call with basic error handling
+        output = await client.chat.completions.create(
+            model=model,
+            messages=messages,
+            response_model=response_model,
+            max_completion_tokens=16000,
+            store=True,
+        )
+
+        task["details"] = output.model_dump(exclude_none=True)
+
+        if task["type"] == TaskType.LEARNING_MATERIAL:
+            await add_generated_learning_material(task["id"], task)
+        else:
+            await add_generated_quiz(task["id"], task)
+
+        await update_task_generation_job_status(
+            task_job_uuid, GenerateTaskJobStatus.COMPLETED
+        )
+
+        course_jobs_status = await get_course_task_generation_jobs_status(course_id)
+
+        websocket_manager = get_manager()
+
+        await websocket_manager.send_item_update(
+            course_id,
+            {
+                "event": "task_completed",
+                "task": {
+                    "id": task["id"],
+                },
+                "total_completed": course_jobs_status[str(GenerateTaskJobStatus.COMPLETED)],
+            },
+        )
+
+        if not course_jobs_status[str(GenerateTaskJobStatus.STARTED)]:
+            await update_course_generation_job_status(
+                course_job_uuid, GenerateCourseJobStatus.COMPLETED
+            )
+            
+    except Exception as e:
+        logger.error(f"Error generating task {task['id']}: {str(e)}")
+        
+        # Update task status to failed
+        await update_task_generation_job_status(
+            task_job_uuid, GenerateTaskJobStatus.FAILED
+        )
+        
+        # Re-raise the exception to let the batch processor handle it
+        raise
 
 
 @router.post("/generate/course/{course_id}/tasks")
@@ -1239,6 +1372,7 @@ async def resume_pending_course_structure_generation_jobs():
                 job["course_id"],
                 job["uuid"],
                 job["job_details"],
+                job["job_details"].get("course_level", 1),
             )
         )
 

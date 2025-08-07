@@ -5,11 +5,10 @@ from tqdm.asyncio import tqdm_asyncio
 
 async def async_batch_gather(
     coroutines: List[Coroutine],
-    batch_size: int = 25,
+    batch_size: int = 25,  # Back to original batch size
     description: str = "Processing batch",
 ):
     total_num = len(coroutines)
-    # outputs = [None] * total_num
     results = []
 
     # Process in batches to limit memory usage
@@ -20,12 +19,6 @@ async def async_batch_gather(
             desc=f"{description} {i}-{i+len(batch)}/{total_num}",
         )
         results.extend(batch_results)
-
-        # for completed_task in asyncio.as_completed(batch):
-        #     task_row_index, output = await completed_task
-
-        #     outputs[task_row_index] = output
-        #     pbar.update(1)
 
         # Give a little time for memory to be freed up
         await asyncio.sleep(1)
