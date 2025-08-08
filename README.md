@@ -1,46 +1,221 @@
-# SensAI backend
+<h1 align="center">📚 SensAI — AI-Powered Learning Suite</h1>
 
-[![codecov](https://codecov.io/gl/hvacademy/sensai-ai/branch/main/graph/badge.svg)](https://codecov.io/gl/hvacademy/sensai-ai)
+<p align="center">
+A next-generation AI-powered course creation and learning management system, enabling <b>end-to-end learning content generation</b>, <b>smart scheduling</b>, <b>review-safe AI outputs</b>, and <b>real-time collaboration</b>.
+</p>
 
-SensAI is an AI-first Learning Management System (LMS) which enables educators to help them teacher smarter and reach further. SensAI coaches your students through questions that develop deeper thinking—just like you would, but for every student and all the time. This repository is the backend for SensAI. The frontend repository can be found [here](https://gitlab.com/hvacademy/sensai-frontend).
+## 🌳 Branch Structure
+- **`main`** → contains the **backend** (FastAPI, Python)
+- **`front`** → contains the **frontend** (Next.js, React)
 
-If you are using SensAI and have any feedback for us or want any help with using SensAI, please consider [joining our community](https://chat.whatsapp.com/LmiulDbWpcXIgqNK6fZyxe) of AI + Education builders and reaching out to us.
+---
 
-If you want to contribute to SensAI, please look at the `Contributing` section below.
+## ✨ Overview
 
-<!-- 
-To get started with using SensAI, please refer to our [Documentation](https://docs.sensai.hyperverge.org) which explains all the key features of SensAI along with demo videos and a step-by-step guide for common use cases. -->
+SensAI is designed to transform how courses are created, managed, and delivered.  
+We built a **complete backend + frontend system** that combines:
 
-Our public roadmap is live [here](https://hyperverge.notion.site/fa1dd0cef7194fa9bf95c28820dca57f?v=ec52c6a716e94df180dcc8ced3d87610). Go check it out and let us know what you think we should build next!
+- **AI-driven course creation** from PDFs or plain ideas.
+- **Real-time AI streaming** for instant feedback.
+- **Smart scheduling** with timezone awareness.
+- **Safe content generation** with built-in review guardrails.
+- **Optimized performance** for faster page loads.
+- **Full API coverage** for integrations.
 
-## Contributing
-To learn more about making a contribution to SensAI, please see our [Contributing guide](./docs/CONTRIBUTING.md).
+Whether you’re an **educator**, **corporate trainer**, or **learning platform admin**, SensAI helps you go from *idea → course → delivery* in minutes.
 
-## Installation
-Refer to the [INSTALL.md](./docs/INSTALL.md) file for instructions on how to install and run the backend locally.
+---
 
-## Testing
-SensAI uses pytest for testing the API endpoints and measuring code coverage. To run the tests and generate coverage reports, follow these instructions:
+## 💡 What We Built
 
-### Installing Test Dependencies
-```bash
-pip install -r requirements-dev.txt
-```
+<h3>🎯 AI Magic — From Idea to Course</h3>
+<ul>
+<li><b>Prompt Enhancer:</b> Converts rough ideas into structured, actionable course briefs in one click.</li>
+<li><b>Audience Understanding:</b> AI creates a clear learner profile to tailor tone, difficulty, and examples.</li>
+<li><b>Templates:</b> Built-in prompt templates for faster content design.</li>
+</ul>
 
-### Running Tests
-To run all tests and generate a coverage report:
-```bash
-./run_tests.sh
-```
+<h3>📄 Reference-First Course Generation (PDF Support)</h3>
+<ul>
+<li>Upload PDFs (≤32MB, ≤100 pages) as your source material.</li>
+<li>Content validation: Type, size, and page count checks.</li>
+<li><b>Precision Calibration:</b> Four adherence levels:
+    <ol>
+    <li>Creative Interpretation</li>
+    <li>Balanced Adherence</li>
+    <li>Faithful Adherence</li>
+    <li>Strict Extraction</li>
+    </ol>
+</li>
+<li>Generates a complete <b>course structure</b> with modules, concepts, and tasks.</li>
+</ul>
 
-### Coverage Reports
-After running the full test suite with `run_tests.sh`, a HTML coverage report will be generated in the `coverage_html` directory. Open `coverage_html/index.html` in your browser to view the report.
+<h3>📝 Auto-Generated Tasks & Quizzes</h3>
+<ul>
+<li>Generate <b>learning materials</b> with structured explanations.</li>
+<li>Create <b>quizzes</b> instantly (objective, subjective, coding).</li>
+<li>Includes <b>correct answers</b>, hints, and AI-verified explanations.</li>
+<li>Auto-linked to <b>scorecards</b> for performance tracking.</li>
+</ul>
 
-### Codecov Integration
-This project is integrated with [Codecov](https://codecov.io) for continuous monitoring of code coverage. Coverage reports are automatically generated and uploaded to Codecov when tests are run in the GitLab CI pipeline. The Codecov badge at the top of this README shows the current coverage status.
+<h3>🛡 Review-Safe System</h3>
+<ul>
+<li>Every AI request is checked against content safety rules.</li>
+<li>Unsafe prompts are <b>blocked</b> with clear reason messages.</li>
+<li>Helps ensure generated content is safe for all audiences.</li>
+</ul>
 
-<!-- ## Deployment
-Use the `Dockerfile` provided to build a docker image and deploy the image to whatever infra makes sense for you. We use an EC2 instance and you can refer to the `.gitlab-ci.yml` and `docker-compose.ai.demo.yml` files to understand how we do Continuous Deployment (CD). -->
+<h3>📅 Smart Scheduling & Calendar</h3>
+<ul>
+<li>Generate day-by-day schedules with:
+    <ul>
+    <li>Working days</li>
+    <li>Holidays/exclusions</li>
+    <li>Timezone adjustments</li>
+    <li>Hours per day</li>
+    </ul>
+</li>
+<li>Optional <b>mock mode</b> to preview schedules.</li>
+<li>Persist schedules for later viewing in <b>SavedScheduleCard</b>.</li>
+</ul>
 
-## Community
-We are building a community of creators, builders, teachers, learners, parents, entrepreneurs, non-profits and volunteers who are excited about the future of AI and education. If you identify as one and want to be part of it, consider [joining our community](https://chat.whatsapp.com/LmiulDbWpcXIgqNK6fZyxe).
+<h3>⚡ Performance Improvements</h3>
+<ul>
+<li>AI responses stream in real-time for faster feedback.</li>
+<li>Parallel task generation with WebSocket progress updates.</li>
+<li>Dynamic imports for heavy views like quizzes & code editors.</li>
+<li>Static file hosting at <code>/uploads/*</code> for quick media loads.</li>
+<li>Optimized CORS handling for smooth uploads/downloads.</li>
+</ul>
+
+---
+
+## 🛠 API Overview
+
+<h3>Base URL</h3>
+<p>
+Backend: <code>http://localhost:8001</code><br>
+Frontend: <code>process.env.NEXT_PUBLIC_BACKEND_URL</code>
+</p>
+
+---
+
+### <h3>AI Endpoints</h3>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/ai/chat` | Streamed AI chat with safety checks |
+| POST | `/ai/generate/course/{course_id}/structure` | Generate modules/tasks from reference material |
+| POST | `/ai/generate/course/{course_id}/tasks` | Bulk-generate content for tasks |
+| POST | `/ai/generate/task/{task_id}/questions` | Auto-generate quiz questions |
+| POST | `/ai/generate/course/{course_id}/schedule` | Create/persist course schedules |
+| POST | `/ai/safety/check` | Standalone content safety validation |
+| POST | `/ai/enhance-prompt` | Improve prompts for richer briefs |
+| POST | `/ai/know-your-audience` | Generate audience insights |
+
+---
+
+### <h3>File Handling</h3>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/file/upload-local` | Upload PDF or media |
+| PUT | `/file/presigned-url/create` | Create presigned upload URL |
+| GET | `/file/presigned-url/get` | Retrieve file URL |
+| GET | `/file/download-local/` | Download file locally |
+
+---
+
+### <h3>Courses</h3>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/courses/` | Create a new course |
+| GET | `/courses/{course_id}` | Fetch course details/tree |
+| PUT | `/courses/{course_id}` | Update course details |
+| DELETE | `/courses/{course_id}` | Delete a course |
+| POST | `/courses/{course_id}/milestones` | Add course modules |
+| PUT | `/courses/milestones/order` | Reorder modules |
+
+---
+
+### <h3>Tasks</h3>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/tasks/` | Create a task |
+| GET | `/tasks/{task_id}` | Get task details |
+| PUT | `/tasks/{task_id}/learning_material` | Update learning material |
+| POST | `/tasks/{task_id}/quiz` | Create a quiz |
+| POST | `/tasks/duplicate` | Duplicate task |
+| DELETE | `/tasks/{task_id}` | Remove task |
+
+---
+
+### <h3>Scheduling</h3>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/schedule/{course_id}` | Retrieve persisted schedule |
+| POST | `/ai/generate/course/{course_id}/schedule` | Generate course schedule |
+
+---
+
+### <h3>Chat & Collaboration</h3>
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/chat/` | Save chat messages |
+| GET | `/chat/user/{user_id}/task/{task_id}` | Retrieve task-specific chat history |
+
+---
+
+## 💡 End-to-End Workflow
+
+<ol>
+<li><b>Upload Reference Material</b>
+    <ul>
+    <li>Upload PDF via <code>/file/upload-local</code>.</li>
+    <li>Validate file type, size, and page limit.</li>
+    </ul>
+</li>
+<li><b>Set Precision Level</b>
+    <ul><li>Choose from Level 1–4 adherence.</li></ul>
+</li>
+<li><b>Generate Course Structure</b>
+    <ul><li><code>/ai/generate/course/{course_id}/structure</code></li></ul>
+</li>
+<li><b>Generate Tasks & Quizzes</b>
+    <ul>
+    <li><code>/ai/generate/course/{course_id}/tasks</code></li>
+    <li><code>/ai/generate/task/{task_id}/questions</code></li>
+    </ul>
+</li>
+<li><b>Schedule the Course</b>
+    <ul><li><code>/ai/generate/course/{course_id}/schedule</code></li></ul>
+</li>
+<li><b>Track in Real-Time</b>
+    <ul><li>WebSockets: <code>/ws/course/{course_id}/generation</code></li></ul>
+</li>
+</ol>
+
+---
+
+## 🚀 Performance & UX Highlights
+<ul>
+<li>Live AI streaming with instant partial responses.</li>
+<li>WebSocket-based progress updates during bulk generation.</li>
+<li>Lazy loading for quizzes, viewers, and editors.</li>
+<li>Local static file serving for near-zero latency media loads.</li>
+<li>Optimized backend queries to handle large datasets quickly.</li>
+</ul>
+
+---
+
+## 📌 Developer Notes
+<ul>
+<li>PDFs are the primary source for structured course creation.</li>
+<li><code>course_level</code> controls AI adherence — higher levels = stricter reference following.</li>
+<li>Content safety checks occur before AI generation begins.</li>
+<li>Streaming endpoints return NDJSON for progressive rendering.</li>
+</ul>
