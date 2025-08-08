@@ -551,6 +551,49 @@ class UpdatePublishedQuizRequest(BaseModel):
     scheduled_publish_at: datetime | None
 
 
+# -----------------------------
+# Scheduling models
+# -----------------------------
+from datetime import date
+from typing import Literal
+
+
+class ScheduleItem(BaseModel):
+    type: Literal["learning", "quiz"]
+    task_id: int | None = None
+    milestone_id: int | None = None
+    title: str
+    duration_minutes: int | None = None
+    notes: str | None = None
+
+
+class ScheduleDay(BaseModel):
+    date: date
+    items: List[ScheduleItem]
+    summary: str | None = None
+
+
+class Schedule(BaseModel):
+    course_id: int
+    generated_at: datetime
+    timezone: str | None = None
+    days: List[ScheduleDay]
+
+
+class GenerateScheduleRequest(BaseModel):
+    start_date: date | None = None
+    include_weekends: bool | None = None
+    exclude_weekdays: List[int] | None = None
+    exclude_dates: List[date] | None = None
+    hours_per_day: int | None = None
+    days_per_week: int | None = None
+    timezone: str | None = None
+
+
+class GenerateScheduleResponse(BaseModel):
+    schedule: Schedule
+
+
 class DuplicateTaskRequest(BaseModel):
     task_id: int
     course_id: int

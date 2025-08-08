@@ -22,6 +22,8 @@ from api.routes import (
     ai,
     scorecard,
 )
+from api.routes import ai_schedule
+from api.routes import schedule as schedule_routes
 # from api.routes.ai import (
 #     resume_pending_task_generation_jobs,
 #     resume_pending_course_structure_generation_jobs,
@@ -105,6 +107,8 @@ if exists(settings.local_upload_folder):
 
 app.include_router(file.router, prefix="/file", tags=["file"])
 app.include_router(ai.router, prefix="/ai", tags=["ai"])
+app.include_router(ai_schedule.router, prefix="/ai", tags=["ai"])
+app.include_router(schedule_routes.router, prefix="/schedule", tags=["schedule"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(task.router, prefix="/tasks", tags=["tasks"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])

@@ -1155,11 +1155,14 @@ def task_generation_schemas():
 
 def get_system_prompt_for_task_generation(task_type):
     LearningMaterial, Quiz = task_generation_schemas()
-    schema = (
-        LearningMaterial.model_json_schema()
-        if task_type == "learning_material"
-        else Quiz.model_json_schema()
+    # Normalize task type to support both enum and string values
+    task_type_str = str(task_type).lower()
+    is_learning = (task_type == TaskType.LEARNING_MATERIAL) or (
+        task_type_str == "learning_material"
     )
+    is_quiz = (task_type == TaskType.QUIZ) or (task_type_str == "quiz")
+
+    schema = LearningMaterial.model_json_schema() if is_learning else Quiz.model_json_schema()
 
     quiz_prompt = """Each quiz/exam contains multiple questions for testing the understanding of the learner on the actual concept.
 
@@ -1179,7 +1182,7 @@ Use appropriate formatting for the `blocks` in the learning material. Make use o
 
 Do not use the name of the learning material as a heading to mark the start of the learning material in the `blocks`.  The name of the learning material will already be visible to the student."""
 
-    task_type_prompt = quiz_prompt if task_type == TaskType.QUIZ else learning_material_prompt
+    task_type_prompt = quiz_prompt if is_quiz else learning_material_prompt
 
     system_prompt = f"""You are an expert course creator. The user will give you an outline for a concept in a course they are creating along with the reference material to be used as the source for the course content and the name of one of the tasks from the outline.
 
@@ -1236,9 +1239,12 @@ Task to generate:
         messages.append({"role": "user", "content": generation_prompt})
 
         LearningMaterial, Quiz = task_generation_schemas()
-        response_model = (
-            LearningMaterial if task["type"] == TaskType.LEARNING_MATERIAL else Quiz
+        task_type_value = task["type"]
+        task_type_str = str(task_type_value).lower()
+        is_learning = (task_type_value == TaskType.LEARNING_MATERIAL) or (
+            task_type_str == "learning_material"
         )
+        response_model = LearningMaterial if is_learning else Quiz
 
         # Simple API call with basic error handling
         output = await client.chat.completions.create(
@@ -1282,14 +1288,11 @@ Task to generate:
             
     except Exception as e:
         logger.error(f"Error generating task {task['id']}: {str(e)}")
-        
-        # Update task status to failed
+        # Update task status to failed and continue without aborting the batch
         await update_task_generation_job_status(
             task_job_uuid, GenerateTaskJobStatus.FAILED
         )
-        
-        # Re-raise the exception to let the batch processor handle it
-        raise
+        return
 
 
 @router.post("/generate/course/{course_id}/tasks")

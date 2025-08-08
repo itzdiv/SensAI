@@ -54,6 +54,7 @@ course_generation_jobs_table_name = "course_generation_jobs"
 task_generation_jobs_table_name = "task_generation_jobs"
 org_api_keys_table_name = "org_api_keys"
 code_drafts_table_name = "code_drafts"
+schedules_table_name = "schedules"
 
 UPLOAD_FOLDER_NAME = "uploads"
 

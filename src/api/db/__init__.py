@@ -27,6 +27,7 @@ from api.config import (
     task_generation_jobs_table_name,
     org_api_keys_table_name,
     code_drafts_table_name,
+    schedules_table_name,
 )
 
 
@@ -452,6 +453,17 @@ async def create_code_drafts_table(cursor):
             )"""
     )
 
+
+async def create_schedules_table(cursor):
+    await cursor.execute(
+        f"""CREATE TABLE IF NOT EXISTS {schedules_table_name} (
+                course_id INTEGER PRIMARY KEY,
+                generated_at DATETIME NOT NULL,
+                timezone TEXT,
+                days TEXT NOT NULL
+            )"""
+    )
+
     # Useful indexes for faster lookup
     await cursor.execute(
         f"""CREATE INDEX IF NOT EXISTS idx_code_drafts_user_id ON {code_drafts_table_name} (user_id)"""
@@ -496,6 +508,7 @@ async def init_db():
             await create_course_generation_jobs_table(cursor)
             await create_task_generation_jobs_table(cursor)
             await create_code_drafts_table(cursor)
+            await create_schedules_table(cursor)
 
             await conn.commit()
             print("Database initialized successfully!")
