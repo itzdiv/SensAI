@@ -28,6 +28,7 @@ from api.models import (
     DuplicateTaskRequest,
     DuplicateTaskResponse,
     MarkTaskCompletedRequest,
+    TaskType,
 )
 
 router = APIRouter()
@@ -38,6 +39,69 @@ async def get_learning_material_tasks_for_course(
     course_id: int,
 ) -> List[Task]:
     return await get_all_learning_material_tasks_for_course_from_db(course_id)
+
+
+@router.get("/{task_id}/questions")
+async def get_task_questions(task_id: int, include_answers: bool = False) -> Dict:
+    task = await get_task_from_db(task_id)
+    if not task or task["type"] != TaskType.QUIZ:
+        raise HTTPException(status_code=404, detail="Quiz task not found")
+
+    simplified = []
+    for q in task.get("questions", []):
+        q_type = str(q.get("type"))
+        as_type = "mcq" if q_type == "objective" else "short"
+
+        stem = None
+        options = None
+        explanation = None
+        try:
+            for b in q.get("blocks", []):
+                if b.get("type") in ("paragraph", "heading") and stem is None:
+                    stem = (b.get("props") or {}).get("text") or b.get("content") or q.get("title")
+                if b.get("type") in ("bulleted_list", "numbered_list") and options is None:
+                    items = b.get("children") or b.get("content") or []
+                    options = [
+                        (it.get("props") or {}).get("text") or it.get("content") or ""
+                        for it in items
+                    ] or None
+                if b.get("type") == "note" and explanation is None:
+                    explanation = (b.get("props") or {}).get("text") or None
+        except Exception:
+            pass
+
+        answer_value = None
+        if include_answers:
+            ans_blocks = q.get("answer") or []
+            if options:
+                ans_text = None
+                for ab in ans_blocks:
+                    ans_text = (ab.get("props") or {}).get("text") or ans_text
+                if ans_text and options:
+                    try:
+                        answer_value = options.index(ans_text)
+                    except ValueError:
+                        answer_value = ans_text
+            else:
+                for ab in ans_blocks:
+                    answer_value = (ab.get("props") or {}).get("text") or answer_value
+
+        entry = {
+            "id": q.get("id"),
+            "task_id": task_id,
+            "type": as_type,
+            "question": stem or q.get("title") or "",
+        }
+        if options:
+            entry["options"] = options
+        if include_answers and answer_value is not None:
+            entry["answer"] = answer_value
+        if explanation:
+            entry["explanation"] = explanation
+
+        simplified.append(entry)
+
+    return {"task_id": task_id, "questions": simplified}
 
 
 @router.post("/", response_model=CreateDraftTaskResponse)

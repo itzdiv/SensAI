@@ -60,8 +60,15 @@ async def websocket_course_generation(websocket: WebSocket, course_id: int):
         # Keep the connection alive until client disconnects
         while True:
             try:
-                # Wait for any message from the client to detect disconnection
-                await websocket.receive_text()
+                # Accept JSON pings; ignore/echo pongs to keep alive
+                try:
+                    data = await websocket.receive_json()
+                    if isinstance(data, dict) and data.get("type") == "ping":
+                        await websocket.send_json({"type": "pong"})
+                        continue
+                except Exception:
+                    # Fallback to text receive for non-JSON clients
+                    await websocket.receive_text()
             except WebSocketDisconnect:
                 logger.info(f"WebSocket disconnected for course_id: {course_id}")
                 break

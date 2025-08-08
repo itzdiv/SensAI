@@ -11,3 +11,4 @@ async def get_schedule(course_id: int):
     return {"schedule": schedule}
 
 
+

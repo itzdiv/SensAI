@@ -126,6 +126,27 @@ async def get_all_learning_material_tasks_for_course(course_id: int):
     ]
 
 
+async def get_learning_materials_for_milestone(course_id: int, milestone_id: int):
+    query = f"""
+    SELECT t.id, t.title, t.blocks
+    FROM {tasks_table_name} t
+    INNER JOIN {course_tasks_table_name} ct ON t.id = ct.task_id
+    WHERE ct.course_id = ? AND ct.milestone_id = ? AND t.deleted_at IS NULL AND t.type = '{TaskType.LEARNING_MATERIAL}'
+    ORDER BY ct.ordering ASC
+    """
+
+    rows = await execute_db_operation(query, (course_id, milestone_id), fetch_all=True)
+
+    return [
+        {
+            "id": row[0],
+            "title": row[1],
+            "blocks": json.loads(row[2]) if row[2] else [],
+        }
+        for row in rows
+    ]
+
+
 def convert_question_db_to_dict(question) -> Dict:
     result = {
         "id": question[0],
@@ -904,7 +925,7 @@ async def add_generated_learning_material(task_id: int, task_details: Dict):
 async def add_generated_quiz(task_id: int, task_details: Dict):
     current_scorecard_index = 0
 
-    for question in task_details["details"]["questions"]:
+    for idx, question in enumerate(task_details["details"]["questions"]):
         question["type"] = question.pop("question_type")
 
         question["blocks"] = convert_blocks_to_right_format(question["blocks"])
@@ -937,6 +958,24 @@ async def add_generated_quiz(task_id: int, task_details: Dict):
         question["is_feedback_shown"] = (
             question["response_type"] != TaskAIResponseType.EXAM
         )
+        # Ensure title exists; derive from first block text if missing
+        if not question.get("title"):
+            derived_title = None
+            try:
+                for block in question["blocks"]:
+                    contents = block.get("content") or []
+                    if contents:
+                        # content items may be dicts with 'text'
+                        for content_item in contents:
+                            text_value = content_item.get("text") if isinstance(content_item, dict) else None
+                            if text_value and text_value.strip():
+                                derived_title = text_value.strip()
+                                break
+                    if derived_title:
+                        break
+            except Exception:
+                derived_title = None
+            question["title"] = derived_title or f"Question {idx + 1}"
         if question.get("scorecard"):
             question["scorecard"]["id"] = current_scorecard_index
             current_scorecard_index += 1

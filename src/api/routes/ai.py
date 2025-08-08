@@ -814,7 +814,13 @@ Do not include the type of task in the name of the task."""
             for task_index, task in enumerate(concept["tasks"]):
                 task["id"] = module_concepts[module["id"]][concept_index][task_index]
 
+    # Compute totals for downstream events and clients
+    expected_total_tasks = sum(
+        len(concept["tasks"]) for module in output["modules"] for concept in module["concepts"]
+    )
+
     job_details["course_structure"] = output
+    job_details["expected_total_tasks"] = expected_total_tasks
     await update_course_generation_job_status_and_details(
         course_job_uuid,
         GenerateCourseJobStatus.PENDING,
@@ -829,6 +835,7 @@ Do not include the type of task in the name of the task."""
         {
             "event": "course_structure_completed",
             "job_id": course_job_uuid,
+            "expected_total": expected_total_tasks,
         },
     )
     logger.info(f"Course structure generation completed for course {course_id}, job {course_job_uuid}")
@@ -1124,6 +1131,9 @@ def task_generation_schemas():
         question_type: Literal["objective", "subjective", "coding"] = Field(
             description='The type of question; "objective" means that the question has a fixed correct answer and the learner\'s response must precisely match it. "subjective" means that the question is subjective, with no fixed correct answer. "coding" - a specific type of "objective" question for programming questions that require one to write code.'
         )
+        title: str = Field(
+            description="A short title or stem for the question; shown in editors and used for indexing"
+        )
         answer_type: Optional[Literal["text", "audio"]] = Field(
             description='The type of answer; "text" means the student has to submit textual answer where "audio" means student has to submit audio answer. Ignore this field for questionType = "coding".',
         )
@@ -1205,6 +1215,7 @@ async def generate_course_task(
     task_job_uuid: str,
     course_job_uuid: str,
     course_id: int,
+    expected_total_tasks: int = 0,
 ):
     try:
         system_prompt = get_system_prompt_for_task_generation(task["type"])
@@ -1246,14 +1257,26 @@ Task to generate:
         )
         response_model = LearningMaterial if is_learning else Quiz
 
-        # Simple API call with basic error handling
-        output = await client.chat.completions.create(
-            model=model,
-            messages=messages,
-            response_model=response_model,
-            max_completion_tokens=16000,
-            store=True,
-        )
+        # Simple API call with basic error handling + timeout and retries
+        last_err = None
+        for attempt in range(3):
+            try:
+                output = await asyncio.wait_for(
+                    client.chat.completions.create(
+                        model=model,
+                        messages=messages,
+                        response_model=response_model,
+                        max_completion_tokens=16000,
+                        store=True,
+                    ),
+                    timeout=120,
+                )
+                break
+            except Exception as e:
+                last_err = e
+                await asyncio.sleep(2 ** attempt)
+        else:
+            raise last_err
 
         task["details"] = output.model_dump(exclude_none=True)
 
@@ -1274,16 +1297,28 @@ Task to generate:
             course_id,
             {
                 "event": "task_completed",
-                "task": {
-                    "id": task["id"],
-                },
+                "job_id": course_job_uuid,
+                "task": task,
                 "total_completed": course_jobs_status[str(GenerateTaskJobStatus.COMPLETED)],
+                "expected_total": expected_total_tasks,
             },
         )
 
         if not course_jobs_status[str(GenerateTaskJobStatus.STARTED)]:
             await update_course_generation_job_status(
                 course_job_uuid, GenerateCourseJobStatus.COMPLETED
+            )
+            await websocket_manager.send_item_update(
+                course_id,
+                {
+                    "event": "generation_completed",
+                    "job_id": course_job_uuid,
+                    "totals": {
+                        "completed": course_jobs_status[str(GenerateTaskJobStatus.COMPLETED)],
+                        "failed": course_jobs_status[str(GenerateTaskJobStatus.FAILED)],
+                        "expected_total": expected_total_tasks,
+                    },
+                },
             )
             
     except Exception as e:
@@ -1336,6 +1371,7 @@ async def generate_course_tasks(
                         task_job_uuid,
                         job_uuid,
                         course_id,
+                        job_details.get("expected_total_tasks", 0),
                     )
                 )
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body, Query
 from datetime import datetime, timezone, date, timedelta
 from typing import List, Dict
 import instructor
@@ -24,7 +24,12 @@ def normalize_weekday_indices(exclude_weekdays: List[int] | None) -> List[int]:
 
 
 @router.post("/generate/course/{course_id}/schedule", response_model=GenerateScheduleResponse)
-async def generate_course_schedule(course_id: int, request: GenerateScheduleRequest | None = None, mock: bool = False, persist: bool = False) -> GenerateScheduleResponse:
+async def generate_course_schedule(
+    course_id: int,
+    request: GenerateScheduleRequest | None = Body(default=None),
+    mock: bool = Query(False),
+    persist: bool = Query(False),
+) -> GenerateScheduleResponse:
     course = await get_course(course_id, only_published=False)
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")

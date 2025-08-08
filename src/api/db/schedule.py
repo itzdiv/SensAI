@@ -8,6 +8,18 @@ from api.utils.db import execute_db_operation
 
 
 async def save_schedule(course_id: int, schedule: Schedule) -> Schedule:
+    # Ensure table exists (idempotent)
+    await execute_db_operation(
+        f"""
+        CREATE TABLE IF NOT EXISTS {schedules_table_name} (
+            course_id INTEGER PRIMARY KEY,
+            generated_at DATETIME NOT NULL,
+            timezone TEXT,
+            days TEXT NOT NULL
+        )
+        """
+    )
+
     # Overwrite semantics using INSERT OR REPLACE on PRIMARY KEY (course_id)
     await execute_db_operation(
         f"""

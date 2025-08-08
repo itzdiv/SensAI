@@ -605,6 +605,27 @@ class DuplicateTaskResponse(BaseModel):
     ordering: int
 
 
+# -----------------------------
+# AI Question Generation models
+# -----------------------------
+from typing import Optional
+from typing import Literal as _Literal
+
+
+class GeneratedQuestion(BaseModel):
+    type: _Literal["objective", "subjective"]
+    title: str
+    question: str
+    options: List[str] | None = None
+    answer: Optional[str] = None
+    explanation: Optional[str] = None
+
+
+class GeneratedQuestions(BaseModel):
+    title: Optional[str] = None
+    questions: List[GeneratedQuestion]
+
+
 class StoreMessageRequest(BaseModel):
     role: str
     content: str | None
