@@ -1811,9 +1811,7 @@ export default function CreateCourse() {
 
             {/* Add overlay when course is being generated */}
             {isGeneratingCourse && !isCourseStructureGenerated && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-[1px] z-40 flex items-center justify-center pointer-events-auto">
-
-                </div>
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-[1px] z-40 flex items-center justify-center pointer-events-auto"></div>
             )}
 
             {/* Show spinner when loading */}
@@ -1822,8 +1820,8 @@ export default function CreateCourse() {
                     <div className="w-16 h-16 border-t-2 border-b-2 border-white rounded-full animate-spin"></div>
                 </div>
             ) : (
-                /* Main content area - only shown after loading */
                 <div className="py-12 grid grid-cols-5 gap-6">
+                    {/* Left column - main content */}
                     <div className="max-w-5xl ml-24 col-span-4 relative">
                         {/* Back to Courses button */}
                         <Link
@@ -1918,6 +1916,20 @@ export default function CreateCourse() {
                                             <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Preview</span>
                                         </button>
 
+                                        {/* AI Scheduler button */}
+                                        <button
+                                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-transparent border border-white hover:bg-white/10 outline-none rounded-full transition-colors cursor-pointer whitespace-nowrap"
+                                            onClick={() => {
+                                                router.push(`/school/admin/${schoolId}/courses/${courseId}/calendar`);
+                                            }}
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            </svg>
+                                            <span>AI Scheduler</span>
+                                        </button>
+
                                     </>
                                 )}
                             </div>
@@ -1967,59 +1979,62 @@ export default function CreateCourse() {
                         />
                     </div>
 
-                    {/* Display cohorts assigned to this course */}
-                    {hasAnyItems() && (
-                        <div className="mt-10">
-                            <div className="relative">
-                                <button
-                                    ref={publishButtonRef}
-                                    data-dropdown-toggle="true"
-                                    className="flex items-center px-6 py-2 text-sm font-medium text-white bg-[#016037] border-0 hover:bg-[#017045] outline-none rounded-full transition-all cursor-pointer shadow-md"
-                                    onClick={() => openCohortSelectionDialog('publish')}
-                                >
-                                    <span className="mr-2 text-base">🚀</span>
-                                    <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Share with learners</span>
-                                </button>
-                            </div>
-
-                            {!isLoadingCourseCohorts && courseCohorts.length > 0 && (
-                                <div className="mt-10">
-                                    <h2 className="text-sm font-light text-gray-400 mb-1">Cohorts</h2>
-                                    <p className="text-xs text-gray-500 mb-3 mr-4">
-                                        View the course settings for each cohort and add learners to it using an invite link from the settings
-                                    </p>
-                                    <div className="flex flex-wrap gap-3">
-                                        {courseCohorts.map((cohort: { id: number; name: string }) => (
-                                            <div
-                                                key={cohort.id}
-                                                className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
-                                            >
-                                                <Tooltip content="Settings" position="top">
-                                                    <button
-                                                        onClick={() => handleOpenSettingsDialog(cohort)}
-                                                        className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
-                                                        aria-label="View settings"
-                                                    >
-                                                        <Settings size={16} />
-                                                    </button>
-                                                </Tooltip>
-                                                <span className="text-white text-sm font-light">{cohort.name}</span>
-                                                <Tooltip content="Remove" position="top">
-                                                    <button
-                                                        onClick={() => initiateCohortRemoval(cohort.id, cohort.name)}
-                                                        className="text-gray-400 hover:text-white cursor-pointer flex items-center ml-2"
-                                                        aria-label="Remove cohort from course"
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
-                                                </Tooltip>
-                                            </div>
-                                        ))}
-                                    </div>
+                    {/* Right column - cohorts info */}
+                    <div className="col-span-1">
+                        {/* Display cohorts assigned to this course */}
+                        {hasAnyItems() && (
+                            <div className="mt-10">
+                                <div className="relative">
+                                    <button
+                                        ref={publishButtonRef}
+                                        data-dropdown-toggle="true"
+                                        className="flex items-center px-6 py-2 text-sm font-medium text-white bg-[#016037] border-0 hover:bg-[#017045] outline-none rounded-full transition-all cursor-pointer shadow-md"
+                                        onClick={() => openCohortSelectionDialog('publish')}
+                                    >
+                                        <span className="mr-2 text-base">🚀</span>
+                                        <span className="drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Share with learners</span>
+                                    </button>
                                 </div>
-                            )}
-                        </div>
-                    )}
+
+                                {!isLoadingCourseCohorts && courseCohorts.length > 0 && (
+                                    <div className="mt-10">
+                                        <h2 className="text-sm font-light text-gray-400 mb-1">Cohorts</h2>
+                                        <p className="text-xs text-gray-500 mb-3 mr-4">
+                                            View the course settings for each cohort and add learners to it using an invite link from the settings
+                                        </p>
+                                        <div className="flex flex-wrap gap-3">
+                                            {courseCohorts.map((cohort: { id: number; name: string }) => (
+                                                <div
+                                                    key={cohort.id}
+                                                    className="flex items-center bg-[#222] px-4 py-2 rounded-full group hover:bg-[#333] transition-colors"
+                                                >
+                                                    <Tooltip content="Settings" position="top">
+                                                        <button
+                                                            onClick={() => handleOpenSettingsDialog(cohort)}
+                                                            className="text-gray-400 hover:text-white cursor-pointer flex items-center mr-2"
+                                                            aria-label="View settings"
+                                                        >
+                                                            <Settings size={16} />
+                                                        </button>
+                                                    </Tooltip>
+                                                    <span className="text-white text-sm font-light">{cohort.name}</span>
+                                                    <Tooltip content="Remove" position="top">
+                                                        <button
+                                                            onClick={() => initiateCohortRemoval(cohort.id, cohort.name)}
+                                                            className="text-gray-400 hover:text-white cursor-pointer flex items-center ml-2"
+                                                            aria-label="Remove cohort from course"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </Tooltip>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -2035,10 +2050,7 @@ export default function CreateCourse() {
                     <div className="p-5 max-h-60 overflow-y-auto space-y-4">
                         {generationProgress.map((message, index) => {
                             const isLatest = index === generationProgress.length - 1;
-
-                            // Show spinner only for latest message when generation is not complete
                             const showSpinner = isLatest && !isGenerationComplete;
-
                             return (
                                 <div key={index} className="flex items-center text-sm">
                                     <div className="flex-shrink-0 mr-3">
@@ -2052,7 +2064,7 @@ export default function CreateCourse() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className={`text-${isLatest ? 'white' : 'gray-400'} font-light`}>
+                                    <div className={(isLatest ? 'text-white' : 'text-gray-400') + ' font-light'}>
                                         {message}
                                     </div>
                                 </div>
@@ -2073,10 +2085,7 @@ export default function CreateCourse() {
                                 </div>
                             </div>
                         )}
-
-
                     </div>
-                    {/* Done button - only shown when generation is complete */}
                     {isGenerationComplete && (
                         <div className="mb-4 flex justify-center">
                             <button
@@ -2223,12 +2232,11 @@ export default function CreateCourse() {
                                 </h3>
                             </div>
                         </div>
-                        
+
                         <div className="mb-4">
                             <p className="text-sm text-gray-600 mb-3">
                                 {contentSafetyError.message}
                             </p>
-                            
                             <div className="bg-red-50 border border-red-200 rounded-md p-3">
                                 <h4 className="text-sm font-medium text-red-800 mb-2">Why was this blocked?</h4>
                                 <p className="text-sm text-red-700">
@@ -2236,7 +2244,7 @@ export default function CreateCourse() {
                                 </p>
                             </div>
                         </div>
-                        
+
                         <div className="flex justify-end space-x-3">
                             <button
                                 onClick={handleContentSafetyDialogClose}
